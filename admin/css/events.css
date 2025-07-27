@@ -193,3 +193,124 @@ body, html {
     background: #d3d3d3;
     border-radius: 8px;
 }
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px 28px;
+    min-width: 340px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+}
+.modal-content h2 {
+    margin: 0 0 18px 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #206233;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+.modal-content label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 1rem;
+}
+#imagePreview {
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-top: 4px;
+}
+#eventLocation {
+    height: 44px;
+    font-size: 1rem;
+    border: none;
+    background: #e0e0e0;
+    border-radius: 8px;
+    padding: 0 14px;
+    outline: none;
+    box-sizing: border-box;
+    margin-top: 2px;
+    color: #444;
+    transition: box-shadow 0.2s;
+}
+#eventLocation:focus {
+    box-shadow: 0 0 0 2px #20623333;
+}
+#eventTitle {
+    height: 44px;
+    font-size: 1rem;
+    border: none;
+    background: #e0e0e0;
+    border-radius: 8px;
+    padding: 0 14px;
+    outline: none;
+    box-sizing: border-box;
+    margin-top: 2px;
+    color: #444;
+    transition: box-shadow 0.2s;
+}
+#eventTitle:focus {
+    box-shadow: 0 0 0 2px #20623333;
+}
+.dropdown-list {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-top: 2px;
+    width: 90%;
+    max-width: 95%;
+    max-height: 140px;
+    overflow-y: auto;
+    z-index: 2100;
+    list-style: none;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.dropdown-list li {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.dropdown-list li:hover {
+    background: #e0e0e0;
+}
+.modal-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+.modal-actions button {
+    padding: 8px 22px;
+    border-radius: 8px;
+    border: none;
+    background: #216a39;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.modal-actions button#closeModalBtn {
+    background: #bbb;
+    color: #222;
+}
+.modal-actions button:hover {
+    background: #174c28;
+}

@@ -12,7 +12,8 @@
             <span class="tools-title">Admin Tools</span>
         </div>
         <div class="tools-list">
-            <div class="tool-card">
+            <!-- events -->
+            <div class="tool-card" onclick="goToEvents()">
                 <span class="tool-icon">
                     <!-- Event icon -->
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -23,7 +24,8 @@
                 </span>
                 <span class="tool-label">Edit Events</span>
             </div>
-            <div class="tool-card">
+            <!-- go to add location -->
+            <div class="tool-card" onclick="goToAddLocation()">
                 <span class="tool-icon">
                     <!-- Add location icon -->
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -33,7 +35,8 @@
                 </span>
                 <span class="tool-label">Add Location and Waypoint</span>
             </div>
-            <div class="tool-card">
+            <!-- change destionation -->
+            <div class="tool-card" onclick="goToChangeDestination()">
                 <span class="tool-icon">
                     <!-- Change destination icon -->
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -44,8 +47,8 @@
                 </span>
                 <span class="tool-label">Change Destination Detail</span>
             </div>
-
-            <div class="tool-card">
+            <!-- admin settings -->
+            <div class="tool-card" onclick="goToSettings()">
                 <span class="tool-icon">
                     <!-- Settings icon -->
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -57,5 +60,20 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function goToEvents(){
+            window.location.href = "./events.html"
+        }
+        function goToAddLocation(){
+            window.location.href = "./add-location.html"
+        }
+        function goToChangeDestination(){
+            window.location.href = "./change-destination.html"
+        }
+        function goToSettings(){
+            window.location.href = "./admin-settings.html"
+        }
+    </script>
 </body>
 </html>
