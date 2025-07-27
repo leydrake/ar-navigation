@@ -38,5 +38,24 @@
       <div class="permission-msg">Please grant permission to proceed.</div>
     </div>
   </div>
+  <script>
+    document.querySelector('.grant-btn').addEventListener('click', async function() {
+      const msgDiv = document.querySelector('.permission-msg');
+      const confirmed = window.confirm('Do you want to allow camera access?');
+      if (!confirmed) {
+        msgDiv.textContent = 'Camera permission request cancelled.';
+        msgDiv.style.color = 'orange';
+        return;
+      }
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        msgDiv.textContent = 'Camera permission granted!';
+        msgDiv.style.color = 'green';
+      } catch (err) {
+        msgDiv.textContent = 'Camera permission denied.';
+        msgDiv.style.color = 'red';
+      }
+    });
+  </script>
 </body>
 </html>
