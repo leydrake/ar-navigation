@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grant Permission</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/cam-permission.css">
+</head>
+<body>
+  <div class="container">
+
+    <div class="camera-area">
+      <div class="camera-icon" id="cameraIcon">
+        <!-- Disabled camera SVG icon -->
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="120" height="120" fill="none"/>
+          <g stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="30" y="44" width="60" height="40" rx="8"/>
+            <circle cx="60" cy="64" r="12"/>
+            <path d="M45 44l7-12h16l7 12"/>
+            <line x1="30" y1="30" x2="90" y2="90" stroke="#fff" stroke-width="5"/>
+          </g>
+        </svg>
+      </div>
+      <video id="cameraVideo" autoplay playsinline style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
+    </div>
+    <div class="bottom-card">
+      <button class="grant-btn" id="grantBtn">
+        <!-- Lock SVG icon -->
+        <svg viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="8" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Grant Permission
+      </button>
+      <div class="permission-msg">Please grant permission to proceed.</div>
+    </div>
+  </div>
+  <script>
+    const grantBtn = document.querySelector('#grantBtn');
+    const msgDiv = document.querySelector('.permission-msg');
+    const cameraIcon = document.querySelector('#cameraIcon');
+    const cameraVideo = document.querySelector('#cameraVideo');
+    let stream = null;
+
+    grantBtn.addEventListener('click', async function() {
+      const confirmed = window.confirm('Do you want to allow camera access?');
+      if (!confirmed) {
+        msgDiv.textContent = 'Camera permission request cancelled.';
+        msgDiv.style.color = 'orange';
+        return;
+      }
+      
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'environment' // Use back camera if available
+          } 
+        });
+        
+        // Hide the camera icon and show the video
+        cameraIcon.style.display = 'none';
+        cameraVideo.style.display = 'block';
+        cameraVideo.srcObject = stream;
+        
+        // Update button and message
+        grantBtn.innerHTML = `
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          Camera Active
+        `;
+        grantBtn.disabled = true;
+        grantBtn.style.backgroundColor = '#4CAF50';
+        msgDiv.textContent = 'Camera is now active!';
+        msgDiv.style.color = 'green';
+        
+      } catch (err) {
+        console.error('Error accessing camera:', err);
+        msgDiv.textContent = 'Camera permission denied or camera not available.';
+        msgDiv.style.color = 'red';
+      }
+    });
+
+    // Clean up stream when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    });
+  </script>
+</body>
+</html>
