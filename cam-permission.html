@@ -13,7 +13,7 @@
   <div class="container">
 
     <div class="camera-area">
-      <div class="camera-icon">
+      <div class="camera-icon" id="cameraIcon">
         <!-- Disabled camera SVG icon -->
         <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="120" height="120" fill="none"/>
@@ -25,9 +25,10 @@
           </g>
         </svg>
       </div>
+      <video id="cameraVideo" autoplay playsinline style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
     </div>
     <div class="bottom-card">
-      <button class="grant-btn">
+      <button class="grant-btn" id="grantBtn">
         <!-- Lock SVG icon -->
         <svg viewBox="0 0 24 24">
           <rect x="5" y="11" width="14" height="8" rx="2"/>
@@ -39,21 +40,57 @@
     </div>
   </div>
   <script>
-    document.querySelector('.grant-btn').addEventListener('click', async function() {
-      const msgDiv = document.querySelector('.permission-msg');
+    const grantBtn = document.querySelector('#grantBtn');
+    const msgDiv = document.querySelector('.permission-msg');
+    const cameraIcon = document.querySelector('#cameraIcon');
+    const cameraVideo = document.querySelector('#cameraVideo');
+    let stream = null;
+
+    grantBtn.addEventListener('click', async function() {
       const confirmed = window.confirm('Do you want to allow camera access?');
       if (!confirmed) {
         msgDiv.textContent = 'Camera permission request cancelled.';
         msgDiv.style.color = 'orange';
         return;
       }
+      
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        msgDiv.textContent = 'Camera permission granted!';
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'environment' // Use back camera if available
+          } 
+        });
+        
+        // Hide the camera icon and show the video
+        cameraIcon.style.display = 'none';
+        cameraVideo.style.display = 'block';
+        cameraVideo.srcObject = stream;
+        
+        // Update button and message
+        grantBtn.innerHTML = `
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          Camera Active
+        `;
+        grantBtn.disabled = true;
+        grantBtn.style.backgroundColor = '#4CAF50';
+        msgDiv.textContent = 'Camera is now active!';
         msgDiv.style.color = 'green';
+        
       } catch (err) {
-        msgDiv.textContent = 'Camera permission denied.';
+        console.error('Error accessing camera:', err);
+        msgDiv.textContent = 'Camera permission denied or camera not available.';
         msgDiv.style.color = 'red';
+      }
+    });
+
+    // Clean up stream when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     });
   </script>
