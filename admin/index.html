@@ -9,22 +9,144 @@
 <body>
     <div class="admin-login-container">
         <div class="login-header">
-            <button class="back-btn" aria-label="Back">
+            <button class="back-btn" onclick="goBack()" aria-label="Back">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
-            <span class="login-title">Log In</span>
+            <span class="login-title">Admin Login</span>
         </div>
         <div class="login-form-container">
-            <form class="login-form">
+            <form class="login-form" id="loginForm">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
                 <button type="submit" class="login-btn">Log In</button>
             </form>
+            <div id="errorMessage" class="error-message"></div>
         </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Admin credentials (you can change these)
+        const adminCredentials = {
+            email: "admin@navigatecampus.com",
+            password: "admin123456"
+        };
+
+        // Function to create admin credentials in Firestore
+        async function createAdminCredentials() {
+            try {
+                // Hash the password (in production, use proper hashing)
+                const hashedPassword = btoa(adminCredentials.password); // Simple base64 encoding for demo
+                
+                await db.collection('admin_credentials').doc('admin').set({
+                    email: adminCredentials.email,
+                    password: hashedPassword,
+                    role: 'admin',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: null
+                });
+                
+                console.log('Admin credentials created successfully in Firestore');
+            } catch (error) {
+                console.error('Error creating admin credentials:', error);
+            }
+        }
+
+        // Function to verify admin credentials
+        async function verifyAdminCredentials(email, password) {
+            try {
+                const hashedPassword = btoa(password);
+                const doc = await db.collection('admin_credentials').doc('admin').get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.email === email && data.password === hashedPassword) {
+                        // Update last login
+                        await db.collection('admin_credentials').doc('admin').update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('Error verifying credentials:', error);
+                return false;
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const loginBtn = document.querySelector('.login-btn');
+            
+            // Show loading state
+            loginBtn.textContent = 'Logging in...';
+            loginBtn.disabled = true;
+            errorMessage.textContent = '';
+            
+            try {
+                const isValid = await verifyAdminCredentials(email, password);
+                
+                if (isValid) {
+                    // Store admin session
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    sessionStorage.setItem('adminEmail', email);
+                    
+                    // Redirect to admin dashboard
+                    window.location.href = 'admin-tools.html';
+                } else {
+                    errorMessage.textContent = 'Invalid email or password';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Login failed. Please try again.';
+                errorMessage.style.display = 'block';
+                console.error('Login error:', error);
+            } finally {
+                // Reset button state
+                loginBtn.textContent = 'Log In';
+                loginBtn.disabled = false;
+            }
+        });
+
+        // Go back function
+        function goBack() {
+            window.history.back();
+        }
+
+        // Create admin credentials when page loads (only runs once)
+        window.addEventListener('load', function() {
+            createAdminCredentials();
+        });
+    </script>
 </body>
 </html>

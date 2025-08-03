@@ -115,3 +115,22 @@ body {
 .login-btn:hover {
     background: #174b25;
 }
+
+.login-btn:disabled {
+    background: #888;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: #d32f2f;
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 16px;
+    font-size: 14px;
+    text-align: center;
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+}
