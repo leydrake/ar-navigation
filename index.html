@@ -119,7 +119,7 @@
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
           isSwiping = true;
           
-          if (deltaX > 0) {
+          if (deltaX < 0) {
             openPanel();
           }
         }
