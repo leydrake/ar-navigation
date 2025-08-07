@@ -56,21 +56,28 @@
             password: "admin123456"
         };
 
-        // Function to create admin credentials in Firestore
+        // Function to create admin credentials in Firestore (only if they don't exist)
         async function createAdminCredentials() {
             try {
-                // Hash the password (in production, use proper hashing)
-                const hashedPassword = btoa(adminCredentials.password); // Simple base64 encoding for demo
+                // Check if admin credentials already exist
+                const doc = await db.collection('admin_credentials').doc('admin').get();
                 
-                await db.collection('admin_credentials').doc('admin').set({
-                    email: adminCredentials.email,
-                    password: hashedPassword,
-                    role: 'admin',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: null
-                });
-                
-                console.log('Admin credentials created successfully in Firestore');
+                if (!doc.exists) {
+                    // Hash the password (in production, use proper hashing)
+                    const hashedPassword = btoa(adminCredentials.password); // Simple base64 encoding for demo
+                    
+                    await db.collection('admin_credentials').doc('admin').set({
+                        email: adminCredentials.email,
+                        password: hashedPassword,
+                        role: 'admin',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastLogin: null
+                    });
+                    
+                    console.log('Admin credentials created successfully in Firestore');
+                } else {
+                    console.log('Admin credentials already exist, skipping creation');
+                }
             } catch (error) {
                 console.error('Error creating admin credentials:', error);
             }

@@ -175,7 +175,105 @@ body, html {
 }
 
 .save-btn:hover {
-    background: #174b25;
+    background: #1a4f2a;
+}
+
+.save-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.save-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.save-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+.password-strength {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.password-strength.weak {
+    color: #d32f2f;
+}
+
+.password-strength.medium {
+    color: #f57c00;
+}
+
+.password-strength.strong {
+    color: #388e3c;
+}
+
+.form-group.error input {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+}
+
+.form-group.error .error-message {
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.form-group.success input {
+    border-color: #388e3c;
+    box-shadow: 0 0 0 2px rgba(56, 142, 60, 0.2);
+}
+
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-container input {
+    flex: 1;
+    padding-right: 50px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #666;
+    border-radius: 4px;
+    transition: color 0.3s;
+}
+
+.password-toggle:hover {
+    color: #206233;
+    background: rgba(32, 98, 51, 0.1);
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
 }
 
 .action-btn {

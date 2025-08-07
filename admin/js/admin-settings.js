@@ -63,23 +63,275 @@ const currentPassword = document.getElementById('currentPassword');
 const newPassword = document.getElementById('newPassword');
 const confirmPassword = document.getElementById('confirmPassword');
 
+// Function to verify current password
+async function verifyCurrentPassword(email, password) {
+    try {
+        const hashedPassword = btoa(password); // Same encoding as login
+        const docRef = doc(db, "admin_credentials", "admin");
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.email === email && data.password === hashedPassword) {
+                return true;
+            }
+        }
+        return false;
+    } catch (error) {
+        console.error('Error verifying current password:', error);
+        return false;
+    }
+}
+
+// Function to update password in Firebase
+async function updatePasswordInFirebase(newPassword) {
+    try {
+        const hashedNewPassword = btoa(newPassword); // Hash the new password
+        await updateDoc(doc(db, "admin_credentials", "admin"), {
+            password: hashedNewPassword,
+            lastUpdated: new Date()
+        });
+        return true;
+    } catch (error) {
+        console.error('Error updating password:', error);
+        return false;
+    }
+}
+
+// Load current admin email
+async function loadAdminEmail() {
+    try {
+        const docRef = doc(db, "admin_credentials", "admin");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            adminEmail.value = data.email;
+        }
+    } catch (error) {
+        console.error('Error loading admin email:', error);
+    }
+}
+
+// Function to check password strength
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = [];
+    
+    if (password.length >= 8) strength++;
+    else feedback.push('At least 8 characters');
+    
+    if (/[a-z]/.test(password)) strength++;
+    else feedback.push('Include lowercase letter');
+    
+    if (/[A-Z]/.test(password)) strength++;
+    else feedback.push('Include uppercase letter');
+    
+    if (/[0-9]/.test(password)) strength++;
+    else feedback.push('Include number');
+    
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    else feedback.push('Include special character');
+    
+    if (strength <= 2) return { strength: 'weak', score: strength, feedback };
+    if (strength <= 3) return { strength: 'medium', score: strength, feedback };
+    return { strength: 'strong', score: strength, feedback };
+}
+
+// Function to update password strength indicator
+function updatePasswordStrength(password) {
+    const strengthResult = checkPasswordStrength(password);
+    const strengthIndicator = document.getElementById('passwordStrength');
+    
+    if (strengthIndicator) {
+        strengthIndicator.textContent = `Password Strength: ${strengthResult.strength.toUpperCase()}`;
+        strengthIndicator.className = `password-strength ${strengthResult.strength}`;
+    }
+}
+
+// Function to validate form fields
+function validateForm() {
+    const email = adminEmail.value.trim();
+    const currentPass = currentPassword.value;
+    const newPass = newPassword.value;
+    const confirmPass = confirmPassword.value;
+    
+    let isValid = true;
+    
+    // Clear previous error states
+    document.querySelectorAll('.form-group').forEach(group => {
+        group.classList.remove('error', 'success');
+        const errorMsg = group.querySelector('.error-message');
+        if (errorMsg) errorMsg.remove();
+    });
+    
+    // Validate email
+    if (!email) {
+        showFieldError(adminEmail, 'Email is required');
+        isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError(adminEmail, 'Please enter a valid email');
+        isValid = false;
+    }
+    
+    // Validate current password
+    if (!currentPass) {
+        showFieldError(currentPassword, 'Current password is required');
+        isValid = false;
+    }
+    
+    // Validate new password
+    if (!newPass) {
+        showFieldError(newPassword, 'New password is required');
+        isValid = false;
+    } else if (newPass.length < 6) {
+        showFieldError(newPassword, 'Password must be at least 6 characters');
+        isValid = false;
+    }
+    
+    // Validate confirm password
+    if (!confirmPass) {
+        showFieldError(confirmPassword, 'Please confirm your password');
+        isValid = false;
+    } else if (newPass !== confirmPass) {
+        showFieldError(confirmPassword, 'Passwords do not match');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+// Function to show field error
+function showFieldError(input, message) {
+    const formGroup = input.closest('.form-group');
+    formGroup.classList.add('error');
+    
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'error-message';
+    errorMsg.textContent = message;
+    formGroup.appendChild(errorMsg);
+}
+
+// Function to show field success
+function showFieldSuccess(input) {
+    const formGroup = input.closest('.form-group');
+    formGroup.classList.remove('error');
+    formGroup.classList.add('success');
+    
+    const errorMsg = formGroup.querySelector('.error-message');
+    if (errorMsg) errorMsg.remove();
+}
+
+// Add password strength indicator to the form
+function addPasswordStrengthIndicator() {
+    const newPasswordGroup = newPassword.closest('.form-group');
+    const strengthIndicator = document.createElement('div');
+    strengthIndicator.id = 'passwordStrength';
+    strengthIndicator.className = 'password-strength';
+    newPasswordGroup.appendChild(strengthIndicator);
+}
+
+// Add event listeners for real-time validation
+function addFormValidationListeners() {
+    // Email validation
+    adminEmail.addEventListener('blur', () => {
+        const email = adminEmail.value.trim();
+        if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showFieldSuccess(adminEmail);
+        }
+    });
+    
+    // New password strength checking
+    newPassword.addEventListener('input', () => {
+        updatePasswordStrength(newPassword.value);
+        if (newPassword.value.length >= 6) {
+            showFieldSuccess(newPassword);
+        }
+    });
+    
+    // Confirm password validation
+    confirmPassword.addEventListener('input', () => {
+        if (confirmPassword.value && confirmPassword.value === newPassword.value) {
+            showFieldSuccess(confirmPassword);
+        }
+    });
+}
+
 accountForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    if (newPassword.value !== confirmPassword.value) {
-        alert('New passwords do not match!');
+    // Validate form first
+    if (!validateForm()) {
         return;
     }
     
-    if (newPassword.value.length < 6) {
-        alert('Password must be at least 6 characters long!');
+    const email = adminEmail.value.trim();
+    const currentPass = currentPassword.value;
+    const newPass = newPassword.value;
+    const confirmPass = confirmPassword.value;
+    
+    if (currentPass === newPass) {
+        showFieldError(newPassword, 'New password must be different from current password');
         return;
     }
     
-    // In a real app, you'd validate current password and update via Firebase Auth
-    alert('Account updated successfully! (Note: Password change requires Firebase Auth setup)');
-    accountForm.reset();
+    // Show loading state
+    const submitBtn = accountForm.querySelector('.save-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Updating...';
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    
+    try {
+        // Verify current password
+        const isCurrentPasswordValid = await verifyCurrentPassword(email, currentPass);
+        
+        if (!isCurrentPasswordValid) {
+            showFieldError(currentPassword, 'Current password is incorrect');
+            return;
+        }
+        
+        // Update password in Firebase
+        const updateSuccess = await updatePasswordInFirebase(newPass);
+        
+        if (updateSuccess) {
+            // Show success message
+            alert('Password updated successfully!');
+            
+            // Clear form and show success states
+            currentPassword.value = '';
+            newPassword.value = '';
+            confirmPassword.value = '';
+            showFieldSuccess(currentPassword);
+            showFieldSuccess(newPassword);
+            showFieldSuccess(confirmPassword);
+            
+            // Clear password strength indicator
+            const strengthIndicator = document.getElementById('passwordStrength');
+            if (strengthIndicator) {
+                strengthIndicator.textContent = '';
+                strengthIndicator.className = 'password-strength';
+            }
+        } else {
+            alert('Failed to update password. Please try again.');
+        }
+        
+    } catch (error) {
+        console.error('Error updating account:', error);
+        alert('An error occurred while updating the password. Please try again.');
+    } finally {
+        // Reset button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+    }
 });
+
+// Load admin email when page loads
+loadAdminEmail();
+
+// Initialize enhanced password change functionality
+addPasswordStrengthIndicator();
+addFormValidationListeners();
 
 // Event Management
 const defaultEventImage = document.getElementById('defaultEventImage');
