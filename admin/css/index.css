@@ -99,6 +99,42 @@ body {
     margin-bottom: 8px;
 }
 
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-container input {
+    flex: 1;
+    padding-right: 50px;
+    margin-bottom: 8px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #666;
+    border-radius: 4px;
+    transition: color 0.3s;
+}
+
+.password-toggle:hover {
+    color: #206233;
+    background: rgba(32, 98, 51, 0.1);
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
 .login-btn {
     background: #206233;
     color: #fff;
