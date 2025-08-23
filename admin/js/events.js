@@ -135,16 +135,53 @@ closeModalBtn.onclick = function() {
     imagePreview.style.display = 'none';
 };
 
-// Image preview
+// Image preview with size validation and compression
 eventImage.onchange = function(e) {
     const file = e.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            imagePreview.src = evt.target.result;
+        // Check file size (max 1MB)
+        const maxSize = 1024 * 1024; // 1MB in bytes
+        if (file.size > maxSize) {
+            alert('Image file is too large. Please select an image smaller than 1MB.');
+            eventImage.value = ''; // Clear the input
+            imagePreview.style.display = 'none';
+            return;
+        }
+        
+        // Compress the image before displaying
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            // Calculate new dimensions (max 800x800)
+            let { width, height } = img;
+            const maxDimension = 800;
+            
+            if (width > height) {
+                if (width > maxDimension) {
+                    height = (height * maxDimension) / width;
+                    width = maxDimension;
+                }
+            } else {
+                if (height > maxDimension) {
+                    width = (width * maxDimension) / height;
+                    height = maxDimension;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+            
+            imagePreview.src = compressedDataUrl;
             imagePreview.style.display = 'block';
         };
-        reader.readAsDataURL(file);
+        
+        img.src = URL.createObjectURL(file);
     } else {
         imagePreview.style.display = 'none';
     }
@@ -180,25 +217,70 @@ eventForm.onsubmit = async function(e) {
     const title = eventTitle.value.trim();
     const location = eventLocation.value.trim();
     let image = '';
+    
     if (eventImage.files[0]) {
+        // Use the compressed image from preview
         image = imagePreview.src;
+        
+        // Check if the compressed image is still too large
+        if (image.length > 500000) { // Check if base64 string is over ~500KB
+            alert('Image is still too large after compression. Please try a smaller image file.');
+            return;
+        }
     } else if (editingEventId) {
         image = editingEventImage;
     }
-    if (!title || !location) return;
-    if (editingEventId) {
-        // Update existing event
-        await updateDoc(doc(db, "events", editingEventId), { title, location, image });
-    } else {
-        // Add new event
-        await addDoc(eventsRef, { title, location, image });
+    
+    if (!title || !location) {
+        alert('Please fill in both title and location');
+        return;
     }
-    fetchAndRenderEvents();
-    addEventModal.style.display = 'none';
-    editingEventId = null;
-    editingEventImage = '';
-    eventForm.reset();
-    imagePreview.style.display = 'none';
+    
+    // Ask for confirmation before adding/updating
+    let confirmMessage = '';
+    if (editingEventId) {
+        confirmMessage = `Do you want to update the event "${title}"?`;
+    } else {
+        confirmMessage = `Do you want to add the event "${title}"?`;
+    }
+    
+    const confirmed = confirm(confirmMessage);
+    
+    if (confirmed) {
+        try {
+            // User clicked "OK" - proceed with adding/updating
+            if (editingEventId) {
+                // Update existing event
+                console.log('Updating event:', editingEventId, { title, location, image: image.substring(0, 100) + '...' });
+                await updateDoc(doc(db, "events", editingEventId), { title, location, image });
+                console.log('Event updated successfully');
+            } else {
+                // Add new event
+                console.log('Adding new event:', { title, location, image: image.substring(0, 100) + '...' });
+                await addDoc(eventsRef, { title, location, image });
+                console.log('Event added successfully');
+            }
+            
+            // Refresh the events list
+            await fetchAndRenderEvents();
+            
+            // Close modal and reset form
+            addEventModal.style.display = 'none';
+            editingEventId = null;
+            editingEventImage = '';
+            eventForm.reset();
+            imagePreview.style.display = 'none';
+            
+            // Show success message
+            alert(editingEventId ? 'Event updated successfully!' : 'Event added successfully!');
+            
+        } catch (error) {
+            console.error('Error saving event:', error);
+            alert('Error saving event: ' + error.message);
+        }
+    } else {
+        console.log('User cancelled the operation');
+    }
 };
 
 // Initial fetch
