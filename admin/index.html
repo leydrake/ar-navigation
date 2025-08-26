@@ -44,6 +44,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- CryptoJS for password hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <script>
         // Firebase configuration
@@ -68,6 +71,11 @@
             password: "admin123456"
         };
 
+        // Function to hash password using SHA-256
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+
         // Function to create admin credentials in Firestore (only if they don't exist)
         async function createAdminCredentials() {
             try {
@@ -75,15 +83,17 @@
                 const doc = await db.collection('admin_credentials').doc('admin').get();
                 
                 if (!doc.exists) {
-                    // Hash the password (in production, use proper hashing)
-                    const hashedPassword = btoa(adminCredentials.password); // Simple base64 encoding for demo
+                    // Hash the password using SHA-256
+                    const hashedPassword = hashPassword(adminCredentials.password);
                     
                     await db.collection('admin_credentials').doc('admin').set({
                         email: adminCredentials.email,
                         password: hashedPassword,
                         role: 'admin',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastLogin: null
+                        lastLogin: null,
+                        loginAttempts: 0,
+                        lockedUntil: null
                     });
                     
                     console.log('Admin credentials created successfully in Firestore');
@@ -95,79 +105,89 @@
             }
         }
 
-        // Function to verify admin credentials
+        // Function to verify admin credentials with rate limiting
         async function verifyAdminCredentials(email, password) {
             try {
-                const hashedPassword = btoa(password);
-                const doc = await db.collection('admin_credentials').doc('admin').get();
+                const docRef = db.collection('admin_credentials').doc('admin');
+                const doc = await docRef.get();
                 
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data.email === email && data.password === hashedPassword) {
-                        // Update last login
-                        await db.collection('admin_credentials').doc('admin').update({
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        return true;
+                if (!doc.exists) {
+                    return { success: false, message: 'Admin account not found' };
+                }
+                
+                const data = doc.data();
+                
+                // Check if account is locked
+                if (data.lockedUntil && new Date() < data.lockedUntil.toDate()) {
+                    const remainingTime = Math.ceil((data.lockedUntil.toDate() - new Date()) / 1000 / 60);
+                    return { 
+                        success: false, 
+                        message: `Account is locked. Try again in ${remainingTime} minutes.` 
+                    };
+                }
+                
+                // Verify email and password
+                if (data.email === email && data.password === hashPassword(password)) {
+                    // Reset login attempts on successful login
+                    await docRef.update({
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+                        loginAttempts: 0,
+                        lockedUntil: null
+                    });
+                    
+                    // Store admin session
+                    localStorage.setItem('adminSession', JSON.stringify({
+                        email: email,
+                        role: data.role,
+                        loginTime: new Date().toISOString(),
+                        token: generateSessionToken()
+                    }));
+                    
+                    return { success: true, message: 'Login successful' };
+                } else {
+                    // Increment failed login attempts
+                    const newAttempts = (data.loginAttempts || 0) + 1;
+                    let lockedUntil = null;
+                    
+                    // Lock account after 5 failed attempts for 15 minutes
+                    if (newAttempts >= 5) {
+                        lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+                    }
+                    
+                    await docRef.update({
+                        loginAttempts: newAttempts,
+                        lockedUntil: lockedUntil
+                    });
+                    
+                    const remainingAttempts = 5 - newAttempts;
+                    if (remainingAttempts > 0) {
+                        return { 
+                            success: false, 
+                            message: `Invalid credentials. ${remainingAttempts} attempts remaining.` 
+                        };
+                    } else {
+                        return { 
+                            success: false, 
+                            message: 'Account locked due to too many failed attempts. Try again in 15 minutes.' 
+                        };
                     }
                 }
-                return false;
             } catch (error) {
-                console.error('Error verifying credentials:', error);
-                return false;
+                console.error('Error verifying admin credentials:', error);
+                return { success: false, message: 'An error occurred. Please try again.' };
             }
         }
 
-        // Handle form submission
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
-            const loginBtn = document.querySelector('.login-btn');
-            
-            // Show loading state
-            loginBtn.textContent = 'Logging in...';
-            loginBtn.disabled = true;
-            errorMessage.textContent = '';
-            
-            try {
-                const isValid = await verifyAdminCredentials(email, password);
-                
-                if (isValid) {
-                    // Store admin session
-                    sessionStorage.setItem('adminLoggedIn', 'true');
-                    sessionStorage.setItem('adminEmail', email);
-                    
-                    // Redirect to admin dashboard
-                    window.location.href = 'admin-tools.html';
-                } else {
-                    errorMessage.textContent = 'Invalid email or password';
-                    errorMessage.style.display = 'block';
-                }
-            } catch (error) {
-                errorMessage.textContent = 'Login failed. Please try again.';
-                errorMessage.style.display = 'block';
-                console.error('Login error:', error);
-            } finally {
-                // Reset button state
-                loginBtn.textContent = 'Log In';
-                loginBtn.disabled = false;
-            }
-        });
-
-        // Go back function
-        function goBack() {
-            window.history.back();
+        // Generate a simple session token
+        function generateSessionToken() {
+            return Math.random().toString(36).substring(2) + Date.now().toString(36);
         }
-        
-        // Function to toggle password visibility
+
+        // Toggle password visibility
         function togglePasswordVisibility(inputId) {
             const input = document.getElementById(inputId);
-            const toggleBtn = input.parentElement.querySelector('.password-toggle');
-            const eyeIcon = toggleBtn.querySelector('.eye-icon');
-            const eyeOffIcon = toggleBtn.querySelector('.eye-off-icon');
+            const eyeIcon = input.parentElement.querySelector('.eye-icon');
+            const eyeOffIcon = input.parentElement.querySelector('.eye-off-icon');
             
             if (input.type === 'password') {
                 input.type = 'text';
@@ -180,8 +200,79 @@
             }
         }
 
-        // Create admin credentials when page loads (only runs once)
-        window.addEventListener('load', function() {
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const loginBtn = document.querySelector('.login-btn');
+            
+            // Basic validation
+            if (!email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            // Disable button and show loading state
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            errorMessage.textContent = '';
+            
+            try {
+                const result = await verifyAdminCredentials(email, password);
+                
+                if (result.success) {
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'admin-tools.html';
+                    }, 1000);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('An unexpected error occurred. Please try again.');
+                console.error('Login error:', error);
+            } finally {
+                // Re-enable button
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Log In';
+            }
+        });
+
+        // Show error message
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.className = 'error-message show';
+            setTimeout(() => {
+                errorMessage.className = 'error-message';
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.className = 'error-message success show';
+            setTimeout(() => {
+                errorMessage.className = 'error-message success';
+            }, 5000);
+        }
+
+        // Navigation function
+        function goBack() {
+            window.location.href = '../index.html';
+        }
+
+        // Initialize admin credentials when page loads
+        document.addEventListener('DOMContentLoaded', function() {
             createAdminCredentials();
         });
     </script>
