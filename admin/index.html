@@ -81,7 +81,7 @@
                     await db.collection('admin_credentials').doc('admin').set({
                         email: adminCredentials.email,
                         password: hashedPassword,
-                        role: 'admin',
+                        role: 'super_admin',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         lastLogin: null
                     });
@@ -95,39 +95,46 @@
             }
         }
 
-        // Function to verify admin credentials
+        // Function to verify admin credentials (supports multiple admins in the same collection)
         async function verifyAdminCredentials(email, password) {
             try {
-                console.log('Starting credential verification...');
                 const hashedPassword = btoa(password);
-                console.log('Password hashed, fetching admin doc...');
-                
-                const doc = await db.collection('admin_credentials').doc('admin').get();
-                console.log('Admin doc fetched:', doc.exists ? 'exists' : 'does not exist');
-                
-                if (doc.exists) {
-                    const data = doc.data();
-                    console.log('Admin data:', { email: data.email, hashedPassword: data.password });
-                    console.log('Comparing:', { inputEmail: email, inputHashedPassword: hashedPassword });
-                    
-                    if (data.email === email && data.password === hashedPassword) {
-                        console.log('Credentials match!');
-                        // Update last login
-                        await db.collection('admin_credentials').doc('admin').update({
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        return true;
-                    } else {
-                        console.log('Credentials do not match');
-                    }
-                } else {
-                    console.log('Admin document does not exist');
+                const snap = await db.collection('admin_credentials')
+                    .where('email', '==', email)
+                    .limit(1)
+                    .get();
+
+                if (snap.empty) {
+                    return { ok: false };
                 }
-                return false;
+
+                const doc = snap.docs[0];
+                const data = doc.data();
+                if (data.password === hashedPassword) {
+                    // Update last login
+                    await db.collection('admin_credentials').doc(doc.id).update({
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return {
+                        ok: true,
+                        user: {
+                            id: doc.id,
+                            email: data.email,
+                            name: data.name || 'Admin',
+                            role: data.role || 'admin',
+                            permissions: Array.isArray(data.permissions) ? data.permissions : []
+                        }
+                    };
+                }
+                return { ok: false };
             } catch (error) {
                 console.error('Error verifying credentials:', error);
-                return false;
+                return { ok: false, error: error.message };
             }
+        }
+
+        function normalizeRole(roleValue) {
+            return (roleValue || '').toString().trim().toLowerCase();
         }
 
         // Handle form submission
@@ -148,14 +155,15 @@
             
             try {
                 console.log('Verifying credentials...');
-                const isValid = await verifyAdminCredentials(email, password);
-                console.log('Credential verification result:', isValid);
-                
-                if (isValid) {
+                const result = await verifyAdminCredentials(email, password);
+                if (result.ok) {
                     console.log('Login successful, redirecting...');
                     // Store admin session
                     sessionStorage.setItem('adminLoggedIn', 'true');
-                    sessionStorage.setItem('adminEmail', email);
+                    sessionStorage.setItem('adminEmail', result.user.email);
+                    sessionStorage.setItem('adminName', result.user.name);
+                    sessionStorage.setItem('adminRole', normalizeRole(result.user.role));
+                    sessionStorage.setItem('adminPermissions', JSON.stringify(result.user.permissions || []));
                     
                     // Redirect to admin dashboard
                     window.location.href = 'admin-tools.html';

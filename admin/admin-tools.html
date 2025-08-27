@@ -30,7 +30,7 @@
         <main class="dashboard-main">
             <div class="dashboard-grid">
                 <!-- Events Management -->
-                <div class="dashboard-card" onclick="goToEvents()">
+                <div class="dashboard-card" data-permission="events" onclick="goToEvents()">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -50,7 +50,7 @@
                 </div>
 
                 <!-- Location Management -->
-                <div class="dashboard-card" onclick="goToAddLocation()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToAddLocation()">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -69,7 +69,7 @@
                 </div>
 
                 <!-- Destination Management -->
-                <div class="dashboard-card" onclick="goToChangeDestination()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToChangeDestination()">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M4 20V4h16v16H4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -89,7 +89,7 @@
                 </div>
 
                 <!-- Edit Location -->
-                <div class="dashboard-card" onclick="goToEditLocation()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToEditLocation()">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -106,11 +106,102 @@
                         </svg>
                     </div>
                 </div>
+
+                <!-- User Management -->
+                <div class="dashboard-card" data-permission="users" onclick="goToUserManagement()">
+                    <div class="card-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">User Management</h3>
+                        <p class="card-description">Manage admin users and permissions</p>
+                    </div>
+                    <div class="card-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
     <script>
+        // Initialize Firebase (same config as login page)
+        (function(){
+            if (!window.firebase || (window.firebase && window.firebase.apps && window.firebase.apps.length)) return;
+        })();
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Permission-based visibility for dashboard cards (be permissive by default)
+        function normalizeRole(roleValue){
+            return (roleValue || '').toString().trim().toLowerCase();
+        }
+
+        function updateCardVisibility(){
+            try {
+                const permissions = JSON.parse(sessionStorage.getItem('adminPermissions') || '[]');
+                const roleRaw = sessionStorage.getItem('adminRole');
+                const role = normalizeRole(roleRaw);
+                const cards = document.querySelectorAll('.dashboard-card[data-permission]');
+                const hasRoleInfo = !!role || (Array.isArray(permissions) && permissions.length > 0);
+
+                cards.forEach(card => {
+                    const required = card.getAttribute('data-permission');
+                    if (hasRoleInfo && role !== 'super_admin' && !permissions.includes(required)) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = '';
+                    }
+                });
+            } catch (e) {
+                console.warn('Permission parse error', e);
+            }
+        }
+
+        (function(){
+            updateCardVisibility();
+            const email = sessionStorage.getItem('adminEmail');
+            if (!email) return;
+            db.collection('admin_credentials')
+                .where('email','==',email)
+                .limit(1)
+                .get()
+                .then(snap => {
+                    if (snap.empty) return;
+                    const data = snap.docs[0].data();
+                    if (data.role) sessionStorage.setItem('adminRole', normalizeRole(data.role));
+                    if (Array.isArray(data.permissions)) sessionStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
+                })
+                .then(() => {
+                    updateCardVisibility();
+                })
+                .catch(err => {
+                    console.warn('Failed to refresh role from Firestore', err);
+                });
+        })();
         function goToEvents(){
             window.location.href = "./events.html"
         }
@@ -125,6 +216,9 @@
         }
         function goToEditLocation(){
             window.location.href = "./edit-location.html"
+        }
+        function goToUserManagement(){
+            window.location.href = "./user-management.html"
         }
     </script>
 </body>
