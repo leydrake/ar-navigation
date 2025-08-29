@@ -17,6 +17,46 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const eventsRef = collection(db, "events");
 
+// Permission checking functions
+function checkEventsPermission() {
+    // Check if user is logged in
+    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+    const adminEmail = sessionStorage.getItem('adminEmail');
+    if (!isLoggedIn || !adminEmail) {
+        window.location.href = 'index.html';
+        return false;
+    }
+
+    // Check role and permissions
+    const role = sessionStorage.getItem('adminRole');
+    const permissions = JSON.parse(sessionStorage.getItem('adminPermissions') || '[]');
+    
+    // Super admin can do everything
+    if (role === 'super_admin') {
+        return true;
+    }
+    
+    // Events admin can only manage events
+    if (role === 'events_admin') {
+        return true;
+    }
+    
+    // Regular admin needs events permission
+    if (permissions.includes('events')) {
+        return true;
+    }
+    
+    // No permission
+    alert('You do not have permission to manage events.');
+    window.location.href = 'admin-tools.html';
+    return false;
+}
+
+// Check permissions before allowing any actions
+if (!checkEventsPermission()) {
+    throw new Error('Insufficient permissions to access events management');
+}
+
 // DOM elements
 const eventsList = document.querySelector('.events-list');
 const addEventBtn = document.querySelector('.add-event-btn');
@@ -99,6 +139,9 @@ function renderEvents(events) {
     // Add event listeners for delete
     document.querySelectorAll('.event-delete-btn').forEach(btn => {
         btn.onclick = async function() {
+            // Check permissions before allowing delete
+            if (!checkEventsPermission()) return;
+            
             const id = this.getAttribute('data-id');
             const confirmed = confirm('Are you sure you want to delete this event?');
             if (!confirmed) return;
@@ -115,6 +158,9 @@ function renderEvents(events) {
     // Edit event
     document.querySelectorAll('.event-edit-btn').forEach(btn => {
         btn.onclick = async function() {
+            // Check permissions before allowing edit
+            if (!checkEventsPermission()) return;
+            
             const id = this.getAttribute('data-id');
             try {
                 const eventDoc = await getDoc(doc(db, "events", id));
@@ -143,6 +189,9 @@ function renderEvents(events) {
 
 // Modal open/close
 addEventBtn.onclick = function() {
+    // Check permissions before allowing add
+    if (!checkEventsPermission()) return;
+    
     addEventModal.style.display = 'flex';
     editingEventId = null;
     editingEventImage = '';
@@ -239,6 +288,10 @@ document.addEventListener('click', function(e) {
 // Add or edit event submit
 eventForm.onsubmit = async function(e) {
     e.preventDefault();
+    
+    // Check permissions before allowing submit
+    if (!checkEventsPermission()) return;
+    
     const title = eventTitle.value.trim();
     const location = eventLocation.value.trim();
     let image = '';

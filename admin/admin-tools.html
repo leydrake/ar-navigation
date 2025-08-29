@@ -16,10 +16,10 @@
                     <p class="dashboard-subtitle">Manage your AR navigation system</p>
                 </div>
                 <div class="header-right">
-                    <button class="settings-btn" onclick="goToSettings()" title="Settings">
+                    <button class="settings-btn" onclick="goToSettings()" title="Settings" id="settingsBtn" style="display: none;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 11 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 11 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
                 </div>
@@ -30,7 +30,7 @@
         <main class="dashboard-main">
             <div class="dashboard-grid">
                 <!-- Events Management -->
-                <div class="dashboard-card" data-permission="events" onclick="goToEvents()">
+                <div class="dashboard-card" data-permission="events" onclick="goToEvents()" id="eventsCard">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -50,7 +50,7 @@
                 </div>
 
                 <!-- Location Management -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToAddLocation()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToAddLocation()" id="addLocationCard">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -69,7 +69,7 @@
                 </div>
 
                 <!-- Destination Management -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToChangeDestination()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToChangeDestination()" id="changeDestinationCard">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M4 20V4h16v16H4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -89,7 +89,7 @@
                 </div>
 
                 <!-- Edit Location -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToEditLocation()">
+                <div class="dashboard-card" data-permission="locations" onclick="goToEditLocation()" id="editLocationCard">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -108,7 +108,7 @@
                 </div>
 
                 <!-- User Management -->
-                <div class="dashboard-card" data-permission="users" onclick="goToUserManagement()">
+                <div class="dashboard-card" data-permission="users" onclick="goToUserManagement()" id="userManagementCard">
                     <div class="card-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -155,71 +155,147 @@
         }
         const db = firebase.firestore();
 
-        // Permission-based visibility for dashboard cards (be permissive by default)
-        function normalizeRole(roleValue){
-            return (roleValue || '').toString().trim().toLowerCase();
+        // Check authentication first
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
         }
 
-        function updateCardVisibility(){
+        // Get admin role and permissions from Firestore
+        async function getAdminRoleAndPermissions() {
             try {
-                const permissions = JSON.parse(sessionStorage.getItem('adminPermissions') || '[]');
-                const roleRaw = sessionStorage.getItem('adminRole');
-                const role = normalizeRole(roleRaw);
-                const cards = document.querySelectorAll('.dashboard-card[data-permission]');
-                const hasRoleInfo = !!role || (Array.isArray(permissions) && permissions.length > 0);
+                const email = sessionStorage.getItem('adminEmail');
+                if (!email) return { role: null, permissions: [] };
 
-                cards.forEach(card => {
-                    const required = card.getAttribute('data-permission');
-                    if (hasRoleInfo && role !== 'super_admin' && !permissions.includes(required)) {
-                        card.style.display = 'none';
-                    } else {
-                        card.style.display = '';
-                    }
-                });
-            } catch (e) {
-                console.warn('Permission parse error', e);
+                const querySnapshot = await db.collection('admin_credentials')
+                    .where('email', '==', email)
+                    .limit(1)
+                    .get();
+
+                if (querySnapshot.empty) {
+                    console.warn('No admin credentials found for email:', email);
+                    return { role: null, permissions: [] };
+                }
+
+                const data = querySnapshot.docs[0].data();
+                const role = data.role ? data.role.toString().trim().toLowerCase() : null;
+                const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+
+                // Store in session storage for other pages
+                sessionStorage.setItem('adminRole', role);
+                sessionStorage.setItem('adminPermissions', JSON.stringify(permissions));
+
+                return { role, permissions };
+            } catch (error) {
+                console.error('Error fetching admin role:', error);
+                return { role: null, permissions: [] };
             }
         }
 
-        (function(){
-            updateCardVisibility();
-            const email = sessionStorage.getItem('adminEmail');
-            if (!email) return;
-            db.collection('admin_credentials')
-                .where('email','==',email)
-                .limit(1)
-                .get()
-                .then(snap => {
-                    if (snap.empty) return;
-                    const data = snap.docs[0].data();
-                    if (data.role) sessionStorage.setItem('adminRole', normalizeRole(data.role));
-                    if (Array.isArray(data.permissions)) sessionStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
-                })
-                .then(() => {
-                    updateCardVisibility();
-                })
-                .catch(err => {
-                    console.warn('Failed to refresh role from Firestore', err);
+        // Update card visibility based on role and permissions
+        function updateCardVisibility(role, permissions) {
+            const cards = {
+                events: document.getElementById('eventsCard'),
+                locations: [
+                    document.getElementById('addLocationCard'),
+                    document.getElementById('changeDestinationCard'),
+                    document.getElementById('editLocationCard')
+                ],
+                users: document.getElementById('userManagementCard'),
+                settings: document.getElementById('settingsBtn')
+            };
+
+            // Super admin can access everything
+            if (role === 'super_admin') {
+                Object.values(cards).forEach(card => {
+                    if (Array.isArray(card)) {
+                        card.forEach(c => c.style.display = '');
+                    } else if (card) {
+                        card.style.display = '';
+                    }
                 });
-        })();
-        function goToEvents(){
-            window.location.href = "./events.html"
+                return;
+            }
+
+            // Events admin can only access events
+            if (role === 'events_admin') {
+                // Show only events card
+                if (cards.events) cards.events.style.display = '';
+                if (cards.locations) cards.locations.forEach(card => card.style.display = 'none');
+                if (cards.users) cards.users.style.display = 'none';
+                if (cards.settings) cards.settings.style.display = 'none';
+                return;
+            }
+
+            // Regular admin - check permissions
+            if (cards.events) {
+                cards.events.style.display = permissions.includes('events') ? '' : 'none';
+            }
+            
+            if (cards.locations) {
+                const hasLocationPermission = permissions.includes('locations');
+                cards.locations.forEach(card => {
+                    card.style.display = hasLocationPermission ? '' : 'none';
+                });
+            }
+            
+            if (cards.users) {
+                cards.users.style.display = permissions.includes('users') ? '' : 'none';
+            }
+            
+            if (cards.settings) {
+                cards.settings.style.display = permissions.includes('settings') ? '' : 'none';
+            }
         }
-        function goToAddLocation(){
-            window.location.href = "./add-location.html"
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth()) return;
+
+            try {
+                const { role, permissions } = await getAdminRoleAndPermissions();
+                updateCardVisibility(role, permissions);
+                
+                // Log the current role for debugging
+                console.log('Current admin role:', role);
+                console.log('Current permissions:', permissions);
+            } catch (error) {
+                console.error('Error initializing page:', error);
+            }
         }
-        function goToChangeDestination(){
-            window.location.href = "./change-destination.html"
+
+        // Navigation functions
+        function goToEvents() {
+            window.location.href = "./events.html";
         }
-        function goToSettings(){
-            window.location.href = "./admin-settings.html"
+        
+        function goToAddLocation() {
+            window.location.href = "./add-location.html";
         }
-        function goToEditLocation(){
-            window.location.href = "./edit-location.html"
+        
+        function goToChangeDestination() {
+            window.location.href = "./change-destination.html";
         }
-        function goToUserManagement(){
-            window.location.href = "./user-management.html"
+        
+        function goToSettings() {
+            window.location.href = "./admin-settings.html";
         }
+        
+        function goToEditLocation() {
+            window.location.href = "./edit-location.html";
+        }
+        
+        function goToUserManagement() {
+            window.location.href = "./user-management.html";
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
     </script>
 </body>
 </html>

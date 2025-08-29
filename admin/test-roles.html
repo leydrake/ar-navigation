@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Testing</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .role-info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .permission-test { margin: 10px 0; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Role-Based Access Control Test</h1>
+    
+    <div class="test-section">
+        <h2>Current Admin Information</h2>
+        <div class="role-info" id="roleInfo">
+            Loading...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Permission Tests</h2>
+        <div class="permission-test">
+            <button onclick="testEventsPermission()">Test Events Permission</button>
+            <span id="eventsTestResult"></span>
+        </div>
+        <div class="permission-test">
+            <button onclick="testLocationsPermission()">Test Locations Permission</button>
+            <span id="locationsTestResult"></span>
+        </div>
+        <div class="test-section">
+            <button onclick="testUsersPermission()">Test Users Permission</button>
+            <span id="usersTestResult"></span>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Actions</h2>
+        <button onclick="goToEvents()">Go to Events Page</button>
+        <button onclick="goToAdminTools()">Go to Admin Tools</button>
+        <button onclick="refreshRoleInfo()">Refresh Role Info</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Auth check script -->
+    <script src="js/auth-check.js"></script>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Get admin role and permissions from Firestore
+        async function getAdminRoleAndPermissions() {
+            try {
+                const email = sessionStorage.getItem('adminEmail');
+                if (!email) return { role: null, permissions: [] };
+
+                const querySnapshot = await db.collection('admin_credentials')
+                    .where('email', '==', email)
+                    .limit(1)
+                    .get();
+
+                if (querySnapshot.empty) {
+                    console.warn('No admin credentials found for email:', email);
+                    return { role: null, permissions: [] };
+                }
+
+                const data = querySnapshot.docs[0].data();
+                const role = data.role ? data.role.toString().trim().toLowerCase() : null;
+                const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+
+                // Store in session storage for other pages
+                sessionStorage.setItem('adminRole', role);
+                sessionStorage.setItem('adminPermissions', JSON.stringify(permissions));
+
+                return { role, permissions };
+            } catch (error) {
+                console.error('Error fetching admin role:', error);
+                return { role: null, permissions: [] };
+            }
+        }
+
+        // Display role information
+        function displayRoleInfo(role, permissions) {
+            const roleInfo = document.getElementById('roleInfo');
+            const email = sessionStorage.getItem('adminEmail');
+            
+            let roleText = role || 'No role assigned';
+            let permissionText = permissions.length > 0 ? permissions.join(', ') : 'No permissions';
+            
+            if (role === 'super_admin') {
+                roleText = '<span class="success">Super Admin (Full Access)</span>';
+            } else if (role === 'events_admin') {
+                roleText = '<span class="warning">Events Admin (Events Only)</span>';
+            } else if (role) {
+                roleText = `<span class="warning">${role} (Limited Access)</span>`;
+            }
+            
+            roleInfo.innerHTML = `
+                <strong>Email:</strong> ${email}<br>
+                <strong>Role:</strong> ${roleText}<br>
+                <strong>Permissions:</strong> ${permissionText}<br>
+                <strong>Session Storage Role:</strong> ${sessionStorage.getItem('adminRole') || 'Not set'}<br>
+                <strong>Session Storage Permissions:</strong> ${sessionStorage.getItem('adminPermissions') || 'Not set'}
+            `;
+        }
+
+        // Test permissions
+        function testEventsPermission() {
+            const result = hasPermission('events');
+            const resultSpan = document.getElementById('eventsTestResult');
+            resultSpan.innerHTML = result ? 
+                '<span class="success">✓ Has permission</span>' : 
+                '<span class="error">✗ No permission</span>';
+        }
+
+        function testLocationsPermission() {
+            const result = hasPermission('locations');
+            const resultSpan = document.getElementById('locationsTestResult');
+            resultSpan.innerHTML = result ? 
+                '<span class="success">✓ Has permission</span>' : 
+                '<span class="error">✗ No permission</span>';
+        }
+
+        function testUsersPermission() {
+            const result = hasPermission('users');
+            const resultSpan = document.getElementById('usersTestResult');
+            resultSpan.innerHTML = result ? 
+                '<span class="success">✓ Has permission</span>' : 
+                '<span class="error">✗ No permission</span>';
+        }
+
+        // Navigation functions
+        function goToEvents() {
+            if (hasPermission('events')) {
+                window.location.href = './events.html';
+            } else {
+                alert('You do not have permission to access events.');
+            }
+        }
+
+        function goToAdminTools() {
+            window.location.href = './admin-tools.html';
+        }
+
+        function refreshRoleInfo() {
+            initializePage();
+        }
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth()) return;
+
+            try {
+                const { role, permissions } = await getAdminRoleAndPermissions();
+                displayRoleInfo(role, permissions);
+                
+                console.log('Current admin role:', role);
+                console.log('Current permissions:', permissions);
+            } catch (error) {
+                console.error('Error initializing page:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
