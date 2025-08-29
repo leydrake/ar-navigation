@@ -65,15 +65,55 @@
     <script type="module" src="js/events.js"></script>
     <script>
         // Check permissions before allowing access
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if user has permission to access events
-            if (!requirePermission('events')) {
-                return; // requirePermission will handle the redirect
+        document.addEventListener('DOMContentLoaded', async function() {
+            // First check if user is logged in
+            if (!checkAdminAuth()) {
+                return;
             }
+            
+            // Wait a bit to ensure role is loaded from admin-tools
+            await new Promise(resolve => setTimeout(resolve, 100));
             
             // Get current admin info for debugging
             const admin = getCurrentAdmin();
-            console.log('Current admin accessing events:', admin);
+            console.log('Current admin from session storage:', admin);
+            
+            // If role is not loaded, try to fetch it from Firestore
+            if (!admin.role) {
+                console.log('Role not found in session storage, fetching from Firestore...');
+                try {
+                    const db = firebase.firestore();
+                    const email = sessionStorage.getItem('adminEmail');
+                    const querySnapshot = await db.collection('admin_credentials')
+                        .where('email', '==', email)
+                        .limit(1)
+                        .get();
+                    
+                    if (!querySnapshot.empty) {
+                        const data = querySnapshot.docs[0].data();
+                        const role = data.role ? data.role.toString().trim().toLowerCase() : null;
+                        const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+                        
+                        // Store in session storage
+                        sessionStorage.setItem('adminRole', role);
+                        sessionStorage.setItem('adminPermissions', JSON.stringify(permissions));
+                        
+                        console.log('Role loaded from Firestore:', role, 'Permissions:', permissions);
+                    }
+                } catch (error) {
+                    console.error('Error fetching role from Firestore:', error);
+                }
+            }
+            
+            // Check if user has permission to access events
+            if (!hasPermission('events')) {
+                console.log('Permission check failed. Role:', admin.role, 'Permissions:', admin.permissions);
+                alert('You do not have permission to access this page.');
+                window.location.href = 'admin-tools.html';
+                return;
+            }
+            
+            console.log('Permission check passed. Admin can access events.');
         });
         
         function goBackToAdminTools() {

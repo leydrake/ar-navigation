@@ -19,10 +19,15 @@ const eventsRef = collection(db, "events");
 
 // Permission checking functions
 function checkEventsPermission() {
+    console.log('checkEventsPermission: Starting permission check...');
+    
     // Check if user is logged in
     const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     const adminEmail = sessionStorage.getItem('adminEmail');
+    console.log('checkEventsPermission: isLoggedIn:', isLoggedIn, 'adminEmail:', adminEmail);
+    
     if (!isLoggedIn || !adminEmail) {
+        console.log('checkEventsPermission: Not logged in, redirecting to index');
         window.location.href = 'index.html';
         return false;
     }
@@ -30,32 +35,42 @@ function checkEventsPermission() {
     // Check role and permissions
     const role = sessionStorage.getItem('adminRole');
     const permissions = JSON.parse(sessionStorage.getItem('adminPermissions') || '[]');
+    console.log('checkEventsPermission: role:', role, 'permissions:', permissions);
     
     // Super admin can do everything
     if (role === 'super_admin') {
+        console.log('checkEventsPermission: Super admin detected, allowing access');
         return true;
     }
     
     // Events admin can only manage events
     if (role === 'events_admin') {
+        console.log('checkEventsPermission: Events admin detected, allowing access');
         return true;
     }
     
     // Regular admin needs events permission
     if (permissions.includes('events')) {
+        console.log('checkEventsPermission: Regular admin with events permission, allowing access');
         return true;
     }
     
     // No permission
+    console.log('checkEventsPermission: No permission, showing alert and redirecting');
     alert('You do not have permission to manage events.');
     window.location.href = 'admin-tools.html';
     return false;
 }
 
 // Check permissions before allowing any actions
-if (!checkEventsPermission()) {
+console.log('Events.js: Checking permissions...');
+const permissionResult = checkEventsPermission();
+console.log('Events.js: Permission check result:', permissionResult);
+if (!permissionResult) {
+    console.error('Events.js: Permission check failed');
     throw new Error('Insufficient permissions to access events management');
 }
+console.log('Events.js: Permission check passed');
 
 // DOM elements
 const eventsList = document.querySelector('.events-list');

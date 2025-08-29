@@ -21,7 +21,14 @@ function getCurrentAdmin() {
 function hasPermission(requiredPermission) {
     const admin = getCurrentAdmin();
     if (!admin.email) return false;
+    
+    // Super admin can do everything
     if (admin.role === 'super_admin') return true;
+    
+    // Events admin can access events
+    if (admin.role === 'events_admin' && requiredPermission === 'events') return true;
+    
+    // Check specific permissions for other roles
     return admin.permissions.includes(requiredPermission);
 }
 

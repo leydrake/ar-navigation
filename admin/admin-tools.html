@@ -22,6 +22,7 @@
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 11 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
+                    <button onclick="refreshRoleInfo()" style="margin-left: 10px; padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Debug: Refresh Role</button>
                 </div>
             </div>
         </header>
@@ -264,6 +265,8 @@
                 // Log the current role for debugging
                 console.log('Current admin role:', role);
                 console.log('Current permissions:', permissions);
+                console.log('Session storage role:', sessionStorage.getItem('adminRole'));
+                console.log('Session storage permissions:', sessionStorage.getItem('adminPermissions'));
             } catch (error) {
                 console.error('Error initializing page:', error);
             }
@@ -293,6 +296,12 @@
         function goToUserManagement() {
             window.location.href = "./user-management.html";
         }
+
+        // Add manual refresh function for debugging
+        window.refreshRoleInfo = async function() {
+            console.log('Manually refreshing role info...');
+            await initializePage();
+        };
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', initializePage);
