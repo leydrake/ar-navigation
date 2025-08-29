@@ -15,6 +15,7 @@
                 </svg>
             </button>
             <span class="settings-title">Admin Settings</span>
+
         </div>
 
         <div class="settings-content">
@@ -25,6 +26,7 @@
                 <button class="tab-btn" data-tab="appearance">Appearance</button>
                 <button class="tab-btn" data-tab="security">Security</button>
                 <button class="tab-btn" data-tab="notifications">Notifications</button>
+                <button class="tab-btn" data-tab="logout">Logout</button>
                 <button class="tab-btn" data-tab="about">About</button>
             </div>
 
@@ -220,6 +222,63 @@
                     <button id="saveNotifications" class="save-btn">Save Notification Settings</button>
                 </div>
 
+                <!-- Logout Tab -->
+                <div id="logout" class="tab-panel">
+                    <h3>Logout & Session Management</h3>
+                    <div class="settings-section">
+                        <h4>Current Session</h4>
+                        <div class="info-item">
+                            <strong>Logged in as:</strong> <span id="currentUserEmail">Loading...</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Role:</strong> <span id="currentUserRole">Loading...</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Login Time:</strong> <span id="loginTime">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Logout Options</h4>
+                        <div class="logout-actions">
+                            <button class="logout-btn" onclick="adminLogout()" style="padding: 12px 24px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-right: 15px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Logout Now
+                            </button>
+                            <button class="logout-all-btn" onclick="logoutAllDevices()" style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Logout All Devices
+                            </button>
+                        </div>
+                        <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                            <strong>Note:</strong> Logging out will end your current session and redirect you to the login page. 
+                            All unsaved changes will be lost.
+                        </p>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Session Security</h4>
+                        <div class="toggle-group">
+                            <label class="toggle">
+                                <input type="checkbox" id="autoLogout" checked>
+                                <span class="slider"></span>
+                                Auto-logout after 30 minutes of inactivity
+                            </label>
+                        </div>
+                        <div class="toggle-group">
+                            <label class="toggle">
+                                <input type="checkbox" id="secureSession" checked>
+                                <span class="slider"></span>
+                                Secure session (HTTPS only)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- About Tab -->
                 <div id="about" class="tab-panel">
                     <h3>About & Support</h3>
@@ -294,6 +353,59 @@
                 eyeOffIcon.style.display = 'none';
             }
         }
+        
+        function adminLogout() {
+            const confirmed = confirm('Are you sure you want to logout?');
+            if (confirmed) {
+                // Clear all session storage
+                sessionStorage.removeItem('adminLoggedIn');
+                sessionStorage.removeItem('adminEmail');
+                sessionStorage.removeItem('adminName');
+                sessionStorage.removeItem('adminRole');
+                sessionStorage.removeItem('adminPermissions');
+                
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        }
+        
+        function logoutAllDevices() {
+            const confirmed = confirm('Are you sure you want to logout from all devices? This will invalidate all active sessions.');
+            if (confirmed) {
+                // Clear all session storage
+                sessionStorage.removeItem('adminLoggedIn');
+                sessionStorage.removeItem('adminEmail');
+                sessionStorage.removeItem('adminName');
+                sessionStorage.removeItem('adminRole');
+                sessionStorage.removeItem('adminPermissions');
+                
+                // In a real app, you would also call an API to invalidate server-side sessions
+                // For now, we'll just clear local storage and redirect
+                
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Load current user information for the logout tab
+        function loadCurrentUserInfo() {
+            const email = sessionStorage.getItem('adminEmail');
+            const role = sessionStorage.getItem('adminRole');
+            const loginTime = sessionStorage.getItem('loginTime') || 'Session started';
+            
+            if (email) {
+                document.getElementById('currentUserEmail').textContent = email;
+            }
+            if (role) {
+                document.getElementById('currentUserRole').textContent = role;
+            }
+            document.getElementById('loginTime').textContent = loginTime;
+        }
+        
+        // Initialize user info when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentUserInfo();
+        });
     </script>
 </body>
 </html> 
