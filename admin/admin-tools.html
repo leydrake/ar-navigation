@@ -7,7 +7,14 @@
     <link rel="stylesheet" href="css/admin-tools.css">
 </head>
 <body>
-    <div class="dashboard-container">
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading admin dashboard...</p>
+    </div>
+
+    <!-- Main Dashboard Container (initially hidden) -->
+    <div id="dashboardContainer" class="dashboard-container" style="display: none;">
         <!-- Header -->
         <header class="dashboard-header">
             <div class="header-content">
@@ -22,112 +29,14 @@
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 11 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
-
                 </div>
             </div>
         </header>
 
         <!-- Main Content -->
         <main class="dashboard-main">
-            <div class="dashboard-grid">
-                <!-- Events Management -->
-                <div class="dashboard-card" data-permission="events" onclick="goToEvents()" id="eventsCard">
-                    <div class="card-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="12" cy="14" r="2" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Events Management</h3>
-                        <p class="card-description">Create, edit, and manage campus events</p>
-                    </div>
-                    <div class="card-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- Location Management -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToAddLocation()" id="addLocationCard">
-                    <div class="card-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Add Location</h3>
-                        <p class="card-description">Add new locations and waypoints to the map</p>
-                    </div>
-                    <div class="card-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- Destination Management -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToChangeDestination()" id="changeDestinationCard">
-                    <div class="card-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 20V4h16v16H4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M8 16l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="12" cy="10" r="2" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Destination Details</h3>
-                        <p class="card-description">Modify destination information and details</p>
-                    </div>
-                    <div class="card-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- Edit Location -->
-                <div class="dashboard-card" data-permission="locations" onclick="goToEditLocation()" id="editLocationCard">
-                    <div class="card-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Edit Location</h3>
-                        <p class="card-description">Modify existing location information</p>
-                    </div>
-                    <div class="card-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- User Management -->
-                <div class="dashboard-card" data-permission="users" onclick="goToUserManagement()" id="userManagementCard">
-                    <div class="card-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">User Management</h3>
-                        <p class="card-description">Manage admin users and permissions</p>
-                    </div>
-                    <div class="card-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
+            <div class="dashboard-grid" id="dashboardGrid">
+                <!-- Content will be dynamically generated based on permissions -->
             </div>
         </main>
     </div>
@@ -198,63 +107,129 @@
             }
         }
 
-        // Update card visibility based on role and permissions
-        function updateCardVisibility(role, permissions) {
-            const cards = {
-                events: document.getElementById('eventsCard'),
-                locations: [
-                    document.getElementById('addLocationCard'),
-                    document.getElementById('changeDestinationCard'),
-                    document.getElementById('editLocationCard')
-                ],
-                users: document.getElementById('userManagementCard'),
-                settings: document.getElementById('settingsBtn')
-            };
+        // Generate dashboard content based on role and permissions
+        function generateDashboardContent(role, permissions) {
+            const dashboardGrid = document.getElementById('dashboardGrid');
+            let content = '';
 
-            // Super admin can access everything
-            if (role === 'super_admin') {
-                Object.values(cards).forEach(card => {
-                    if (Array.isArray(card)) {
-                        card.forEach(c => c.style.display = '');
-                    } else if (card) {
-                        card.style.display = '';
-                    }
-                });
-                return;
-            }
-
-            // Events admin can only access events
-            if (role === 'events_admin') {
-                // Show only events card
-                if (cards.events) cards.events.style.display = '';
-                if (cards.locations) cards.locations.forEach(card => card.style.display = 'none');
-                if (cards.users) cards.users.style.display = 'none';
-                // Show settings button to all admins
-                if (cards.settings) cards.settings.style.display = '';
-                return;
+            // Events Management - show if super_admin, events_admin, or has events permission
+            if (role === 'super_admin' || role === 'events_admin' || permissions.includes('events')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToEvents()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="14" r="2" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Events Management</h3>
+                            <p class="card-description">Create, edit, and manage campus events</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
             }
 
-            // Regular admin - check permissions
-            if (cards.events) {
-                cards.events.style.display = permissions.includes('events') ? '' : 'none';
+            // Location Management - show if super_admin or has locations permission
+            if (role === 'super_admin' || permissions.includes('locations')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToAddLocation()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Add Location</h3>
+                            <p class="card-description">Add new locations and waypoints to the map</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card" onclick="goToChangeDestination()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 20V4h16v16H4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 16l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="10" r="2" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Destination Details</h3>
+                            <p class="card-description">Modify destination information and details</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card" onclick="goToEditLocation()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Edit Location</h3>
+                            <p class="card-description">Modify existing location information</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
             }
-            
-            if (cards.locations) {
-                const hasLocationPermission = permissions.includes('locations');
-                cards.locations.forEach(card => {
-                    card.style.display = hasLocationPermission ? '' : 'none';
-                });
+
+            // User Management - show if super_admin or has users permission
+            if (role === 'super_admin' || permissions.includes('users')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToUserManagement()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">User Management</h3>
+                            <p class="card-description">Manage admin users and permissions</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
             }
-            
-            if (cards.users) {
-                cards.users.style.display = permissions.includes('users') ? '' : 'none';
+
+            // Settings button - show to all admins
+            if (role) {
+                const settingsBtn = document.getElementById('settingsBtn');
+                if (settingsBtn) {
+                    settingsBtn.style.display = '';
+                }
             }
-            
-            // Settings button visibility rules:
-            // - All admins can see the settings button (including logout functionality)
-            if (cards.settings) {
-                cards.settings.style.display = '';
-            }
+
+            dashboardGrid.innerHTML = content;
         }
 
         // Initialize page
@@ -263,7 +238,13 @@
 
             try {
                 const { role, permissions } = await getAdminRoleAndPermissions();
-                updateCardVisibility(role, permissions);
+                
+                // Generate content based on permissions
+                generateDashboardContent(role, permissions);
+                
+                // Hide loading, show dashboard
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('dashboardContainer').style.display = 'block';
                 
                 // Log the current role for debugging
                 console.log('Current admin role:', role);
@@ -272,6 +253,13 @@
                 console.log('Session storage permissions:', sessionStorage.getItem('adminPermissions'));
             } catch (error) {
                 console.error('Error initializing page:', error);
+                // Show error state
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="error-state">
+                        <p>Error loading dashboard. Please refresh the page.</p>
+                        <button onclick="location.reload()">Refresh</button>
+                    </div>
+                `;
             }
         }
 
