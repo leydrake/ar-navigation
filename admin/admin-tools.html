@@ -204,6 +204,11 @@
                 loadAnalyticsData();
             }
 
+            // Show feedback overview if super_admin or has feedback permission
+            if (role === 'super_admin' || permissions.includes('feedback')) {
+                loadFeedbackOverview();
+            }
+
             // Events Management - show if super_admin, events_admin, or has events permission
             if (role === 'super_admin' || role === 'events_admin' || permissions.includes('events')) {
                 content += `
@@ -336,6 +341,28 @@
                 `;
             }
 
+            // Feedback Management - show if super_admin or has feedback permission
+            if (role === 'super_admin' || permissions.includes('feedback')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToFeedback()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Feedback Management</h3>
+                            <p class="card-description">Manage user feedback and support requests</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
 
             // Settings button - show to all admins
             if (role) {
@@ -410,6 +437,10 @@
         
         function goToAnalytics() {
             window.location.href = "./analytics.html";
+        }
+        
+        function goToFeedback() {
+            window.location.href = "./feedback.html";
         }
 
         // Add manual refresh function for debugging
@@ -587,6 +618,63 @@
             setTimeout(() => {
                 refreshBtn.style.transform = 'rotate(0deg)';
             }, 500);
+        }
+
+        // Feedback overview functions
+        async function loadFeedbackOverview() {
+            try {
+                const feedbackSnapshot = await db.collection('feedback').orderBy('timestamp', 'desc').limit(5).get();
+                const recentFeedback = [];
+                
+                feedbackSnapshot.forEach(doc => {
+                    recentFeedback.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Add feedback overview to analytics section if it exists
+                const analyticsSection = document.getElementById('analyticsSection');
+                if (analyticsSection && recentFeedback.length > 0) {
+                    const feedbackOverview = document.createElement('div');
+                    feedbackOverview.className = 'feedback-overview';
+                    feedbackOverview.innerHTML = `
+                        <div class="feedback-overview-header">
+                            <h3>Recent Feedback</h3>
+                            <button class="view-all-btn" onclick="goToFeedback()">View All</button>
+                        </div>
+                        <div class="feedback-overview-list">
+                            ${recentFeedback.map(feedback => `
+                                <div class="feedback-overview-item">
+                                    <div class="feedback-overview-meta">
+                                        <span class="feedback-type ${feedback.type}">${feedback.type.toUpperCase()}</span>
+                                        <span class="feedback-status ${feedback.status.replace('_', '-')}">${feedback.status.replace('_', ' ').toUpperCase()}</span>
+                                    </div>
+                                    <div class="feedback-overview-content">
+                                        <h4>${feedback.title || 'No Title'}</h4>
+                                        <p>${feedback.description ? feedback.description.substring(0, 100) + '...' : 'No description'}</p>
+                                    </div>
+                                    <div class="feedback-overview-footer">
+                                        <span class="feedback-user">${feedback.userEmail || 'Anonymous'}</span>
+                                        <span class="feedback-date">${formatDate(feedback.timestamp)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    analyticsSection.appendChild(feedbackOverview);
+                }
+
+            } catch (error) {
+                console.error('Error loading feedback overview:', error);
+            }
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Unknown';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         }
 
         // Initialize when page loads

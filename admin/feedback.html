@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Management</title>
+    <link rel="stylesheet" href="css/feedback.css">
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading feedback management...</p>
+    </div>
+
+    <!-- Main Feedback Container (initially hidden) -->
+    <div id="feedbackContainer" class="feedback-container" style="display: none;">
+        <!-- Header -->
+        <header class="feedback-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="back-btn" onclick="goBack()" title="Back to Dashboard">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="header-text">
+                        <h1 class="feedback-title">Feedback Management</h1>
+                        <p class="feedback-subtitle">Manage user feedback and support requests</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="refresh-btn" onclick="refreshFeedback()" title="Refresh Data">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="feedback-main">
+            <!-- Summary Cards -->
+            <div class="summary-section">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Total Feedback</h3>
+                        <p class="summary-value" id="totalFeedback">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Pending</h3>
+                        <p class="summary-value" id="pendingFeedback">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Resolved</h3>
+                        <p class="summary-value" id="resolvedFeedback">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Avg Rating</h3>
+                        <p class="summary-value" id="avgRating">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="filters-section">
+                <div class="filters-left">
+                    <div class="filter-group">
+                        <label for="statusFilter">Status:</label>
+                        <select id="statusFilter" onchange="filterFeedback()">
+                            <option value="">All</option>
+                            <option value="new">New</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="typeFilter">Type:</label>
+                        <select id="typeFilter" onchange="filterFeedback()">
+                            <option value="">All</option>
+                            <option value="bug">Bug Report</option>
+                            <option value="feature">Feature Request</option>
+                            <option value="general">General Feedback</option>
+                            <option value="support">Support Request</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="priorityFilter">Priority:</label>
+                        <select id="priorityFilter" onchange="filterFeedback()">
+                            <option value="">All</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filters-right">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search feedback..." onkeyup="searchFeedback()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback List -->
+            <div class="feedback-list-section">
+                <div class="feedback-list-header">
+                    <h3 class="list-title">Feedback Items</h3>
+                    <div class="list-actions">
+                        <button class="action-btn" onclick="exportFeedback()" title="Export Feedback">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="feedback-list" id="feedbackList">
+                    <!-- Feedback items will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Feedback Detail Modal -->
+    <div id="feedbackModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Feedback Details</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Feedback details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn btn-primary" onclick="updateFeedbackStatus()" id="updateStatusBtn">Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Global variables
+        let allFeedback = [];
+        let filteredFeedback = [];
+        let currentFeedbackId = null;
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth()) return;
+
+            try {
+                await loadFeedbackData();
+                
+                // Hide loading, show feedback management
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('feedbackContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Error initializing feedback management:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="error-state">
+                        <p>Error loading feedback management. Please refresh the page.</p>
+                        <button onclick="location.reload()">Refresh</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Load feedback data
+        async function loadFeedbackData() {
+            try {
+                // Load summary data
+                await loadSummaryData();
+                
+                // Load feedback list
+                await loadFeedbackList();
+            } catch (error) {
+                console.error('Error loading feedback data:', error);
+                throw error;
+            }
+        }
+
+        // Load summary data
+        async function loadSummaryData() {
+            try {
+                const feedbackSnapshot = await db.collection('feedback').orderBy('timestamp', 'desc').get();
+                allFeedback = [];
+                
+                feedbackSnapshot.forEach(doc => {
+                    allFeedback.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Calculate summary statistics
+                const totalFeedback = allFeedback.length;
+                const pendingFeedback = allFeedback.filter(f => f.status === 'new' || f.status === 'in_progress').length;
+                const resolvedFeedback = allFeedback.filter(f => f.status === 'resolved').length;
+                
+                // Calculate average rating
+                const ratedFeedback = allFeedback.filter(f => f.rating && f.rating > 0);
+                const avgRating = ratedFeedback.length > 0 
+                    ? (ratedFeedback.reduce((sum, f) => sum + f.rating, 0) / ratedFeedback.length).toFixed(1)
+                    : 'N/A';
+
+                // Update summary cards
+                document.getElementById('totalFeedback').textContent = totalFeedback.toLocaleString();
+                document.getElementById('pendingFeedback').textContent = pendingFeedback.toLocaleString();
+                document.getElementById('resolvedFeedback').textContent = resolvedFeedback.toLocaleString();
+                document.getElementById('avgRating').textContent = avgRating;
+
+                // Set initial filtered data
+                filteredFeedback = [...allFeedback];
+                displayFeedbackList();
+
+            } catch (error) {
+                console.error('Error loading summary data:', error);
+            }
+        }
+
+        // Load feedback list
+        async function loadFeedbackList() {
+            displayFeedbackList();
+        }
+
+        // Display feedback list
+        function displayFeedbackList() {
+            const feedbackList = document.getElementById('feedbackList');
+            feedbackList.innerHTML = '';
+
+            if (filteredFeedback.length === 0) {
+                feedbackList.innerHTML = '<p class="no-feedback">No feedback found matching your criteria.</p>';
+                return;
+            }
+
+            filteredFeedback.forEach(feedback => {
+                const feedbackItem = document.createElement('div');
+                feedbackItem.className = 'feedback-item';
+                feedbackItem.onclick = () => openFeedbackModal(feedback.id);
+                
+                const statusClass = feedback.status.replace('_', '-');
+                const priorityClass = feedback.priority || 'medium';
+                
+                feedbackItem.innerHTML = `
+                    <div class="feedback-item-header">
+                        <div class="feedback-meta">
+                            <span class="feedback-type ${feedback.type}">${feedback.type.toUpperCase()}</span>
+                            <span class="feedback-priority ${priorityClass}">${priorityClass.toUpperCase()}</span>
+                            <span class="feedback-status ${statusClass}">${feedback.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                        <div class="feedback-date">${formatDate(feedback.timestamp)}</div>
+                    </div>
+                    <div class="feedback-content">
+                        <h4 class="feedback-title">${feedback.title || 'No Title'}</h4>
+                        <p class="feedback-description">${feedback.description || 'No description provided'}</p>
+                    </div>
+                    <div class="feedback-footer">
+                        <div class="feedback-user">
+                            <span class="user-info">${feedback.userEmail || 'Anonymous'}</span>
+                            ${feedback.rating ? `<span class="rating">⭐ ${feedback.rating}/5</span>` : ''}
+                        </div>
+                        <div class="feedback-actions">
+                            <button class="action-btn" onclick="event.stopPropagation(); openFeedbackModal('${feedback.id}')" title="View Details">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                feedbackList.appendChild(feedbackItem);
+            });
+        }
+
+        // Filter feedback
+        function filterFeedback() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+
+            filteredFeedback = allFeedback.filter(feedback => {
+                const statusMatch = !statusFilter || feedback.status === statusFilter;
+                const typeMatch = !typeFilter || feedback.type === typeFilter;
+                const priorityMatch = !priorityFilter || feedback.priority === priorityFilter;
+                
+                return statusMatch && typeMatch && priorityMatch;
+            });
+
+            displayFeedbackList();
+        }
+
+        // Search feedback
+        function searchFeedback() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filterFeedback();
+                return;
+            }
+
+            filteredFeedback = allFeedback.filter(feedback => {
+                const title = (feedback.title || '').toLowerCase();
+                const description = (feedback.description || '').toLowerCase();
+                const userEmail = (feedback.userEmail || '').toLowerCase();
+                
+                return title.includes(searchTerm) || 
+                       description.includes(searchTerm) || 
+                       userEmail.includes(searchTerm);
+            });
+
+            displayFeedbackList();
+        }
+
+        // Open feedback modal
+        function openFeedbackModal(feedbackId) {
+            const feedback = allFeedback.find(f => f.id === feedbackId);
+            if (!feedback) return;
+
+            currentFeedbackId = feedbackId;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="feedback-detail">
+                    <div class="detail-header">
+                        <h4>${feedback.title || 'No Title'}</h4>
+                        <div class="detail-meta">
+                            <span class="type-badge ${feedback.type}">${feedback.type.toUpperCase()}</span>
+                            <span class="priority-badge ${feedback.priority || 'medium'}">${(feedback.priority || 'medium').toUpperCase()}</span>
+                            <span class="status-badge ${feedback.status.replace('_', '-')}">${feedback.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-content">
+                        <div class="detail-section">
+                            <h5>Description</h5>
+                            <p>${feedback.description || 'No description provided'}</p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h5>User Information</h5>
+                            <p><strong>Email:</strong> ${feedback.userEmail || 'Anonymous'}</p>
+                            <p><strong>Page:</strong> ${feedback.page || 'Unknown'}</p>
+                            <p><strong>User Agent:</strong> ${feedback.userAgent || 'Unknown'}</p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h5>Additional Details</h5>
+                            <p><strong>Submitted:</strong> ${formatDate(feedback.timestamp)}</p>
+                            ${feedback.rating ? `<p><strong>Rating:</strong> ⭐ ${feedback.rating}/5</p>` : ''}
+                            ${feedback.attachments ? `<p><strong>Attachments:</strong> ${feedback.attachments.length} file(s)</p>` : ''}
+                        </div>
+                        
+                        ${feedback.adminNotes ? `
+                        <div class="detail-section">
+                            <h5>Admin Notes</h5>
+                            <p>${feedback.adminNotes}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('feedbackModal').style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+            currentFeedbackId = null;
+        }
+
+        // Update feedback status
+        async function updateFeedbackStatus() {
+            if (!currentFeedbackId) return;
+            
+            const newStatus = prompt('Enter new status (new, in_progress, resolved, closed):');
+            if (!newStatus) return;
+            
+            try {
+                await db.collection('feedback').doc(currentFeedbackId).update({
+                    status: newStatus,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Refresh data
+                await loadFeedbackData();
+                closeModal();
+                
+                alert('Status updated successfully!');
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status. Please try again.');
+            }
+        }
+
+        // Refresh feedback
+        async function refreshFeedback() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.style.transform = 'rotate(360deg)';
+            
+            await loadFeedbackData();
+            
+            setTimeout(() => {
+                refreshBtn.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+
+        // Export feedback
+        function exportFeedback() {
+            const csvContent = generateCSV(filteredFeedback);
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `feedback-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Generate CSV
+        function generateCSV(data) {
+            const headers = ['ID', 'Type', 'Priority', 'Status', 'Title', 'Description', 'User Email', 'Rating', 'Submitted Date'];
+            const rows = data.map(feedback => [
+                feedback.id,
+                feedback.type || '',
+                feedback.priority || '',
+                feedback.status || '',
+                (feedback.title || '').replace(/"/g, '""'),
+                (feedback.description || '').replace(/"/g, '""'),
+                feedback.userEmail || '',
+                feedback.rating || '',
+                formatDate(feedback.timestamp)
+            ]);
+            
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(field => `"${field}"`).join(','))
+                .join('\n');
+            
+            return csvContent;
+        }
+
+        // Format date
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Unknown';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.location.href = 'admin-tools.html';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
