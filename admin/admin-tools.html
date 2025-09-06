@@ -214,6 +214,11 @@
                 loadBugOverview();
             }
 
+            // Show survey overview if super_admin or has survey permission
+            if (role === 'super_admin' || permissions.includes('surveys')) {
+                loadSurveyOverview();
+            }
+
             // Events Management - show if super_admin, events_admin, or has events permission
             if (role === 'super_admin' || role === 'events_admin' || permissions.includes('events')) {
                 content += `
@@ -390,6 +395,29 @@
                 `;
             }
 
+            // Survey Management - show if super_admin or has survey permission
+            if (role === 'super_admin' || permissions.includes('surveys')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToSurveys()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">User Surveys</h3>
+                            <p class="card-description">Manage user satisfaction surveys and responses</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
 
             // Settings button - show to all admins
             if (role) {
@@ -472,6 +500,10 @@
         
         function goToBugReporting() {
             window.location.href = "./bug-reporting.html";
+        }
+        
+        function goToSurveys() {
+            window.location.href = "./surveys.html";
         }
 
         // Add manual refresh function for debugging
@@ -757,6 +789,57 @@
 
             } catch (error) {
                 console.error('Error loading bug overview:', error);
+            }
+        }
+
+        // Survey overview functions
+        async function loadSurveyOverview() {
+            try {
+                const surveySnapshot = await db.collection('surveys').orderBy('timestamp', 'desc').limit(5).get();
+                const recentSurveys = [];
+                
+                surveySnapshot.forEach(doc => {
+                    recentSurveys.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Add survey overview to analytics section if it exists
+                const analyticsSection = document.getElementById('analyticsSection');
+                if (analyticsSection && recentSurveys.length > 0) {
+                    const surveyOverview = document.createElement('div');
+                    surveyOverview.className = 'survey-overview';
+                    surveyOverview.innerHTML = `
+                        <div class="survey-overview-header">
+                            <h3>Recent Survey Responses</h3>
+                            <button class="view-all-btn" onclick="goToSurveys()">View All</button>
+                        </div>
+                        <div class="survey-overview-list">
+                            ${recentSurveys.map(survey => `
+                                <div class="survey-overview-item">
+                                    <div class="survey-overview-meta">
+                                        <span class="survey-type ${survey.type}">${survey.type ? survey.type.toUpperCase() : 'GENERAL'}</span>
+                                        <span class="survey-rating">${'★'.repeat(survey.overallRating || 0)}${'☆'.repeat(5 - (survey.overallRating || 0))} (${survey.overallRating || 0}/5)</span>
+                                    </div>
+                                    <div class="survey-overview-content">
+                                        <h4>${survey.title || 'Survey Response'}</h4>
+                                        <p>${survey.comments ? survey.comments.substring(0, 100) + '...' : 'No additional comments'}</p>
+                                    </div>
+                                    <div class="survey-overview-footer">
+                                        <span class="survey-user">${survey.userEmail || 'Anonymous'}</span>
+                                        <span class="survey-date">${formatDate(survey.timestamp)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    analyticsSection.appendChild(surveyOverview);
+                }
+
+            } catch (error) {
+                console.error('Error loading survey overview:', error);
             }
         }
 

@@ -731,6 +731,122 @@ body, html {
     font-style: italic;
 }
 
+/* Survey Overview */
+.survey-overview {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.survey-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.survey-overview-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.survey-overview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.survey-overview-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.survey-overview-item:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.survey-overview-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.survey-type, .survey-rating {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.survey-type {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.survey-type.satisfaction {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.survey-type.experience {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.survey-type.feature {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.survey-rating {
+    background: #fff8e1;
+    color: #f9a825;
+    font-size: 0.8rem;
+}
+
+.survey-overview-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.survey-overview-content p {
+    font-size: 0.85rem;
+    color: #6c757d;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.survey-overview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.survey-user {
+    font-weight: 500;
+}
+
+.survey-date {
+    font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .dashboard-header {
