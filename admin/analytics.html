@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <link rel="stylesheet" href="css/analytics.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading analytics...</p>
+    </div>
+
+    <!-- Main Analytics Container (initially hidden) -->
+    <div id="analyticsContainer" class="analytics-container" style="display: none;">
+        <!-- Header -->
+        <header class="analytics-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="back-btn" onclick="goBack()" title="Back to Dashboard">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="header-text">
+                        <h1 class="analytics-title">Analytics Dashboard</h1>
+                        <p class="analytics-subtitle">Visitor statistics and insights</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="refresh-btn" onclick="refreshAnalytics()" title="Refresh Data">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="analytics-main">
+            <!-- Summary Cards -->
+            <div class="summary-section">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Total Visitors</h3>
+                        <p class="summary-value" id="totalVisitors">-</p>
+                        <p class="summary-change" id="totalVisitorsChange">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Today's Visitors</h3>
+                        <p class="summary-value" id="todayVisitors">-</p>
+                        <p class="summary-change" id="todayVisitorsChange">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Unique Visitors</h3>
+                        <p class="summary-value" id="uniqueVisitors">-</p>
+                        <p class="summary-change" id="uniqueVisitorsChange">-</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="summary-content">
+                        <h3 class="summary-title">Page Views</h3>
+                        <p class="summary-value" id="pageViews">-</p>
+                        <p class="summary-change" id="pageViewsChange">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Visitor Trends (Last 30 Days)</h3>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" onclick="updateChart('30')">30 Days</button>
+                            <button class="chart-btn" onclick="updateChart('7')">7 Days</button>
+                            <button class="chart-btn" onclick="updateChart('1')">Today</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="visitorChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Top Pages</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="pagesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-section">
+                <div class="activity-header">
+                    <h3 class="activity-title">Recent Activity</h3>
+                    <button class="view-all-btn" onclick="viewAllActivity()">View All</button>
+                </div>
+                <div class="activity-list" id="activityList">
+                    <!-- Activity items will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Global variables
+        let visitorChart = null;
+        let pagesChart = null;
+        let currentPeriod = '30';
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth()) return;
+
+            try {
+                await loadAnalyticsData();
+                
+                // Hide loading, show analytics
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('analyticsContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Error initializing analytics:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="error-state">
+                        <p>Error loading analytics. Please refresh the page.</p>
+                        <button onclick="location.reload()">Refresh</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Load analytics data
+        async function loadAnalyticsData() {
+            try {
+                // Load summary data
+                await loadSummaryData();
+                
+                // Load charts
+                await loadVisitorChart();
+                await loadPagesChart();
+                
+                // Load recent activity
+                await loadRecentActivity();
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+                throw error;
+            }
+        }
+
+        // Load summary data
+        async function loadSummaryData() {
+            try {
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                // Get total visitors
+                const totalSnapshot = await db.collection('analytics').doc('visitors').get();
+                const totalVisitors = totalSnapshot.exists ? totalSnapshot.data().count || 0 : 0;
+
+                // Get today's visitors
+                const todaySnapshot = await db.collection('analytics').doc('daily_visitors').collection('days').doc(todayStr).get();
+                const todayVisitors = todaySnapshot.exists ? todaySnapshot.data().count || 0 : 0;
+
+                // Get yesterday's visitors for comparison
+                const yesterdaySnapshot = await db.collection('analytics').doc('daily_visitors').collection('days').doc(yesterdayStr).get();
+                const yesterdayVisitors = yesterdaySnapshot.exists ? yesterdaySnapshot.data().count || 0 : 0;
+
+                // Get unique visitors (last 30 days)
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const uniqueVisitorsSnapshot = await db.collection('analytics')
+                    .doc('unique_visitors')
+                    .collection('visitors')
+                    .where('lastVisit', '>=', thirtyDaysAgo)
+                    .get();
+                const uniqueVisitors = uniqueVisitorsSnapshot.size;
+
+                // Get page views
+                const pageViewsSnapshot = await db.collection('analytics').doc('page_views').get();
+                const pageViews = pageViewsSnapshot.exists ? pageViewsSnapshot.data().count || 0 : 0;
+
+                // Update summary cards
+                document.getElementById('totalVisitors').textContent = totalVisitors.toLocaleString();
+                document.getElementById('todayVisitors').textContent = todayVisitors.toLocaleString();
+                document.getElementById('uniqueVisitors').textContent = uniqueVisitors.toLocaleString();
+                document.getElementById('pageViews').textContent = pageViews.toLocaleString();
+
+                // Calculate changes
+                const todayChange = yesterdayVisitors > 0 ? ((todayVisitors - yesterdayVisitors) / yesterdayVisitors * 100) : 0;
+                document.getElementById('todayVisitorsChange').textContent = 
+                    `${todayChange >= 0 ? '+' : ''}${todayChange.toFixed(1)}% from yesterday`;
+                document.getElementById('todayVisitorsChange').className = 
+                    `summary-change ${todayChange >= 0 ? 'positive' : 'negative'}`;
+
+            } catch (error) {
+                console.error('Error loading summary data:', error);
+            }
+        }
+
+        // Load visitor chart
+        async function loadVisitorChart() {
+            try {
+                const days = currentPeriod === '1' ? 1 : currentPeriod === '7' ? 7 : 30;
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+
+                const labels = [];
+                const data = [];
+
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+                    const daySnapshot = await db.collection('analytics')
+                        .doc('daily_visitors')
+                        .collection('days')
+                        .doc(dateStr)
+                        .get();
+                    
+                    data.push(daySnapshot.exists ? daySnapshot.data().count || 0 : 0);
+                }
+
+                const ctx = document.getElementById('visitorChart').getContext('2d');
+                
+                if (visitorChart) {
+                    visitorChart.destroy();
+                }
+
+                visitorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Visitors',
+                            data: data,
+                            borderColor: '#206233',
+                            backgroundColor: 'rgba(32, 98, 51, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#206233',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading visitor chart:', error);
+            }
+        }
+
+        // Load pages chart
+        async function loadPagesChart() {
+            try {
+                const pagesSnapshot = await db.collection('analytics').doc('page_views').collection('pages').get();
+                const pagesData = [];
+                
+                pagesSnapshot.forEach(doc => {
+                    pagesData.push({
+                        page: doc.id,
+                        views: doc.data().count || 0
+                    });
+                });
+
+                pagesData.sort((a, b) => b.views - a.views);
+                const topPages = pagesData.slice(0, 5);
+
+                const ctx = document.getElementById('pagesChart').getContext('2d');
+                
+                if (pagesChart) {
+                    pagesChart.destroy();
+                }
+
+                pagesChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: topPages.map(p => p.page),
+                        datasets: [{
+                            data: topPages.map(p => p.views),
+                            backgroundColor: [
+                                '#206233',
+                                '#28a745',
+                                '#20c997',
+                                '#17a2b8',
+                                '#6f42c1'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading pages chart:', error);
+            }
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const activitySnapshot = await db.collection('analytics')
+                    .doc('recent_activity')
+                    .collection('activities')
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+
+                const activityList = document.getElementById('activityList');
+                activityList.innerHTML = '';
+
+                if (activitySnapshot.empty) {
+                    activityList.innerHTML = '<p class="no-activity">No recent activity</p>';
+                    return;
+                }
+
+                activitySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const timeAgo = getTimeAgo(data.timestamp.toDate());
+                    
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+                    activityItem.innerHTML = `
+                        <div class="activity-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-text">${data.description}</p>
+                            <p class="activity-time">${timeAgo}</p>
+                        </div>
+                    `;
+                    activityList.appendChild(activityItem);
+                });
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+            }
+        }
+
+        // Update chart period
+        function updateChart(period) {
+            currentPeriod = period;
+            
+            // Update button states
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadVisitorChart();
+        }
+
+        // Refresh analytics
+        async function refreshAnalytics() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.style.transform = 'rotate(360deg)';
+            
+            await loadAnalyticsData();
+            
+            setTimeout(() => {
+                refreshBtn.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+
+        // Get time ago string
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.location.href = 'admin-tools.html';
+        }
+
+        function viewAllActivity() {
+            // This could open a modal or navigate to a full activity page
+            console.log('View all activity');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>

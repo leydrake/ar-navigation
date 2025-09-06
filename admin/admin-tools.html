@@ -35,6 +35,88 @@
 
         <!-- Main Content -->
         <main class="dashboard-main">
+            <!-- Analytics Section -->
+            <div id="analyticsSection" class="analytics-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">Analytics Overview</h2>
+                    <button class="refresh-analytics-btn" onclick="refreshAnalytics()" title="Refresh Analytics">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <div class="analytics-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="analytics-content">
+                            <h3 class="analytics-title">Active Users</h3>
+                            <p class="analytics-value" id="activeUsers">-</p>
+                            <p class="analytics-subtitle">Currently using AR</p>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <div class="analytics-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="analytics-content">
+                            <h3 class="analytics-title">Navigation Sessions</h3>
+                            <p class="analytics-value" id="navigationSessions">-</p>
+                            <p class="analytics-subtitle">Today's AR usage</p>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <div class="analytics-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="analytics-content">
+                            <h3 class="analytics-title">Popular Destinations</h3>
+                            <p class="analytics-value" id="popularDestinations">-</p>
+                            <p class="analytics-subtitle">Most visited locations</p>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <div class="analytics-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="analytics-content">
+                            <h3 class="analytics-title">Success Rate</h3>
+                            <p class="analytics-value" id="successRate">-</p>
+                            <p class="analytics-subtitle">Successful navigations</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-chart-section">
+                    <div class="chart-container">
+                        <h3 class="chart-title">AR Navigation Usage (Last 7 Days)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="visitorTrendChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="dashboard-grid" id="dashboardGrid">
                 <!-- Content will be dynamically generated based on permissions -->
             </div>
@@ -45,6 +127,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // Initialize Firebase (same config as login page)
@@ -110,7 +195,14 @@
         // Generate dashboard content based on role and permissions
         function generateDashboardContent(role, permissions) {
             const dashboardGrid = document.getElementById('dashboardGrid');
+            const analyticsSection = document.getElementById('analyticsSection');
             let content = '';
+
+            // Show analytics section if super_admin or has analytics permission
+            if (role === 'super_admin' || permissions.includes('analytics')) {
+                analyticsSection.style.display = 'block';
+                loadAnalyticsData();
+            }
 
             // Events Management - show if super_admin, events_admin, or has events permission
             if (role === 'super_admin' || role === 'events_admin' || permissions.includes('events')) {
@@ -139,6 +231,29 @@
             // Location Management - show if super_admin or has locations permission
             if (role === 'super_admin' || permissions.includes('locations')) {
                 content += `
+                    <div class="dashboard-card" onclick="goToBuildingManagement()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M3 21h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M5 21V7l8-4v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M19 21V11l-6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 9v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 12v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 15v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 18v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Building Management</h3>
+                            <p class="card-description">Manage buildings, floors, and rooms</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+
                     <div class="dashboard-card" onclick="goToAddLocation()">
                         <div class="card-icon">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
@@ -221,6 +336,7 @@
                 `;
             }
 
+
             // Settings button - show to all admins
             if (role) {
                 const settingsBtn = document.getElementById('settingsBtn');
@@ -268,6 +384,10 @@
             window.location.href = "./events.html";
         }
         
+        function goToBuildingManagement() {
+            window.location.href = "./building-management.html";
+        }
+        
         function goToAddLocation() {
             window.location.href = "./add-location.html";
         }
@@ -286,6 +406,10 @@
         
         function goToUserManagement() {
             window.location.href = "./user-management.html";
+        }
+        
+        function goToAnalytics() {
+            window.location.href = "./analytics.html";
         }
 
         // Add manual refresh function for debugging
@@ -308,6 +432,161 @@
                 // Redirect to login page
                 window.location.href = 'index.html';
             }
+        }
+
+        // Analytics functions
+        let visitorChart = null;
+
+        async function loadAnalyticsData() {
+            try {
+                // Load summary data
+                await loadSummaryData();
+                
+                // Load visitor trend chart
+                await loadVisitorTrendChart();
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+            }
+        }
+
+        async function loadSummaryData() {
+            try {
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const oneHourAgo = new Date(today.getTime() - 60 * 60 * 1000);
+
+                // Get active users (users who used AR in the last hour)
+                const activeUsersSnapshot = await db.collection('analytics')
+                    .doc('ar_sessions')
+                    .collection('active')
+                    .where('lastActivity', '>=', oneHourAgo)
+                    .get();
+                const activeUsers = activeUsersSnapshot.size;
+
+                // Get navigation sessions for today
+                const navigationSessionsSnapshot = await db.collection('analytics')
+                    .doc('ar_sessions')
+                    .collection('daily')
+                    .doc(todayStr)
+                    .get();
+                const navigationSessions = navigationSessionsSnapshot.exists ? navigationSessionsSnapshot.data().count || 0 : 0;
+
+                // Get popular destinations (most visited locations)
+                const destinationsSnapshot = await db.collection('analytics')
+                    .doc('destinations')
+                    .collection('popular')
+                    .orderBy('visitCount', 'desc')
+                    .limit(1)
+                    .get();
+                const popularDestinations = destinationsSnapshot.empty ? 0 : destinationsSnapshot.docs[0].data().visitCount || 0;
+
+                // Get success rate (successful navigations vs total attempts)
+                const successDataSnapshot = await db.collection('analytics').doc('success_rate').get();
+                const successRate = successDataSnapshot.exists ? successDataSnapshot.data().rate || 0 : 0;
+
+                // Update summary cards
+                document.getElementById('activeUsers').textContent = activeUsers.toLocaleString();
+                document.getElementById('navigationSessions').textContent = navigationSessions.toLocaleString();
+                document.getElementById('popularDestinations').textContent = popularDestinations.toLocaleString();
+                document.getElementById('successRate').textContent = successRate.toFixed(1) + '%';
+
+            } catch (error) {
+                console.error('Error loading summary data:', error);
+            }
+        }
+
+        async function loadVisitorTrendChart() {
+            try {
+                const days = 7;
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+
+                const labels = [];
+                const data = [];
+
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+                    // Get AR navigation sessions for each day
+                    const daySnapshot = await db.collection('analytics')
+                        .doc('ar_sessions')
+                        .collection('daily')
+                        .doc(dateStr)
+                        .get();
+                    
+                    data.push(daySnapshot.exists ? daySnapshot.data().count || 0 : 0);
+                }
+
+                const ctx = document.getElementById('visitorTrendChart').getContext('2d');
+                
+                if (visitorChart) {
+                    visitorChart.destroy();
+                }
+
+                visitorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'AR Sessions',
+                            data: data,
+                            borderColor: '#206233',
+                            backgroundColor: 'rgba(32, 98, 51, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#206233',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'AR Navigation Sessions'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading AR usage trend chart:', error);
+            }
+        }
+
+        function refreshAnalytics() {
+            const refreshBtn = document.querySelector('.refresh-analytics-btn');
+            refreshBtn.style.transform = 'rotate(360deg)';
+            
+            loadAnalyticsData();
+            
+            setTimeout(() => {
+                refreshBtn.style.transform = 'rotate(0deg)';
+            }, 500);
         }
 
         // Initialize when page loads
