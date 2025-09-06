@@ -209,6 +209,11 @@
                 loadFeedbackOverview();
             }
 
+            // Show bug overview if super_admin or has bug permission
+            if (role === 'super_admin' || permissions.includes('bugs')) {
+                loadBugOverview();
+            }
+
             // Events Management - show if super_admin, events_admin, or has events permission
             if (role === 'super_admin' || role === 'events_admin' || permissions.includes('events')) {
                 content += `
@@ -363,6 +368,28 @@
                 `;
             }
 
+            // Bug Reporting Management - show if super_admin or has bug permission
+            if (role === 'super_admin' || permissions.includes('bugs')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToBugReporting()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Bug Reporting</h3>
+                            <p class="card-description">Track and manage bug reports and technical issues</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
 
             // Settings button - show to all admins
             if (role) {
@@ -441,6 +468,10 @@
         
         function goToFeedback() {
             window.location.href = "./feedback.html";
+        }
+        
+        function goToBugReporting() {
+            window.location.href = "./bug-reporting.html";
         }
 
         // Add manual refresh function for debugging
@@ -675,6 +706,58 @@
             if (!timestamp) return 'Unknown';
             const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        // Bug overview functions
+        async function loadBugOverview() {
+            try {
+                const bugSnapshot = await db.collection('bug_reports').orderBy('timestamp', 'desc').limit(5).get();
+                const recentBugs = [];
+                
+                bugSnapshot.forEach(doc => {
+                    recentBugs.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Add bug overview to analytics section if it exists
+                const analyticsSection = document.getElementById('analyticsSection');
+                if (analyticsSection && recentBugs.length > 0) {
+                    const bugOverview = document.createElement('div');
+                    bugOverview.className = 'bug-overview';
+                    bugOverview.innerHTML = `
+                        <div class="bug-overview-header">
+                            <h3>Recent Bug Reports</h3>
+                            <button class="view-all-btn" onclick="goToBugReporting()">View All</button>
+                        </div>
+                        <div class="bug-overview-list">
+                            ${recentBugs.map(bug => `
+                                <div class="bug-overview-item">
+                                    <div class="bug-overview-meta">
+                                        <span class="bug-category ${bug.category}">${bug.category ? bug.category.replace('_', ' ').toUpperCase() : 'UNCATEGORIZED'}</span>
+                                        <span class="bug-severity ${bug.severity || 'medium'}">${(bug.severity || 'medium').toUpperCase()}</span>
+                                        <span class="bug-status ${bug.status.replace('_', '-')}">${bug.status.replace('_', ' ').toUpperCase()}</span>
+                                    </div>
+                                    <div class="bug-overview-content">
+                                        <h4>${bug.title || 'No Title'}</h4>
+                                        <p>${bug.description ? bug.description.substring(0, 100) + '...' : 'No description'}</p>
+                                    </div>
+                                    <div class="bug-overview-footer">
+                                        <span class="bug-user">${bug.userEmail || 'Anonymous'}</span>
+                                        <span class="bug-date">${formatDate(bug.timestamp)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    analyticsSection.appendChild(bugOverview);
+                }
+
+            } catch (error) {
+                console.error('Error loading bug overview:', error);
+            }
         }
 
         // Initialize when page loads

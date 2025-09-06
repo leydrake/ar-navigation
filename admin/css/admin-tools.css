@@ -530,6 +530,207 @@ body, html {
     font-style: italic;
 }
 
+/* Bug Overview */
+.bug-overview {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.bug-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.bug-overview-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.bug-overview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bug-overview-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.bug-overview-item:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.bug-overview-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.bug-category, .bug-severity, .bug-status {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bug-category {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.bug-category.ar-navigation {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.bug-category.camera {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.bug-category.location {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.bug-category.ui-ux {
+    background: #e0f2f1;
+    color: #00695c;
+}
+
+.bug-category.performance {
+    background: #fff8e1;
+    color: #f9a825;
+}
+
+.bug-category.crash {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.bug-category.other {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.bug-severity {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.bug-severity.critical {
+    background: #ffebee;
+    color: #d32f2f;
+    font-weight: 700;
+}
+
+.bug-severity.high {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.bug-severity.medium {
+    background: #fff8e1;
+    color: #f9a825;
+}
+
+.bug-severity.low {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.bug-status {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.bug-status.new {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.bug-status.confirmed {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.bug-status.in-progress {
+    background: #e1f5fe;
+    color: #0277bd;
+}
+
+.bug-status.testing {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.bug-status.fixed {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.bug-status.closed {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.bug-status.duplicate {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.bug-status.wont-fix {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.bug-overview-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.bug-overview-content p {
+    font-size: 0.85rem;
+    color: #6c757d;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.bug-overview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.bug-user {
+    font-weight: 500;
+}
+
+.bug-date {
+    font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .dashboard-header {
