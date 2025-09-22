@@ -185,3 +185,22 @@ body, html {
     outline: 2px solid #206233;
     background: #fff;
 }
+
+.clear-fields-btn {
+    width: 90%;
+    max-width: 340px;
+    margin: 12px 0 0 0;
+    background: transparent;
+    color: #206233;
+    border: 2px solid #206233;
+    border-radius: 8px;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-fields-btn:hover {
+    background: #e7efe9;
+}

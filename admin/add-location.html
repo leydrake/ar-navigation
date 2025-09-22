@@ -37,13 +37,10 @@
                 <input type="number" id="location-y" name="location-y" step="any" required />
                 <label for="location-z">Z</label>
                 <input type="number" id="location-z" name="location-z" step="any" required />
-                <div class="ar-path-btns">
-                    <button type="button" class="ar-path-btn">Record AR Path</button>
-                    <button type="button" class="ar-path-btn">Reset AR Path</button>
-                </div>
             </form>
         </div>
         <button class="save-changes-btn" id="save-location-btn">Save Changes</button>
+        <button class="clear-fields-btn" id="clear-fields-btn">Clear All Fields</button>
     </div>
     <script>
         function goBackToAdminTools(){
@@ -70,10 +67,12 @@
         const db = getFirestore(app);
 
         const saveBtn = document.getElementById('save-location-btn');
+        const clearBtn = document.getElementById('clear-fields-btn');
         const nameInput = document.getElementById('location-name');
         const xInput = document.getElementById('location-x');
         const yInput = document.getElementById('location-y');
         const zInput = document.getElementById('location-z');
+        const imageInput = document.getElementById('location-image');
 
         async function saveCoordinates() {
             const name = nameInput.value.trim();
@@ -113,6 +112,18 @@
         }
 
         saveBtn.addEventListener('click', saveCoordinates);
+
+        function clearAllFields() {
+            nameInput.value = '';
+            xInput.value = '';
+            yInput.value = '';
+            zInput.value = '';
+            if (imageInput) {
+                imageInput.value = '';
+            }
+        }
+
+        clearBtn.addEventListener('click', clearAllFields);
     </script>
 </body>
 </html>
