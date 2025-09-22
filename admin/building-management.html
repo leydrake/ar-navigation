@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+t <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -49,14 +49,6 @@
                 </svg>
                 <input type="text" id="searchInput" placeholder="Search buildings, floors, or rooms..." class="search-input">
             </div>
-            <div class="filter-container">
-                <select id="campusFilter" class="filter-select">
-                    <option value="">All Campuses</option>
-                    <option value="bustos">Bustos Campus</option>
-                    <option value="main">Main Campus</option>
-                    <option value="sarmiento">Sarmiento Campus</option>
-                </select>
-            </div>
         </div>
 
         <!-- Buildings List -->
@@ -96,13 +88,7 @@
                     <input type="text" id="buildingCode" name="code" placeholder="e.g., ADM, LIB, SCI">
                 </div>
                 <div class="form-group">
-                    <label for="buildingCampus">Campus *</label>
-                    <select id="buildingCampus" name="campus" required>
-                        <option value="">Select Campus</option>
-                        <option value="bustos">Bustos Campus</option>
-                        <option value="main">Main Campus</option>
-                        <option value="sarmiento">Sarmiento Campus</option>
-                    </select>
+                    <!-- Campus removed: single campus deployment -->
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -119,8 +105,8 @@
                     <textarea id="buildingDescription" name="description" rows="3" placeholder="Brief description of the building..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="buildingImage">Image URL</label>
-                    <input type="url" id="buildingImage" name="imageUrl" placeholder="https://example.com/building-image.jpg">
+                    <label for="buildingImageFile">Image</label>
+                    <input type="file" id="buildingImageFile" name="imageFile" accept="image/*">
                 </div>
                 <div class="form-actions">
                     <button type="button" class="cancel-btn" onclick="closeBuildingModal()">Cancel</button>
@@ -465,12 +451,7 @@
 
         // Helper functions
         function getCampusName(campus) {
-            const campusNames = {
-                'bustos': 'Bustos Campus',
-                'main': 'Main Campus',
-                'sarmiento': 'Sarmiento Campus'
-            };
-            return campusNames[campus] || campus;
+            return 'Bustos Campus';
         }
 
         function getRoomTypeName(type) {
@@ -531,11 +512,11 @@
             document.getElementById('modalTitle').textContent = 'Edit Building';
             document.getElementById('buildingName').value = building.name;
             document.getElementById('buildingCode').value = building.code || '';
-            document.getElementById('buildingCampus').value = building.campus;
+            // Campus fixed to Bustos; no UI field
             document.getElementById('buildingLatitude').value = building.latitude;
             document.getElementById('buildingLongitude').value = building.longitude;
             document.getElementById('buildingDescription').value = building.description || '';
-            document.getElementById('buildingImage').value = building.imageUrl || '';
+            // Image file input cannot be prefilled for security reasons
             document.getElementById('buildingModal').style.display = 'block';
         }
 
@@ -603,7 +584,6 @@
         function setupEventListeners() {
             // Search functionality
             document.getElementById('searchInput').addEventListener('input', filterBuildings);
-            document.getElementById('campusFilter').addEventListener('change', filterBuildings);
 
             // Form submissions
             document.getElementById('buildingForm').addEventListener('submit', handleBuildingSubmit);
@@ -614,8 +594,6 @@
         // Filter buildings
         function filterBuildings() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const campusFilter = document.getElementById('campusFilter').value;
-            
             const filteredBuildings = buildings.filter(building => {
                 const matchesSearch = !searchTerm || 
                     building.name.toLowerCase().includes(searchTerm) ||
@@ -628,9 +606,7 @@
                         )
                     );
                 
-                const matchesCampus = !campusFilter || building.campus === campusFilter;
-                
-                return matchesSearch && matchesCampus;
+                return matchesSearch;
             });
             
             // Re-render with filtered results
@@ -645,14 +621,26 @@
             e.preventDefault();
             
             const formData = new FormData(e.target);
+            const imageFile = document.getElementById('buildingImageFile').files[0] || null;
+            let imageBlob = null;
+            if (imageFile) {
+                try {
+                    const arrayBuffer = await imageFile.arrayBuffer();
+                    const bytes = new Uint8Array(arrayBuffer);
+                    imageBlob = firebase.firestore.Blob.fromUint8Array(bytes);
+                } catch (e) {
+                    console.error('Failed to read image file:', e);
+                }
+            }
+
             const buildingData = {
                 name: formData.get('name'),
                 code: formData.get('code'),
-                campus: formData.get('campus'),
+                campus: 'bustos',
                 latitude: parseFloat(formData.get('latitude')),
                 longitude: parseFloat(formData.get('longitude')),
                 description: formData.get('description'),
-                imageUrl: formData.get('imageUrl'),
+                image: imageBlob,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
