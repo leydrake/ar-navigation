@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Management</title>
+    <link rel="stylesheet" href="css/building-management.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading building management...</p>
+    </div>
+
+    <!-- Main Container (initially hidden) -->
+    <div id="mainContainer" class="main-container" style="display: none;">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <button class="back-btn" onclick="goBack()" aria-label="Back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="header-text">
+                    <h1 class="page-title">Building Management</h1>
+                    <p class="page-subtitle">Manage buildings, floors, and rooms</p>
+                </div>
+                <button class="add-building-btn" onclick="showAddBuildingModal()" title="Add Building">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Add Building
+                </button>
+            </div>
+        </header>
+
+        <!-- Search and Filter Bar -->
+        <div class="search-filter-bar">
+            <div class="search-container">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                    <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search buildings, floors, or rooms..." class="search-input">
+            </div>
+            <div class="filter-container">
+                <select id="campusFilter" class="filter-select">
+                    <option value="">All Campuses</option>
+                    <option value="bustos">Bustos Campus</option>
+                    <option value="main">Main Campus</option>
+                    <option value="sarmiento">Sarmiento Campus</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Buildings List -->
+        <main class="buildings-container">
+            <div id="buildingsList" class="buildings-list">
+                <!-- Buildings will be dynamically loaded here -->
+            </div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 21h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M5 21V7l8-4v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19 21V11l-6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3>No buildings found</h3>
+                <p>Start by adding your first building to the system.</p>
+                <button class="add-first-building-btn" onclick="showAddBuildingModal()">Add First Building</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Building Modal -->
+    <div id="buildingModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Building</h2>
+                <button class="close-btn" onclick="closeBuildingModal()">&times;</button>
+            </div>
+            <form id="buildingForm" class="modal-form">
+                <div class="form-group">
+                    <label for="buildingName">Building Name *</label>
+                    <input type="text" id="buildingName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="buildingCode">Building Code</label>
+                    <input type="text" id="buildingCode" name="code" placeholder="e.g., ADM, LIB, SCI">
+                </div>
+                <div class="form-group">
+                    <label for="buildingCampus">Campus *</label>
+                    <select id="buildingCampus" name="campus" required>
+                        <option value="">Select Campus</option>
+                        <option value="bustos">Bustos Campus</option>
+                        <option value="main">Main Campus</option>
+                        <option value="sarmiento">Sarmiento Campus</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="buildingLatitude">Latitude *</label>
+                        <input type="number" id="buildingLatitude" name="latitude" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="buildingLongitude">Longitude *</label>
+                        <input type="number" id="buildingLongitude" name="longitude" step="any" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="buildingDescription">Description</label>
+                    <textarea id="buildingDescription" name="description" rows="3" placeholder="Brief description of the building..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="buildingImage">Image URL</label>
+                    <input type="url" id="buildingImage" name="imageUrl" placeholder="https://example.com/building-image.jpg">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeBuildingModal()">Cancel</button>
+                    <button type="submit" class="save-btn">Save Building</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Floor Modal -->
+    <div id="floorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="floorModalTitle">Add Floor</h2>
+                <button class="close-btn" onclick="closeFloorModal()">&times;</button>
+            </div>
+            <form id="floorForm" class="modal-form">
+                <input type="hidden" id="floorBuildingId" name="buildingId">
+                <div class="form-group">
+                    <label for="floorNumber">Floor Number *</label>
+                    <input type="number" id="floorNumber" name="number" required>
+                </div>
+                <div class="form-group">
+                    <label for="floorName">Floor Name</label>
+                    <input type="text" id="floorName" name="name" placeholder="e.g., Ground Floor, First Floor">
+                </div>
+                <div class="form-group">
+                    <label for="floorDescription">Description</label>
+                    <textarea id="floorDescription" name="description" rows="3" placeholder="Description of this floor..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeFloorModal()">Cancel</button>
+                    <button type="submit" class="save-btn">Save Floor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Room Modal -->
+    <div id="roomModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="roomModalTitle">Add Room</h2>
+                <button class="close-btn" onclick="closeRoomModal()">&times;</button>
+            </div>
+            <form id="roomForm" class="modal-form">
+                <input type="hidden" id="roomFloorId" name="floorId">
+                <div class="form-group">
+                    <label for="roomNumber">Room Number *</label>
+                    <input type="text" id="roomNumber" name="number" required placeholder="e.g., 101, A-201">
+                </div>
+                <div class="form-group">
+                    <label for="roomName">Room Name</label>
+                    <input type="text" id="roomName" name="name" placeholder="e.g., Computer Lab, Conference Room">
+                </div>
+                <div class="form-group">
+                    <label for="roomType">Room Type</label>
+                    <select id="roomType" name="type">
+                        <option value="classroom">Classroom</option>
+                        <option value="laboratory">Laboratory</option>
+                        <option value="office">Office</option>
+                        <option value="conference">Conference Room</option>
+                        <option value="library">Library</option>
+                        <option value="cafeteria">Cafeteria</option>
+                        <option value="restroom">Restroom</option>
+                        <option value="storage">Storage</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="roomCapacity">Capacity</label>
+                    <input type="number" id="roomCapacity" name="capacity" min="1" placeholder="Maximum number of people">
+                </div>
+                <div class="form-group">
+                    <label for="roomDescription">Description</label>
+                    <textarea id="roomDescription" name="description" rows="3" placeholder="Description of this room..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeRoomModal()">Cancel</button>
+                    <button type="submit" class="save-btn">Save Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h2 id="confirmTitle">Confirm Action</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="closeConfirmModal()">Cancel</button>
+                <button type="button" class="delete-btn" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Global variables
+        let buildings = [];
+        let currentBuildingId = null;
+        let currentFloorId = null;
+        let currentRoomId = null;
+
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth()) return;
+
+            try {
+                await loadBuildings();
+                setupEventListeners();
+                
+                // Hide loading, show main content
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showError('Failed to load building management. Please refresh the page.');
+            }
+        }
+
+        // Load buildings from Firebase
+        async function loadBuildings() {
+            try {
+                const snapshot = await db.collection('buildings').orderBy('name').get();
+                buildings = [];
+                
+                for (const doc of snapshot.docs) {
+                    const buildingData = doc.data();
+                    buildingData.id = doc.id;
+                    
+                    // Load floors for this building
+                    const floorsSnapshot = await db.collection('floors')
+                        .where('buildingId', '==', doc.id)
+                        .orderBy('number')
+                        .get();
+                    
+                    buildingData.floors = [];
+                    for (const floorDoc of floorsSnapshot.docs) {
+                        const floorData = floorDoc.data();
+                        floorData.id = floorDoc.id;
+                        
+                        // Load rooms for this floor
+                        const roomsSnapshot = await db.collection('rooms')
+                            .where('floorId', '==', floorDoc.id)
+                            .orderBy('number')
+                            .get();
+                        
+                        floorData.rooms = [];
+                        for (const roomDoc of roomsSnapshot.docs) {
+                            const roomData = roomDoc.data();
+                            roomData.id = roomDoc.id;
+                            floorData.rooms.push(roomData);
+                        }
+                        
+                        buildingData.floors.push(floorData);
+                    }
+                    
+                    buildings.push(buildingData);
+                }
+                
+                renderBuildings();
+            } catch (error) {
+                console.error('Error loading buildings:', error);
+                throw error;
+            }
+        }
+
+        // Render buildings list
+        function renderBuildings() {
+            const buildingsList = document.getElementById('buildingsList');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (buildings.length === 0) {
+                buildingsList.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            buildingsList.style.display = 'block';
+            emptyState.style.display = 'none';
+            
+            buildingsList.innerHTML = buildings.map(building => `
+                <div class="building-card" data-building-id="${building.id}">
+                    <div class="building-header" onclick="toggleBuilding('${building.id}')">
+                        <div class="building-info">
+                            <div class="building-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 21h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M5 21V7l8-4v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M19 21V11l-6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="building-details">
+                                <h3 class="building-name">${building.name}</h3>
+                                <p class="building-code">${building.code || 'No code'}</p>
+                                <p class="building-campus">${getCampusName(building.campus)}</p>
+                            </div>
+                        </div>
+                        <div class="building-actions">
+                            <button class="action-btn edit-btn" onclick="editBuilding('${building.id}')" title="Edit Building">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteBuilding('${building.id}')" title="Delete Building">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="toggle-btn" onclick="toggleBuilding('${building.id}')">
+                                <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="building-content" id="building-${building.id}" style="display: none;">
+                        <div class="floors-container">
+                            <div class="floors-header">
+                                <h4>Floors (${building.floors.length})</h4>
+                                <button class="add-floor-btn" onclick="showAddFloorModal('${building.id}')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    Add Floor
+                                </button>
+                            </div>
+                            <div class="floors-list">
+                                ${building.floors.map(floor => `
+                                    <div class="floor-card" data-floor-id="${floor.id}">
+                                        <div class="floor-header" onclick="toggleFloor('${floor.id}')">
+                                            <div class="floor-info">
+                                                <span class="floor-number">Floor ${floor.number}</span>
+                                                <span class="floor-name">${floor.name || 'Unnamed Floor'}</span>
+                                            </div>
+                                            <div class="floor-actions">
+                                                <button class="action-btn edit-btn" onclick="editFloor('${floor.id}')" title="Edit Floor">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                                <button class="action-btn delete-btn" onclick="deleteFloor('${floor.id}')" title="Delete Floor">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                                <button class="toggle-btn" onclick="toggleFloor('${floor.id}')">
+                                                    <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="floor-content" id="floor-${floor.id}" style="display: none;">
+                                            <div class="rooms-container">
+                                                <div class="rooms-header">
+                                                    <h5>Rooms (${floor.rooms.length})</h5>
+                                                    <button class="add-room-btn" onclick="showAddRoomModal('${floor.id}')">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                                            <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                        </svg>
+                                                        Add Room
+                                                    </button>
+                                                </div>
+                                                <div class="rooms-list">
+                                                    ${floor.rooms.map(room => `
+                                                        <div class="room-card" data-room-id="${room.id}">
+                                                            <div class="room-info">
+                                                                <span class="room-number">${room.number}</span>
+                                                                <span class="room-name">${room.name || 'Unnamed Room'}</span>
+                                                                <span class="room-type">${getRoomTypeName(room.type)}</span>
+                                                                ${room.capacity ? `<span class="room-capacity">Capacity: ${room.capacity}</span>` : ''}
+                                                            </div>
+                                                            <div class="room-actions">
+                                                                <button class="action-btn edit-btn" onclick="editRoom('${room.id}')" title="Edit Room">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                    </svg>
+                                                                </button>
+                                                                <button class="action-btn delete-btn" onclick="deleteRoom('${room.id}')" title="Delete Room">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                                                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Helper functions
+        function getCampusName(campus) {
+            const campusNames = {
+                'bustos': 'Bustos Campus',
+                'main': 'Main Campus',
+                'sarmiento': 'Sarmiento Campus'
+            };
+            return campusNames[campus] || campus;
+        }
+
+        function getRoomTypeName(type) {
+            const typeNames = {
+                'classroom': 'Classroom',
+                'laboratory': 'Laboratory',
+                'office': 'Office',
+                'conference': 'Conference Room',
+                'library': 'Library',
+                'cafeteria': 'Cafeteria',
+                'restroom': 'Restroom',
+                'storage': 'Storage',
+                'other': 'Other'
+            };
+            return typeNames[type] || type;
+        }
+
+        // Toggle functions
+        function toggleBuilding(buildingId) {
+            const content = document.getElementById(`building-${buildingId}`);
+            const toggleIcon = document.querySelector(`[data-building-id="${buildingId}"] .toggle-icon`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggleIcon.style.transform = 'rotate(90deg)';
+            } else {
+                content.style.display = 'none';
+                toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function toggleFloor(floorId) {
+            const content = document.getElementById(`floor-${floorId}`);
+            const toggleIcon = document.querySelector(`[data-floor-id="${floorId}"] .toggle-icon`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggleIcon.style.transform = 'rotate(90deg)';
+            } else {
+                content.style.display = 'none';
+                toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Modal functions
+        function showAddBuildingModal() {
+            currentBuildingId = null;
+            document.getElementById('modalTitle').textContent = 'Add Building';
+            document.getElementById('buildingForm').reset();
+            document.getElementById('buildingModal').style.display = 'block';
+        }
+
+        function editBuilding(buildingId) {
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+
+            currentBuildingId = buildingId;
+            document.getElementById('modalTitle').textContent = 'Edit Building';
+            document.getElementById('buildingName').value = building.name;
+            document.getElementById('buildingCode').value = building.code || '';
+            document.getElementById('buildingCampus').value = building.campus;
+            document.getElementById('buildingLatitude').value = building.latitude;
+            document.getElementById('buildingLongitude').value = building.longitude;
+            document.getElementById('buildingDescription').value = building.description || '';
+            document.getElementById('buildingImage').value = building.imageUrl || '';
+            document.getElementById('buildingModal').style.display = 'block';
+        }
+
+        function closeBuildingModal() {
+            document.getElementById('buildingModal').style.display = 'none';
+        }
+
+        function showAddFloorModal(buildingId) {
+            currentFloorId = null;
+            currentBuildingId = buildingId;
+            document.getElementById('floorModalTitle').textContent = 'Add Floor';
+            document.getElementById('floorForm').reset();
+            document.getElementById('floorBuildingId').value = buildingId;
+            document.getElementById('floorModal').style.display = 'block';
+        }
+
+        function editFloor(floorId) {
+            const floor = buildings.find(b => b.floors.some(f => f.id === floorId))?.floors.find(f => f.id === floorId);
+            if (!floor) return;
+
+            currentFloorId = floorId;
+            currentBuildingId = floor.buildingId;
+            document.getElementById('floorModalTitle').textContent = 'Edit Floor';
+            document.getElementById('floorNumber').value = floor.number;
+            document.getElementById('floorName').value = floor.name || '';
+            document.getElementById('floorDescription').value = floor.description || '';
+            document.getElementById('floorBuildingId').value = floor.buildingId;
+            document.getElementById('floorModal').style.display = 'block';
+        }
+
+        function closeFloorModal() {
+            document.getElementById('floorModal').style.display = 'none';
+        }
+
+        function showAddRoomModal(floorId) {
+            currentRoomId = null;
+            currentFloorId = floorId;
+            document.getElementById('roomModalTitle').textContent = 'Add Room';
+            document.getElementById('roomForm').reset();
+            document.getElementById('roomFloorId').value = floorId;
+            document.getElementById('roomModal').style.display = 'block';
+        }
+
+        function editRoom(roomId) {
+            const room = buildings.find(b => b.floors.some(f => f.rooms.some(r => r.id === roomId)))?.floors.find(f => f.rooms.some(r => r.id === roomId))?.rooms.find(r => r.id === roomId);
+            if (!room) return;
+
+            currentRoomId = roomId;
+            currentFloorId = room.floorId;
+            document.getElementById('roomModalTitle').textContent = 'Edit Room';
+            document.getElementById('roomNumber').value = room.number;
+            document.getElementById('roomName').value = room.name || '';
+            document.getElementById('roomType').value = room.type || 'classroom';
+            document.getElementById('roomCapacity').value = room.capacity || '';
+            document.getElementById('roomDescription').value = room.description || '';
+            document.getElementById('roomFloorId').value = room.floorId;
+            document.getElementById('roomModal').style.display = 'block';
+        }
+
+        function closeRoomModal() {
+            document.getElementById('roomModal').style.display = 'none';
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', filterBuildings);
+            document.getElementById('campusFilter').addEventListener('change', filterBuildings);
+
+            // Form submissions
+            document.getElementById('buildingForm').addEventListener('submit', handleBuildingSubmit);
+            document.getElementById('floorForm').addEventListener('submit', handleFloorSubmit);
+            document.getElementById('roomForm').addEventListener('submit', handleRoomSubmit);
+        }
+
+        // Filter buildings
+        function filterBuildings() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const campusFilter = document.getElementById('campusFilter').value;
+            
+            const filteredBuildings = buildings.filter(building => {
+                const matchesSearch = !searchTerm || 
+                    building.name.toLowerCase().includes(searchTerm) ||
+                    (building.code && building.code.toLowerCase().includes(searchTerm)) ||
+                    building.floors.some(floor => 
+                        floor.name.toLowerCase().includes(searchTerm) ||
+                        floor.rooms.some(room => 
+                            room.name.toLowerCase().includes(searchTerm) ||
+                            room.number.toLowerCase().includes(searchTerm)
+                        )
+                    );
+                
+                const matchesCampus = !campusFilter || building.campus === campusFilter;
+                
+                return matchesSearch && matchesCampus;
+            });
+            
+            // Re-render with filtered results
+            const originalBuildings = buildings;
+            buildings = filteredBuildings;
+            renderBuildings();
+            buildings = originalBuildings;
+        }
+
+        // Form handlers
+        async function handleBuildingSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const buildingData = {
+                name: formData.get('name'),
+                code: formData.get('code'),
+                campus: formData.get('campus'),
+                latitude: parseFloat(formData.get('latitude')),
+                longitude: parseFloat(formData.get('longitude')),
+                description: formData.get('description'),
+                imageUrl: formData.get('imageUrl'),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentBuildingId) {
+                    // Update existing building
+                    await db.collection('buildings').doc(currentBuildingId).update({
+                        ...buildingData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Add new building
+                    await db.collection('buildings').add(buildingData);
+                }
+                
+                await loadBuildings();
+                closeBuildingModal();
+                showSuccess(currentBuildingId ? 'Building updated successfully!' : 'Building added successfully!');
+            } catch (error) {
+                console.error('Error saving building:', error);
+                showError('Failed to save building. Please try again.');
+            }
+        }
+
+        async function handleFloorSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const floorData = {
+                buildingId: formData.get('buildingId'),
+                number: parseInt(formData.get('number')),
+                name: formData.get('name'),
+                description: formData.get('description'),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentFloorId) {
+                    // Update existing floor
+                    await db.collection('floors').doc(currentFloorId).update({
+                        ...floorData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Add new floor
+                    await db.collection('floors').add(floorData);
+                }
+                
+                await loadBuildings();
+                closeFloorModal();
+                showSuccess(currentFloorId ? 'Floor updated successfully!' : 'Floor added successfully!');
+            } catch (error) {
+                console.error('Error saving floor:', error);
+                showError('Failed to save floor. Please try again.');
+            }
+        }
+
+        async function handleRoomSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const roomData = {
+                floorId: formData.get('floorId'),
+                number: formData.get('number'),
+                name: formData.get('name'),
+                type: formData.get('type'),
+                capacity: formData.get('capacity') ? parseInt(formData.get('capacity')) : null,
+                description: formData.get('description'),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentRoomId) {
+                    // Update existing room
+                    await db.collection('rooms').doc(currentRoomId).update({
+                        ...roomData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Add new room
+                    await db.collection('rooms').add(roomData);
+                }
+                
+                await loadBuildings();
+                closeRoomModal();
+                showSuccess(currentRoomId ? 'Room updated successfully!' : 'Room added successfully!');
+            } catch (error) {
+                console.error('Error saving room:', error);
+                showError('Failed to save room. Please try again.');
+            }
+        }
+
+        // Delete functions
+        async function deleteBuilding(buildingId) {
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+
+            const confirmed = await showConfirmModal(
+                'Delete Building',
+                `Are you sure you want to delete "${building.name}"? This will also delete all floors and rooms in this building.`,
+                async () => {
+                    try {
+                        // Delete all rooms first
+                        for (const floor of building.floors) {
+                            for (const room of floor.rooms) {
+                                await db.collection('rooms').doc(room.id).delete();
+                            }
+                        }
+                        
+                        // Delete all floors
+                        for (const floor of building.floors) {
+                            await db.collection('floors').doc(floor.id).delete();
+                        }
+                        
+                        // Delete the building
+                        await db.collection('buildings').doc(buildingId).delete();
+                        
+                        await loadBuildings();
+                        showSuccess('Building deleted successfully!');
+                    } catch (error) {
+                        console.error('Error deleting building:', error);
+                        showError('Failed to delete building. Please try again.');
+                    }
+                }
+            );
+        }
+
+        async function deleteFloor(floorId) {
+            const floor = buildings.find(b => b.floors.some(f => f.id === floorId))?.floors.find(f => f.id === floorId);
+            if (!floor) return;
+
+            const confirmed = await showConfirmModal(
+                'Delete Floor',
+                `Are you sure you want to delete Floor ${floor.number}? This will also delete all rooms on this floor.`,
+                async () => {
+                    try {
+                        // Delete all rooms in this floor
+                        for (const room of floor.rooms) {
+                            await db.collection('rooms').doc(room.id).delete();
+                        }
+                        
+                        // Delete the floor
+                        await db.collection('floors').doc(floorId).delete();
+                        
+                        await loadBuildings();
+                        showSuccess('Floor deleted successfully!');
+                    } catch (error) {
+                        console.error('Error deleting floor:', error);
+                        showError('Failed to delete floor. Please try again.');
+                    }
+                }
+            );
+        }
+
+        async function deleteRoom(roomId) {
+            const room = buildings.find(b => b.floors.some(f => f.rooms.some(r => r.id === roomId)))?.floors.find(f => f.rooms.some(r => r.id === roomId))?.rooms.find(r => r.id === roomId);
+            if (!room) return;
+
+            const confirmed = await showConfirmModal(
+                'Delete Room',
+                `Are you sure you want to delete Room ${room.number}?`,
+                async () => {
+                    try {
+                        await db.collection('rooms').doc(roomId).delete();
+                        await loadBuildings();
+                        showSuccess('Room deleted successfully!');
+                    } catch (error) {
+                        console.error('Error deleting room:', error);
+                        showError('Failed to delete room. Please try again.');
+                    }
+                }
+            );
+        }
+
+        // Utility functions
+        function showConfirmModal(title, message, onConfirm) {
+            return new Promise((resolve) => {
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmMessage').textContent = message;
+                document.getElementById('confirmModal').style.display = 'block';
+                
+                const confirmBtn = document.getElementById('confirmActionBtn');
+                confirmBtn.onclick = async () => {
+                    await onConfirm();
+                    closeConfirmModal();
+                    resolve(true);
+                };
+            });
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            // Simple success notification
+            const notification = document.createElement('div');
+            notification.className = 'success-notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function showError(message) {
+            // Simple error notification
+            const notification = document.createElement('div');
+            notification.className = 'error-notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Navigation
+        function goBack() {
+            window.location.href = 'admin-tools.html';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>

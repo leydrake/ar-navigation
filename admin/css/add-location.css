@@ -114,6 +114,23 @@ body, html {
     margin-bottom: 8px;
 }
 
+.location-form input[type="number"] {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background: #fcf9f5;
+    font-size: 16px;
+    margin-bottom: 8px;
+    -moz-appearance: textfield;
+}
+
+/* Remove spinners in WebKit */
+.location-form input[type="number"]::-webkit-outer-spin-button,
+.location-form input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .ar-path-btns {
     display: flex;
     gap: 12px;
@@ -155,4 +172,16 @@ body, html {
 
 .save-changes-btn:hover {
     background: #174b25;
+}
+
+.save-changes-btn:disabled {
+    background: #9bb6a4;
+    cursor: not-allowed;
+}
+
+/* Input focus styles */
+.location-form input[type="text"]:focus,
+.location-form input[type="number"]:focus {
+    outline: 2px solid #206233;
+    background: #fff;
 }

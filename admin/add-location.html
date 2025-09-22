@@ -31,21 +31,88 @@
             <form class="location-form">
                 <label for="location-name">Location Name</label>
                 <input type="text" id="location-name" name="location-name" required />
-                <label for="location-description">Description</label>
-                <input type="text" id="location-description" name="location-description" />
+                <label for="location-x">X</label>
+                <input type="number" id="location-x" name="location-x" step="any" required />
+                <label for="location-y">Y</label>
+                <input type="number" id="location-y" name="location-y" step="any" required />
+                <label for="location-z">Z</label>
+                <input type="number" id="location-z" name="location-z" step="any" required />
                 <div class="ar-path-btns">
                     <button type="button" class="ar-path-btn">Record AR Path</button>
                     <button type="button" class="ar-path-btn">Reset AR Path</button>
                 </div>
             </form>
         </div>
-        <button class="save-changes-btn">Save Changes</button>
+        <button class="save-changes-btn" id="save-location-btn">Save Changes</button>
     </div>
     <script>
         function goBackToAdminTools(){
             window.location.href = "./admin-tools.html"
         }
 
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        // Reuse the same Firebase config as other admin pages
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const saveBtn = document.getElementById('save-location-btn');
+        const nameInput = document.getElementById('location-name');
+        const xInput = document.getElementById('location-x');
+        const yInput = document.getElementById('location-y');
+        const zInput = document.getElementById('location-z');
+
+        async function saveCoordinates() {
+            const name = nameInput.value.trim();
+            const x = parseFloat(xInput.value);
+            const y = parseFloat(yInput.value);
+            const z = parseFloat(zInput.value);
+
+            if (!name || Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z)) {
+                alert('Please provide a name and valid numeric X, Y, Z values.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            try {
+                await addDoc(collection(db, 'coordinates'), {
+                    name,
+                    x,
+                    y,
+                    z,
+                    createdAt: serverTimestamp()
+                });
+                alert('Location saved to Firestore.');
+                // Optionally clear the form
+                // nameInput.value = '';
+                // descInput.value = '';
+                // xInput.value = '';
+                // yInput.value = '';
+                // zInput.value = '';
+            } catch (err) {
+                console.error('Error saving coordinates:', err);
+                alert('Failed to save. See console for details.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
+            }
+        }
+
+        saveBtn.addEventListener('click', saveCoordinates);
     </script>
 </body>
 </html>
