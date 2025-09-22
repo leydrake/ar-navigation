@@ -71,6 +71,14 @@
         </main>
     </div>
 
+    <!-- Progress Overlay -->
+    <div id="progressOverlay" class="progress-overlay" style="display: none;">
+        <div class="progress-content">
+            <div class="loading-spinner"></div>
+            <p id="progressText">Processing...</p>
+        </div>
+    </div>
+
     <!-- Add/Edit Building Modal -->
     <div id="buildingModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -776,19 +784,20 @@
                 `Are you sure you want to delete "${building.name}"? This will also delete all floors and rooms in this building.`,
                 async () => {
                     try {
-                        // Delete all rooms first
-                        for (const floor of building.floors) {
-                            for (const room of floor.rooms) {
-                                await db.collection('rooms').doc(room.id).delete();
-                            }
-                        }
-                        
-                        // Delete all floors
-                        for (const floor of building.floors) {
-                            await db.collection('floors').doc(floor.id).delete();
-                        }
-                        
-                        // Delete the building
+                        // Show progress overlay
+                        setProgress(true, 'Deleting building and its contents...');
+
+                        // Delete all rooms in parallel
+                        const roomDeletes = building.floors.flatMap(floor =>
+                            floor.rooms.map(room => db.collection('rooms').doc(room.id).delete())
+                        );
+                        await Promise.all(roomDeletes);
+
+                        // Delete all floors in parallel
+                        const floorDeletes = building.floors.map(floor => db.collection('floors').doc(floor.id).delete());
+                        await Promise.all(floorDeletes);
+
+                        // Delete the building last
                         await db.collection('buildings').doc(buildingId).delete();
                         
                         await loadBuildings();
@@ -796,6 +805,8 @@
                     } catch (error) {
                         console.error('Error deleting building:', error);
                         showError('Failed to delete building. Please try again.');
+                    } finally {
+                        setProgress(false);
                     }
                 }
             );
@@ -810,11 +821,12 @@
                 `Are you sure you want to delete Floor ${floor.number}? This will also delete all rooms on this floor.`,
                 async () => {
                     try {
-                        // Delete all rooms in this floor
-                        for (const room of floor.rooms) {
-                            await db.collection('rooms').doc(room.id).delete();
-                        }
-                        
+                        setProgress(true, 'Deleting floor and its rooms...');
+
+                        // Delete all rooms in parallel
+                        const roomDeletes = floor.rooms.map(room => db.collection('rooms').doc(room.id).delete());
+                        await Promise.all(roomDeletes);
+
                         // Delete the floor
                         await db.collection('floors').doc(floorId).delete();
                         
@@ -823,6 +835,8 @@
                     } catch (error) {
                         console.error('Error deleting floor:', error);
                         showError('Failed to delete floor. Please try again.');
+                    } finally {
+                        setProgress(false);
                     }
                 }
             );
@@ -837,12 +851,15 @@
                 `Are you sure you want to delete Room ${room.number}?`,
                 async () => {
                     try {
+                        setProgress(true, 'Deleting room...');
                         await db.collection('rooms').doc(roomId).delete();
                         await loadBuildings();
                         showSuccess('Room deleted successfully!');
                     } catch (error) {
                         console.error('Error deleting room:', error);
                         showError('Failed to delete room. Please try again.');
+                    } finally {
+                        setProgress(false);
                     }
                 }
             );
@@ -866,6 +883,15 @@
 
         function closeConfirmModal() {
             document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        function setProgress(isVisible, text) {
+            const overlay = document.getElementById('progressOverlay');
+            const progressText = document.getElementById('progressText');
+            if (typeof text === 'string' && text.length) {
+                progressText.textContent = text;
+            }
+            overlay.style.display = isVisible ? 'flex' : 'none';
         }
 
         function showSuccess(message) {

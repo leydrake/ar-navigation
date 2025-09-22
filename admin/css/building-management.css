@@ -42,6 +42,11 @@ html, body {
     gap: var(--space-3);
 }
 
+/* Progress overlay */
+.progress-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.progress-content { background: #fff; border-radius: 12px; padding: var(--space-4); box-shadow: var(--shadow); display: grid; gap: var(--space-3); align-items: center; justify-items: center; }
+.progress-content p { margin: 0; color: var(--text); }
+
 .loading-spinner {
     width: 40px;
     height: 40px;
@@ -246,6 +251,10 @@ html, body {
 .modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); padding: var(--space-6); z-index: 100; }
 .modal-content { width: 100%; max-width: 560px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; transform: translateY(3vh); max-height: 90vh; overflow: auto; }
 .modal-content.small { max-width: 420px; }
+.modal-content.small .modal-header { padding: var(--space-3) var(--space-5); }
+.modal-content.small .modal-body { padding: var(--space-4) var(--space-5) var(--space-3); }
+.modal-content.small .modal-body p { margin: 0; }
+.modal-content.small .form-actions { padding: 0 var(--space-5) var(--space-4); gap: var(--space-3); }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
 .modal-header h2 { margin: 0; font-size: 18px; }
 .close-btn { background: transparent; border: none; font-size: 24px; line-height: 1; cursor: pointer; color: var(--subtext); }
