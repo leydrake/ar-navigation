@@ -1,4 +1,4 @@
-t <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -212,6 +212,7 @@ t <!DOCTYPE html>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <script>
         // Firebase configuration
@@ -278,7 +279,6 @@ t <!DOCTYPE html>
                     // Load floors for this building
                     const floorsSnapshot = await db.collection('floors')
                         .where('buildingId', '==', doc.id)
-                        .orderBy('number')
                         .get();
                     
                     buildingData.floors = [];
@@ -289,7 +289,6 @@ t <!DOCTYPE html>
                         // Load rooms for this floor
                         const roomsSnapshot = await db.collection('rooms')
                             .where('floorId', '==', floorDoc.id)
-                            .orderBy('number')
                             .get();
                         
                         floorData.rooms = [];
@@ -298,9 +297,18 @@ t <!DOCTYPE html>
                             roomData.id = roomDoc.id;
                             floorData.rooms.push(roomData);
                         }
+                        // Sort rooms client-side by number (numeric if possible)
+                        floorData.rooms.sort((a, b) => {
+                            const aNum = parseInt(a.number, 10);
+                            const bNum = parseInt(b.number, 10);
+                            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+                            return String(a.number).localeCompare(String(b.number));
+                        });
                         
                         buildingData.floors.push(floorData);
                     }
+                    // Sort floors client-side by number
+                    buildingData.floors.sort((a, b) => (a.number || 0) - (b.number || 0));
                     
                     buildings.push(buildingData);
                 }
@@ -622,41 +630,63 @@ t <!DOCTYPE html>
             
             const formData = new FormData(e.target);
             const imageFile = document.getElementById('buildingImageFile').files[0] || null;
-            let imageBlob = null;
-            if (imageFile) {
-                try {
-                    const arrayBuffer = await imageFile.arrayBuffer();
-                    const bytes = new Uint8Array(arrayBuffer);
-                    imageBlob = firebase.firestore.Blob.fromUint8Array(bytes);
-                } catch (e) {
-                    console.error('Failed to read image file:', e);
-                }
-            }
 
-            const buildingData = {
+            // Prepare base data without image fields
+            const baseData = {
                 name: formData.get('name'),
                 code: formData.get('code'),
                 campus: 'bustos',
                 latitude: parseFloat(formData.get('latitude')),
                 longitude: parseFloat(formData.get('longitude')),
                 description: formData.get('description'),
-                image: imageBlob,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
-                if (currentBuildingId) {
-                    // Update existing building
-                    await db.collection('buildings').doc(currentBuildingId).update({
-                        ...buildingData,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                // Get or create the document reference first, so we have an ID for storage
+                const docRef = currentBuildingId 
+                    ? db.collection('buildings').doc(currentBuildingId)
+                    : db.collection('buildings').doc();
+
+                if (!currentBuildingId) {
+                    // Create the document initially (without image fields)
+                    await docRef.set({
+                        ...baseData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 } else {
-                    // Add new building
-                    await db.collection('buildings').add(buildingData);
+                    // Update base fields
+                    await docRef.update(baseData);
                 }
-                
+
+                // If there's an image file, upload to Storage and save Blob + URL/path
+                if (imageFile) {
+                    const storage = firebase.storage();
+                    const storagePath = `buildings/${docRef.id}/${Date.now()}_${imageFile.name}`;
+                    const storageRef = storage.ref().child(storagePath);
+                    await storageRef.put(imageFile);
+                    const imageUrl = await storageRef.getDownloadURL();
+
+                    // Create Firestore Blob from file
+                    let imageBlob = null;
+                    try {
+                        const arrayBuffer = await imageFile.arrayBuffer();
+                        const bytes = new Uint8Array(arrayBuffer);
+                        imageBlob = firebase.firestore.Blob.fromUint8Array(bytes);
+                    } catch (e) {
+                        console.error('Failed to read image file:', e);
+                    }
+
+                    const imageFields = {
+                        image: imageBlob,
+                        imageUrl: imageUrl,
+                        imageStoragePath: storagePath,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    await docRef.update(imageFields);
+                }
+
                 await loadBuildings();
                 closeBuildingModal();
                 showSuccess(currentBuildingId ? 'Building updated successfully!' : 'Building added successfully!');
