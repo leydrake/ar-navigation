@@ -31,18 +31,16 @@
         <!-- Header -->
         <header class="feedback-header">
             <div class="header-content">
-                <div class="header-left">
-                    <button class="back-btn" onclick="goBack()" title="Back to Dashboard">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="header-text">
-                        <h1 class="feedback-title">Feedback Management</h1>
-                        <p class="feedback-subtitle">Manage user feedback and support requests</p>
-                    </div>
+                <button class="back-btn" onclick="goBack()" title="Back to Dashboard">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="header-text">
+                    <h1 class="feedback-title">Feedback Management</h1>
+                    <p class="feedback-subtitle">Manage user feedback and support requests</p>
                 </div>
-                <div class="header-right">
+                <div class="header-actions">
                     <button class="refresh-btn" onclick="refreshFeedback()" title="Refresh Data">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -482,13 +480,20 @@
         // Refresh feedback
         async function refreshFeedback() {
             const refreshBtn = document.querySelector('.refresh-btn');
-            refreshBtn.style.transform = 'rotate(360deg)';
-            
-            await loadFeedbackData();
-            
-            setTimeout(() => {
-                refreshBtn.style.transform = 'rotate(0deg)';
-            }, 500);
+            if (refreshBtn) {
+                refreshBtn.classList.add('loading');
+                refreshBtn.setAttribute('aria-busy', 'true');
+                refreshBtn.disabled = true;
+            }
+            try {
+                await loadFeedbackData();
+            } finally {
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.removeAttribute('aria-busy');
+                    refreshBtn.classList.remove('loading');
+                }
+            }
         }
 
         // Export feedback

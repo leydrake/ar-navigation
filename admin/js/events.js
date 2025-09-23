@@ -392,4 +392,19 @@ eventForm.onsubmit = async function(e) {
 // Initial fetch
 document.addEventListener('DOMContentLoaded', function() {
     fetchAndRenderEvents();
+    const refreshBtn = document.getElementById('refreshEventsBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = async function() {
+            refreshBtn.classList.add('loading');
+            refreshBtn.setAttribute('aria-busy', 'true');
+            refreshBtn.disabled = true;
+            try {
+                await fetchAndRenderEvents();
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.removeAttribute('aria-busy');
+                refreshBtn.classList.remove('loading');
+            }
+        };
+    }
 });

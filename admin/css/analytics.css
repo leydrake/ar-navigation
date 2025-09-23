@@ -1,3 +1,4 @@
+.header-content { max-width: 1100px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
 /* Skeleton styles */
 .skeleton-container { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.2s ease-in-out infinite; }

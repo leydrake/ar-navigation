@@ -9,13 +9,17 @@
 <body>
     <div class="add-location-container">
         <div class="add-location-header">
-            <button class="back-btn" aria-label="Back" onclick="goBackToAdminTools()">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                    <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <span class="add-location-title">Add Location</span>
-
+            <div class="header-inner">
+                <button class="back-btn" aria-label="Back" onclick="goBackToAdminTools()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="header-text">
+                    <h1 class="add-location-title">Add Location</h1>
+                    <p class="add-location-subtitle">Add new locations and waypoints to the map</p>
+                </div>
+            </div>
         </div>
         <div class="image-upload-area">
             <input type="file" id="location-image" accept="image/*" hidden />
