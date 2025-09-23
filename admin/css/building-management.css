@@ -1,3 +1,22 @@
+/* Skeleton styles */
+.skeleton-container { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.2s ease-in-out infinite; }
+@keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.skeleton-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.skeleton-circle { width: 48px; height: 48px; border-radius: 50%; }
+.skeleton-lines { flex: 1; }
+.skeleton-line { height: 12px; border-radius: 6px; margin: 6px 0; }
+.skeleton-line-lg { width: 240px; }
+.skeleton-line-sm { width: 160px; }
+.skeleton-btn { width: 140px; height: 36px; border-radius: 8px; margin-left: auto; }
+.skeleton-search { height: 44px; border-radius: 10px; margin: 12px 0 20px; }
+.skeleton-building-list { display: grid; grid-template-columns: repeat(1, 1fr); gap: 16px; }
+@media (min-width: 700px) { .skeleton-building-list { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .skeleton-building-list { grid-template-columns: repeat(3, 1fr); } }
+.skeleton-building-card { height: 140px; border-radius: 12px; }
+
+/* apply skeleton bg */
+.skeleton-circle, .skeleton-line, .skeleton-btn, .skeleton-search, .skeleton-building-card { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.2s infinite; }
 /* Base */
 :root {
     --bg: #fcf9f5;

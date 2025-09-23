@@ -10,10 +10,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading State -->
-    <div id="loadingState" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading building management...</p>
+    <!-- Skeleton Loading State -->
+    <div id="loadingState" class="skeleton-container">
+        <div class="skeleton-header">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-lines">
+                <div class="skeleton-line skeleton-line-lg"></div>
+                <div class="skeleton-line skeleton-line-sm"></div>
+            </div>
+            <div class="skeleton-btn"></div>
+        </div>
+        <div class="skeleton-search"></div>
+        <div class="skeleton-building-list">
+            <div class="skeleton-building-card"></div>
+            <div class="skeleton-building-card"></div>
+            <div class="skeleton-building-card"></div>
+        </div>
     </div>
 
     <!-- Main Container (initially hidden) -->
@@ -650,7 +662,9 @@
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
+            const isEdit = Boolean(currentBuildingId);
             try {
+                setProgress(true, isEdit ? 'Updating building...' : 'Adding building...');
                 // Get or create the document reference first, so we have an ID for storage
                 const docRef = currentBuildingId 
                     ? db.collection('buildings').doc(currentBuildingId)
@@ -672,7 +686,18 @@
                     const storage = firebase.storage();
                     const storagePath = `buildings/${docRef.id}/${Date.now()}_${imageFile.name}`;
                     const storageRef = storage.ref().child(storagePath);
-                    await storageRef.put(imageFile);
+                    // Upload with progress updates
+                    await new Promise((resolve, reject) => {
+                        const task = storageRef.put(imageFile);
+                        task.on('state_changed', (snapshot) => {
+                            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                            setProgress(true, `Uploading image... ${pct}%`);
+                        }, (error) => {
+                            reject(error);
+                        }, () => {
+                            resolve();
+                        });
+                    });
                     const imageUrl = await storageRef.getDownloadURL();
 
                     // Create Firestore Blob from file
@@ -695,12 +720,15 @@
                     await docRef.update(imageFields);
                 }
 
+                setProgress(true, isEdit ? 'Finalizing update...' : 'Finalizing add...');
                 await loadBuildings();
                 closeBuildingModal();
-                showSuccess(currentBuildingId ? 'Building updated successfully!' : 'Building added successfully!');
+                showSuccess(isEdit ? 'Building updated successfully!' : 'Building added successfully!');
             } catch (error) {
                 console.error('Error saving building:', error);
                 showError('Failed to save building. Please try again.');
+            } finally {
+                setProgress(false);
             }
         }
 
@@ -718,6 +746,7 @@
             };
 
             try {
+                setProgress(true, currentFloorId ? 'Updating floor...' : 'Adding floor...');
                 if (currentFloorId) {
                     // Update existing floor
                     await db.collection('floors').doc(currentFloorId).update({
@@ -729,12 +758,15 @@
                     await db.collection('floors').add(floorData);
                 }
                 
+                setProgress(true, 'Refreshing floors...');
                 await loadBuildings();
                 closeFloorModal();
                 showSuccess(currentFloorId ? 'Floor updated successfully!' : 'Floor added successfully!');
             } catch (error) {
                 console.error('Error saving floor:', error);
                 showError('Failed to save floor. Please try again.');
+            } finally {
+                setProgress(false);
             }
         }
 
@@ -754,6 +786,7 @@
             };
 
             try {
+                setProgress(true, currentRoomId ? 'Updating room...' : 'Adding room...');
                 if (currentRoomId) {
                     // Update existing room
                     await db.collection('rooms').doc(currentRoomId).update({
@@ -765,12 +798,15 @@
                     await db.collection('rooms').add(roomData);
                 }
                 
+                setProgress(true, 'Refreshing rooms...');
                 await loadBuildings();
                 closeRoomModal();
                 showSuccess(currentRoomId ? 'Room updated successfully!' : 'Room added successfully!');
             } catch (error) {
                 console.error('Error saving room:', error);
                 showError('Failed to save room. Please try again.');
+            } finally {
+                setProgress(false);
             }
         }
 

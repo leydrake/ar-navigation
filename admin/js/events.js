@@ -74,6 +74,8 @@ console.log('Events.js: Permission check passed');
 
 // DOM elements
 const eventsList = document.querySelector('.events-list');
+const adminContainer = document.querySelector('.events-admin-container');
+const loadingState = document.getElementById('loadingState');
 const addEventBtn = document.querySelector('.add-event-btn');
 const addEventModal = document.getElementById('addEventModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
@@ -103,15 +105,26 @@ let editingEventImage = '';
 // Fetch and render events
 async function fetchAndRenderEvents() {
     try {
+        // show skeleton until data is ready
+        if (loadingState && adminContainer) {
+            loadingState.style.display = '';
+            adminContainer.style.display = 'none';
+        }
         const querySnapshot = await getDocs(eventsRef);
         const events = [];
         querySnapshot.forEach((docSnap) => {
             events.push({ id: docSnap.id, ...docSnap.data() });
         });
         renderEvents(events);
+        if (loadingState && adminContainer) {
+            loadingState.style.display = 'none';
+            adminContainer.style.display = '';
+        }
     } catch (error) {
         console.error('Error fetching events:', error);
         eventsList.innerHTML = '<p class="error-message">Error loading events. Please try again.</p>';
+        if (loadingState) loadingState.style.display = 'none';
+        if (adminContainer) adminContainer.style.display = '';
     }
 }
 

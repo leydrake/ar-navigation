@@ -18,6 +18,21 @@ body, html {
     position: relative;
 }
 
+/* Skeleton styles */
+.skeleton-container { padding: 16px; }
+.skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.2s ease-in-out infinite; }
+@keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.skeleton-header { display: flex; align-items: center; gap: 12px; margin: 72px 16px 12px; }
+.skeleton-circle { width: 40px; height: 40px; border-radius: 50%; }
+.skeleton-lines { flex: 1; }
+.skeleton-line { height: 12px; border-radius: 6px; margin: 6px 0; }
+.skeleton-line-lg { width: 220px; }
+.skeleton-line-sm { width: 160px; }
+.skeleton-search { height: 44px; border-radius: 10px; margin: 8px 16px; }
+.skeleton-events-list { display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 0 0 80px; }
+.skeleton-event-card { width: 90%; max-width: 400px; height: 76px; border-radius: 10px; }
+.skeleton-circle, .skeleton-line, .skeleton-search, .skeleton-event-card { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.2s infinite; }
+
 .events-header {
     position: fixed;
     top: 0;

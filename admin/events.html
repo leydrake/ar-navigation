@@ -7,8 +7,24 @@
     <link rel="stylesheet" href="css/events.css">
 </head>
 <body>
+    <!-- Skeleton Loading State -->
+    <div id="loadingState" class="skeleton-container">
+        <div class="skeleton-header">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-lines">
+                <div class="skeleton-line skeleton-line-lg"></div>
+                <div class="skeleton-line skeleton-line-sm"></div>
+            </div>
+        </div>
+        <div class="skeleton-search"></div>
+        <div class="skeleton-events-list">
+            <div class="skeleton-event-card"></div>
+            <div class="skeleton-event-card"></div>
+            <div class="skeleton-event-card"></div>
+        </div>
+    </div>
 
-    <div class="events-admin-container">
+    <div class="events-admin-container" style="display: none;">
         <div class="events-header">
             <button class="back-btn" aria-label="Back" onclick="goBackToAdminTools()">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
