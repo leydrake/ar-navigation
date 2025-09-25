@@ -1,0 +1,48 @@
+
+{
+  "TargetList": [
+    {
+      "Name": "Library",
+      "FloorNumber": 0,
+      "Position": {
+        "x": 26.77189,
+        "y": 0.0,
+        "z": -50.92173
+      },
+      "Rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    },
+    {
+      "Name": "Sogo",
+      "FloorNumber": 0,
+      "Position": {
+        "x": -27.51,
+        "y": 0.0,
+        "z": -8.839
+      },
+      "Rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    },
+    {
+      "Name": "Gate",
+      "FloorNumber": 0,
+      "Position": {
+        "x": -127.66,
+        "y": 0.0,
+        "z": 50.396
+      },
+      "Rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    }
+   
+  ]
+}
