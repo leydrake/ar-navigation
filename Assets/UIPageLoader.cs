@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 #if UNITY_ANDROID
 using UnityEngine.Android;
@@ -17,7 +18,10 @@ public class UIPageLoader : MonoBehaviour
     public VisualTreeAsset permissionPageUXML;
 
     [Header("Next Scene")]
-    public string nextSceneName = "MainApp"; // set this in Inspector
+	public string nextSceneName = "SampleScene"; // set this in Inspector
+
+	// Tracks whether we are awaiting the Android permission dialog result
+	bool awaitingPermissionResult = false;
 
     void Start()
     {
@@ -61,73 +65,82 @@ public class UIPageLoader : MonoBehaviour
 
 		if (pageAsset == startPageUXML)
         {
-            var startButton = root.Q<Button>("StartButton");
-            if (startButton != null)
-            {
-                Debug.Log("[UIPageLoader] Found StartButton; wiring click handler.");
-				startButton.clicked += () =>
-				{
-					Debug.Log("[UIPageLoader] StartButton clicked.");
-					ShowPage(termsPageUXML);
-				};
-            }
-            else
-            {
-                Debug.LogWarning("[UIPageLoader] StartButton not found in startPageUXML.");
-            }
+			if (!TryWireClick(root, "StartButton", () => { Debug.Log("[UIPageLoader] StartButton clicked."); ShowPage(termsPageUXML); }))
+			{
+				Debug.LogWarning("[UIPageLoader] StartButton not found as Button/VisualElement in startPageUXML.");
+			}
         }
         else if (pageAsset == termsPageUXML)
         {
-            var acceptButton = root.Q<Button>("AcceptTermsButton");
-            if (acceptButton != null)
-            {
-                Debug.Log("[UIPageLoader] Found AcceptTermsButton; wiring click handler.");
-                acceptButton.clicked += () =>
-                {
-                    Debug.Log("[UIPageLoader] AcceptTermsButton clicked.");
-                    ShowPage(permissionPageUXML);
-                };
-            }
-            else
-            {
-                Debug.LogWarning("[UIPageLoader] AcceptTermsButton not found in termsPageUXML.");
-            }
+			if (!TryWireClick(root, "AcceptTermsButton", () => { Debug.Log("[UIPageLoader] AcceptTermsButton clicked."); ShowPage(permissionPageUXML); }))
+			{
+				Debug.LogWarning("[UIPageLoader] AcceptTermsButton not found as Button/VisualElement in termsPageUXML.");
+			}
+
+			// Wire Back button on Terms page -> back to Start page (support Button or VisualElement)
+			bool wiredBack =
+				TryWireClick(root, "BackButton", () => { Debug.Log("[UIPageLoader] BackButton (Terms) clicked."); ShowPage(startPageUXML); }) ||
+				TryWireClick(root, "Back", () => { Debug.Log("[UIPageLoader] Back (Terms) clicked."); ShowPage(startPageUXML); }) ||
+				TryWireClick(root, "btnBack", () => { Debug.Log("[UIPageLoader] btnBack (Terms) clicked."); ShowPage(startPageUXML); });
+			if (!wiredBack)
+			{
+				Debug.LogWarning("[UIPageLoader] Back element not found on Terms page.");
+			}
         }
         else if (pageAsset == permissionPageUXML)
         {
-            var grantButton = root.Q<Button>("GrantPermissionButton");
-            if (grantButton != null)
-            {
-                Debug.Log("[UIPageLoader] Found GrantPermissionButton; wiring click handler.");
-                grantButton.clicked += () =>
-                {
-                    Debug.Log("[UIPageLoader] GrantPermissionButton clicked.");
-                    GrantPermission();
-                };
-            }
-            else
-            {
-                Debug.LogWarning("[UIPageLoader] GrantPermissionButton not found in permissionPageUXML.");
-            }
+			if (!TryWireClick(root, "GrantPermissionButton", () => { Debug.Log("[UIPageLoader] GrantPermissionButton clicked."); GrantPermission(); }))
+			{
+				Debug.LogWarning("[UIPageLoader] GrantPermissionButton not found as Button/VisualElement in permissionPageUXML.");
+			}
+
+			// Wire Back button on Permission page -> back to Terms page (support Button or VisualElement)
+			bool wiredBack2 =
+				TryWireClick(root, "BackButton", () => { Debug.Log("[UIPageLoader] BackButton (Permission) clicked."); ShowPage(termsPageUXML); }) ||
+				TryWireClick(root, "Back", () => { Debug.Log("[UIPageLoader] Back (Permission) clicked."); ShowPage(termsPageUXML); }) ||
+				TryWireClick(root, "btnBack", () => { Debug.Log("[UIPageLoader] btnBack (Permission) clicked."); ShowPage(termsPageUXML); });
+			if (!wiredBack2)
+			{
+				Debug.LogWarning("[UIPageLoader] Back element not found on Permission page.");
+			}
         }
     }
+
+	// Tries to find a clickable element by name as either Button or VisualElement and wire a click callback
+	bool TryWireClick(VisualElement root, string elementName, System.Action onClick)
+	{
+		var button = root.Q<Button>(elementName);
+		if (button != null)
+		{
+			button.clicked += onClick;
+			return true;
+		}
+
+		var ve = root.Q<VisualElement>(elementName);
+		if (ve != null)
+		{
+			ve.RegisterCallback<ClickEvent>(_ => onClick());
+			return true;
+		}
+
+		return false;
+	}
 
     void GrantPermission()
     {
         Debug.Log("[UIPageLoader] GrantPermission invoked.");
 #if UNITY_ANDROID
-        bool hasPerm = Permission.HasUserAuthorizedPermission(Permission.Camera);
-        Debug.Log("[UIPageLoader][Android] Camera permission current: " + hasPerm);
-        if (!hasPerm)
+        // Check if we already have camera permission
+        if (Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
-            Debug.Log("[UIPageLoader][Android] Requesting camera permission.");
-            Permission.RequestUserPermission(Permission.Camera);
-        }
-        else
-        {
-            Debug.Log("[UIPageLoader][Android] Permission already granted. Proceeding to next scene.");
+            Debug.Log("[UIPageLoader][Android] Camera permission already granted. Proceeding to SampleScene.");
             GoToNextScene();
+            return;
         }
+
+        // Request camera permission using coroutine for better handling
+        Debug.Log("[UIPageLoader][Android] Requesting camera permission...");
+        StartCoroutine(RequestCameraPermission());
 #elif UNITY_IOS
         // iOS will show its own prompt automatically
         Debug.Log("[UIPageLoader][iOS] Proceeding to next scene (system handles prompt).");
@@ -138,12 +151,56 @@ public class UIPageLoader : MonoBehaviour
 #endif
     }
 
+    IEnumerator RequestCameraPermission()
+    {
+#if UNITY_ANDROID
+        awaitingPermissionResult = true;
+        
+        // Request the permission
+        Permission.RequestUserPermission(Permission.Camera);
+        
+        // Wait a frame for the permission dialog to appear
+        yield return null;
+        
+        // Wait for the user to respond (check every frame)
+        while (awaitingPermissionResult)
+        {
+            // Check if permission was granted
+            if (Permission.HasUserAuthorizedPermission(Permission.Camera))
+            {
+                Debug.Log("[UIPageLoader][Android] Permission granted! Proceeding to SampleScene.");
+                awaitingPermissionResult = false;
+                GoToNextScene();
+                yield break;
+            }
+            
+            yield return null;
+        }
+        
+        // If we get here, permission was denied
+        Debug.Log("[UIPageLoader][Android] Permission denied. Staying on Permission page.");
+#endif
+        yield break;
+    }
+
     void OnApplicationFocus(bool hasFocus)
     {
 #if UNITY_ANDROID
-        bool hasPerm = Permission.HasUserAuthorizedPermission(Permission.Camera);
-        Debug.Log("[UIPageLoader][Android] OnApplicationFocus: hasFocus=" + hasFocus + ", permission=" + hasPerm);
-		// Prevent auto-navigation to the next scene on focus; only navigate via Start button
+		bool hasPerm = Permission.HasUserAuthorizedPermission(Permission.Camera);
+		Debug.Log("[UIPageLoader][Android] OnApplicationFocus: hasFocus=" + hasFocus + ", permission=" + hasPerm + ", awaitingPermissionResult=" + awaitingPermissionResult);
+		if (hasFocus && awaitingPermissionResult)
+		{
+			awaitingPermissionResult = false;
+			if (hasPerm)
+			{
+				Debug.Log("[UIPageLoader][Android] Permission granted from dialog. Proceeding to SampleScene.");
+				GoToNextScene();
+			}
+			else
+			{
+				Debug.Log("[UIPageLoader][Android] Permission denied from dialog. Staying on Permission page.");
+			}
+		}
 #endif
     }
 
