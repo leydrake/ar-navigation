@@ -948,7 +948,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &40919615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2274,7 +2274,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &223974227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6171,7 +6171,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1045393183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9823,13 +9823,14 @@ GameObject:
   - component: {fileID: 1807665805}
   - component: {fileID: 1807665804}
   - component: {fileID: 1807665807}
+  - component: {fileID: 1807665808}
   m_Layer: 0
   m_Name: Events
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1807665804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9846,7 +9847,10 @@ MonoBehaviour:
   uiDocument: {fileID: 1807665805}
   searchFieldName: SearchInput
   scrollViewName: EventsScrollView
+  titleFontSize: 26
+  locationFontSize: 20
   showDebugBanner: 1
+  refreshButtonName: RefreshButton
 --- !u!114 &1807665805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9891,6 +9895,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fetchOnStart: 1
+  networkTimeoutSeconds: 30
+  maxRetryAttempts: 3
+--- !u!114 &1807665808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1807665803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49f4122dd352e954f885dbbe51b8c4ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDetailedLogging: 1
+  testFirebaseConnection: 1
+  initializationDelay: 3
+  checkPermissions: 1
 --- !u!1 &1812123495
 GameObject:
   m_ObjectHideFlags: 0
@@ -11022,7 +11044,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!82 &1990990994
 AudioSource:
   m_ObjectHideFlags: 0

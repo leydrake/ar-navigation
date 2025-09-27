@@ -20,17 +20,24 @@ public class EventsUIController : MonoBehaviour
 	[SerializeField]
 	private string scrollViewName = "EventsScrollView";
 
+	[SerializeField]
+	private int titleFontSize = 16;
+
+	[SerializeField]
+	private int locationFontSize = 12;
+
 	private TextField searchField;
 	private ScrollView listView;
+	private VisualElement refreshButton;
 
 	private List<EventData> current = new List<EventData>();
 
+
 	[SerializeField]
-	private bool showDebugBanner = true;
+	private string refreshButtonName = "RefreshButton";
 
 	private void Awake()
 	{
-		Debug.Log("[EventsUI] Awake start");
 		if (uiDocument == null)
 		{
 			uiDocument = GetComponent<UIDocument>();
@@ -45,7 +52,7 @@ public class EventsUIController : MonoBehaviour
 
 		searchField = root.Q<TextField>(searchFieldName);
 		listView = root.Q<ScrollView>(scrollViewName);
-		Debug.Log($"[EventsUI] Queried elements: searchField={(searchField!=null)}, listView={(listView!=null)}");
+		refreshButton = root.Q<VisualElement>(refreshButtonName);
 
 		if (searchField == null)
 		{
@@ -57,25 +64,20 @@ public class EventsUIController : MonoBehaviour
 			Debug.LogWarning($"EventsUIController: ScrollView '{scrollViewName}' not found in UXML.");
 		}
 
+		if (refreshButton == null)
+		{
+			Debug.LogWarning($"EventsUIController: VisualElement '{refreshButtonName}' not found in UXML.");
+		}
+		else
+		{
+			// Register for click events on the VisualElement
+			refreshButton.RegisterCallback<ClickEvent>(OnRefreshClicked);
+		}
+
 		if (searchField != null)
 		{
 			searchField.RegisterValueChangedCallback(_ => ApplyFilter());
 		}
-
-		// Visual debug banner to confirm rendering
-		if (showDebugBanner && listView != null)
-		{
-			var banner = new Label("UI connected. Waiting for events...");
-			banner.style.backgroundColor = new Color(1f, 1f, 0.2f, 1f);
-			banner.style.color = Color.black;
-			banner.style.marginBottom = 6;
-			banner.style.paddingLeft = 6;
-			banner.style.paddingTop = 2;
-			banner.style.paddingBottom = 2;
-			listView.Add(banner);
-			Debug.Log("[EventsUI] Debug banner added to ScrollView.");
-		}
-
 
 		if (eventsFetcher == null)
 		{
@@ -90,28 +92,15 @@ public class EventsUIController : MonoBehaviour
 		{
 			Debug.LogWarning("EventsUIController: No EventsFetcher found in scene (active or inactive). UI will be empty.");
 		}
-		else
-		{
-			Debug.Log("EventsUIController: Found EventsFetcher. Subscribing to EventsChanged.");
-		}
 
 		if (eventsFetcher != null)
 		{
 			eventsFetcher.EventsChanged += OnEventsChanged;
 			eventsFetcher.LoadingChanged += OnLoadingChanged;
-			Debug.Log($"[EventsUI] Subscribed to EventsFetcher (instance={eventsFetcher.GetInstanceID()}). Current list count={(eventsFetcher.events==null?0:eventsFetcher.events.Count)}");
 			if (eventsFetcher.events != null && eventsFetcher.events.Count > 0)
 			{
 				OnEventsChanged(new List<EventData>(eventsFetcher.events));
 			}
-			else
-			{
-				Debug.Log("[EventsUI] Events list empty on Awake; waiting for EventsChanged...");
-			}
-		}
-		else
-		{
-			Debug.LogWarning("EventsUIController: No EventsFetcher found in scene.");
 		}
 	}
 
@@ -121,6 +110,11 @@ public class EventsUIController : MonoBehaviour
 		{
 			eventsFetcher.EventsChanged -= OnEventsChanged;
 			eventsFetcher.LoadingChanged -= OnLoadingChanged;
+		}
+
+		if (refreshButton != null)
+		{
+			refreshButton.UnregisterCallback<ClickEvent>(OnRefreshClicked);
 		}
 	}
 
@@ -136,14 +130,12 @@ public class EventsUIController : MonoBehaviour
 		yield return new WaitForSeconds(0.6f);
 		if (eventsFetcher != null && (current == null || current.Count == 0) && eventsFetcher.events != null && eventsFetcher.events.Count > 0)
 		{
-			Debug.Log($"[EventsUI] Fallback populate. Count={eventsFetcher.events.Count}");
 			OnEventsChanged(new List<EventData>(eventsFetcher.events));
 		}
 	}
 
 	private void OnEventsChanged(List<EventData> list)
 	{
-		Debug.Log($"[EventsUI] OnEventsChanged received. Count={(list==null?0:list.Count)}");
 		current = list ?? new List<EventData>();
 		RebuildList(current);
 	}
@@ -176,7 +168,6 @@ public class EventsUIController : MonoBehaviour
 		}
 
 		listView.Clear();
-		Debug.Log($"[EventsUI] Building {list.Count} rows...");
 
 		foreach (var item in list)
 		{
@@ -191,10 +182,7 @@ public class EventsUIController : MonoBehaviour
 			empty.style.color = new Color(0.4f, 0.4f, 0.4f);
 			empty.style.marginTop = 16;
 			listView.Add(empty);
-			Debug.Log("[EventsUI] Displayed empty state message.");
 		}
-
-		Debug.Log($"[EventsUI] ScrollView child count after rebuild: {listView.childCount}");
 	}
 
 	private void ShowSkeletons(int count)
@@ -252,14 +240,58 @@ public class EventsUIController : MonoBehaviour
 
 	private void OnLoadingChanged(bool isLoading)
 	{
-		Debug.Log($"[EventsUI] OnLoadingChanged: {isLoading}");
 		if (isLoading)
 		{
 			ShowSkeletons(4);
 		}
 		else
 		{
-			// Do nothing here; list will be rebuilt by OnEventsChanged
+			// Re-enable refresh button when loading is complete
+			OnLoadingFinished();
+		}
+	}
+
+	/// <summary>
+	/// Called when the refresh button is clicked
+	/// </summary>
+	private void OnRefreshClicked(ClickEvent evt)
+	{
+		RefreshEvents();
+	}
+
+	/// <summary>
+	/// Public method to refresh events data
+	/// Can be called from other scripts or UI elements
+	/// </summary>
+	public void RefreshEvents()
+	{
+		if (eventsFetcher == null)
+		{
+			Debug.LogWarning("[EventsUI] Cannot refresh - EventsFetcher is null");
+			return;
+		}
+		
+		// Disable refresh button during loading to prevent multiple requests
+		if (refreshButton != null)
+		{
+			refreshButton.SetEnabled(false);
+		}
+		
+		// Force refresh by clearing current data first
+		current.Clear();
+		RebuildList(current);
+		
+		eventsFetcher.FetchAllEvents();
+	}
+
+	/// <summary>
+	/// Re-enables the refresh button when loading is complete
+	/// </summary>
+	private void OnLoadingFinished()
+	{
+		if (refreshButton != null)
+		{
+			refreshButton.SetEnabled(true);
 		}
 	}
 
@@ -268,14 +300,18 @@ public class EventsUIController : MonoBehaviour
 		var row = new VisualElement();
 		row.style.flexDirection = FlexDirection.Row;
 		row.style.height = 96;
-		row.style.marginBottom = 8;
+		row.style.marginBottom = 12;
+		row.style.marginLeft = 8;
+		row.style.marginRight = 8;
 		row.style.backgroundColor = new Color(1f, 1f, 1f, 1f);
 		row.style.borderBottomLeftRadius = 10;
 		row.style.borderBottomRightRadius = 10;
 		row.style.borderTopLeftRadius = 10;
 		row.style.borderTopRightRadius = 10;
-		row.style.paddingLeft = 8;
-		row.style.paddingRight = 8;
+		row.style.paddingLeft = 16;
+		row.style.paddingRight = 16;
+		row.style.paddingTop = 12;
+		row.style.paddingBottom = 12;
 		row.style.alignItems = Align.Center;
 
 		var img = new Image();
@@ -287,15 +323,17 @@ public class EventsUIController : MonoBehaviour
 
 		var col = new VisualElement();
 		col.style.flexGrow = 1;
-		col.style.marginLeft = 8;
+		col.style.marginLeft = 12;
 		col.style.flexDirection = FlexDirection.Column;
+		col.style.justifyContent = Justify.Center;
 
 		var title = new Label(string.IsNullOrEmpty(data.title) ? "(untitled)" : data.title);
 		title.style.unityFontStyleAndWeight = FontStyle.Bold;
-		title.style.fontSize = 16;
+		title.style.fontSize = titleFontSize;
+		title.style.marginBottom = 4;
 
 		var location = new Label(string.IsNullOrEmpty(data.location) ? string.Empty : $"Location: {data.location}");
-		location.style.fontSize = 12;
+		location.style.fontSize = locationFontSize;
 		location.style.color = new Color(0.25f, 0.25f, 0.25f);
 
 		col.Add(title);

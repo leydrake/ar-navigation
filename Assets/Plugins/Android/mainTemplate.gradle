@@ -28,7 +28,7 @@ android {
 android {
     ndkPath "**NDKPATH**"
 
-    compileSdkVersion **APIVERSION**
+    compileSdkVersion 34
     buildToolsVersion '**BUILDTOOLS**'
 
     compileOptions {
@@ -38,7 +38,7 @@ android {
 
     defaultConfig {
         minSdkVersion **MINSDKVERSION**
-        targetSdkVersion **TARGETSDKVERSION**
+        targetSdkVersion 34
         ndk {
             abiFilters **ABIFILTERS**
         }
