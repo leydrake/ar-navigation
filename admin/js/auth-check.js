@@ -1,11 +1,34 @@
 // Authentication check for admin pages
-function checkAdminAuth() {
+async function checkAdminAuth() {
     const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     const adminEmail = sessionStorage.getItem('adminEmail');
     if (!isLoggedIn || !adminEmail) {
         window.location.href = 'index.html';
         return false;
     }
+    
+    // Check if the current user's account has been disabled
+    try {
+        const db = firebase.firestore();
+        const querySnapshot = await db.collection('admin_credentials')
+            .where('email', '==', adminEmail)
+            .limit(1)
+            .get();
+            
+        if (!querySnapshot.empty) {
+            const data = querySnapshot.docs[0].data();
+            if (data.disabled === true) {
+                // Account has been disabled, force logout
+                adminLogout();
+                alert('Your account has been disabled. Please contact an administrator.');
+                return false;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking account status:', error);
+        // Continue with normal flow if there's an error checking status
+    }
+    
     return true;
 }
 
@@ -32,8 +55,8 @@ function hasPermission(requiredPermission) {
     return admin.permissions.includes(requiredPermission);
 }
 
-function requirePermission(requiredPermission) {
-    if (!checkAdminAuth()) return false;
+async function requirePermission(requiredPermission) {
+    if (!(await checkAdminAuth())) return false;
     if (!hasPermission(requiredPermission)) {
         alert('You do not have permission to access this page.');
         window.location.href = 'admin-tools.html';
@@ -53,6 +76,6 @@ function adminLogout() {
 }
 
 // Check auth on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkAdminAuth();
+document.addEventListener('DOMContentLoaded', async function() {
+    await checkAdminAuth();
 }); 

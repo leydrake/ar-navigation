@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/user-management.css">
 </head>
 <body>
@@ -41,7 +43,19 @@
                         </div>
                         <div class="form-group">
                             <label for="userPassword">Password</label>
-                            <input type="password" id="userPassword" required placeholder="Enter password">
+                            <div class="password-input-container">
+                                <input type="password" id="userPassword" required placeholder="Enter password">
+                                <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                    <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <svg class="eye-off-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -100,7 +114,37 @@
             </div>
 
             <div class="section-card">
-                <h3 class="section-title">Existing Users</h3>
+                <div class="section-header">
+                    <h3 class="section-title">Existing Users</h3>
+                    <div class="search-filters-container">
+                        <div class="search-container">
+                            <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
+                            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="filters-container">
+                            <select id="roleFilter" class="filter-select">
+                                <option value="">All Roles</option>
+                                <option value="super_admin">Super Admin</option>
+                                <option value="events_admin">Events Admin</option>
+                                <option value="locations_admin">Locations Admin</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                            <select id="statusFilter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                            <button id="clearFilters" class="clear-filters-btn" title="Clear all filters">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="users-table-container">
                     <table class="users-table">
                         <thead>
@@ -141,7 +185,105 @@
             window.location.href = "./admin-tools.html";
         }
         
+        // Password toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordToggle = document.getElementById('passwordToggle');
+            const passwordInput = document.getElementById('userPassword');
+            const eyeIcon = passwordToggle.querySelector('.eye-icon');
+            const eyeOffIcon = passwordToggle.querySelector('.eye-off-icon');
+            
+            if (passwordToggle && passwordInput && eyeIcon && eyeOffIcon) {
+                passwordToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (passwordInput.type === 'password') {
+                        // Show password - show open eye
+                        passwordInput.type = 'text';
+                        eyeIcon.style.display = 'block';
+                        eyeOffIcon.style.display = 'none';
+                    } else {
+                        // Hide password - show closed eye
+                        passwordInput.type = 'password';
+                        eyeIcon.style.display = 'none';
+                        eyeOffIcon.style.display = 'block';
+                    }
+                });
+            }
+        });
 
+        // User search and filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('userSearch');
+            const roleFilter = document.getElementById('roleFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const clearFiltersBtn = document.getElementById('clearFilters');
+            const usersTableBody = document.getElementById('usersTableBody');
+
+            function filterUsers() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const selectedRole = roleFilter.value.toLowerCase();
+                const selectedStatus = statusFilter.value.toLowerCase();
+                const rows = usersTableBody.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    // Get text content from all cells
+                    const name = row.cells[0]?.textContent?.toLowerCase() || '';
+                    const email = row.cells[1]?.textContent?.toLowerCase() || '';
+                    const role = row.cells[2]?.textContent?.toLowerCase() || '';
+                    const permissions = row.cells[3]?.textContent?.toLowerCase() || '';
+                    const status = row.cells[4]?.textContent?.toLowerCase() || '';
+                    
+                    // Check search term match
+                    const searchMatch = searchTerm === '' || 
+                                      name.includes(searchTerm) || 
+                                      email.includes(searchTerm) || 
+                                      role.includes(searchTerm) || 
+                                      permissions.includes(searchTerm) || 
+                                      status.includes(searchTerm);
+                    
+                    // Check role filter match
+                    const roleMatch = selectedRole === '' || 
+                                    role.includes(selectedRole) ||
+                                    (selectedRole === 'super_admin' && role.includes('super')) ||
+                                    (selectedRole === 'events_admin' && role.includes('events')) ||
+                                    (selectedRole === 'locations_admin' && role.includes('locations'));
+                    
+                    // Check status filter match
+                    const statusMatch = selectedStatus === '' || 
+                                      status.includes(selectedStatus);
+                    
+                    // Show row only if all conditions match
+                    const shouldShow = searchMatch && roleMatch && statusMatch;
+                    row.style.display = shouldShow ? '' : 'none';
+                });
+            }
+
+            if (searchInput && usersTableBody) {
+                // Search input
+                searchInput.addEventListener('input', filterUsers);
+                
+                // Role filter
+                if (roleFilter) {
+                    roleFilter.addEventListener('change', filterUsers);
+                }
+                
+                // Status filter
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', filterUsers);
+                }
+                
+                // Clear filters button
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', function() {
+                        searchInput.value = '';
+                        roleFilter.value = '';
+                        statusFilter.value = '';
+                        filterUsers();
+                    });
+                }
+            }
+        });
     </script>
 </body>
 </html>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
@@ -105,11 +107,17 @@
                     .get();
 
                 if (snap.empty) {
-                    return { ok: false };
+                    return { ok: false, message: 'Invalid email or password' };
                 }
 
                 const doc = snap.docs[0];
                 const data = doc.data();
+                
+                // Check if account is disabled
+                if (data.disabled === true) {
+                    return { ok: false, message: 'This account has been disabled. Please contact an administrator.' };
+                }
+                
                 if (data.password === hashedPassword) {
                     // Update last login
                     await db.collection('admin_credentials').doc(doc.id).update({
@@ -126,7 +134,7 @@
                         }
                     };
                 }
-                return { ok: false };
+                return { ok: false, message: 'Invalid email or password' };
             } catch (error) {
                 console.error('Error verifying credentials:', error);
                 return { ok: false, error: error.message };
@@ -168,8 +176,8 @@
                     // Redirect to admin dashboard
                     window.location.href = 'admin-tools.html';
                 } else {
-                    console.log('Invalid credentials');
-                    errorMessage.textContent = 'Invalid email or password';
+                    console.log('Login failed:', result.message);
+                    errorMessage.textContent = result.message || 'Invalid email or password';
                     errorMessage.style.display = 'block';
                 }
             } catch (error) {
