@@ -3,6 +3,7 @@ using UnityEngine;
 using Firebase;
 using Firebase.Extensions;
 using Firebase.Firestore;
+using System.IO;
 
 public class FirestoreToCustomJson : MonoBehaviour
 {
@@ -13,6 +14,12 @@ public class FirestoreToCustomJson : MonoBehaviour
 
     [Header("Local Model JSON (Drag & Drop)")]
     [SerializeField] private TextAsset targetModelData; // Base JSON file
+    
+    [Header("JSON File Path")]
+    [SerializeField] private string jsonFilePath = "StreamingAssets/TargetData.json"; // Path to save the updated JSON
+    
+    [Header("Target Handler Reference")]
+    [SerializeField] private TargetHandler targetHandler; // Reference to TargetHandler to refresh data
 
     private TargetListWrapper wrapper;
     
@@ -89,21 +96,37 @@ public class FirestoreToCustomJson : MonoBehaviour
                 wrapper.TargetList.Add(target);
             }
 
-            // Save updated JSON to targetModelData
+            // Save updated JSON to file
             string json = JsonUtility.ToJson(wrapper, true);
             
-            // Update the targetModelData TextAsset with new JSON
-            if (targetModelData != null)
+            // Write the JSON data to file
+            try
             {
-                // Note: TextAsset.text is read-only at runtime, so we'll store the JSON in a variable
-                // You can access this data through the wrapper.TargetList property
-                Debug.Log("Updated JSON data stored in targetModelData wrapper.");
-                Debug.Log(json);
+                // Use Application.streamingAssetsPath for writable location
+                string fullPath = Path.Combine(Application.streamingAssetsPath, "TargetData.json");
+                
+                // Ensure the directory exists
+                string directory = Path.GetDirectoryName(fullPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
+                // Write the JSON data to the file
+                File.WriteAllText(fullPath, json);
+                Debug.Log($"Successfully wrote updated JSON to: {fullPath}");
+                Debug.Log($"Updated JSON data:\n{json}");
+                
+                // Refresh the TargetHandler if reference is available
+                if (targetHandler != null) {
+                    targetHandler.RefreshTargetData();
+                } else {
+                    Debug.LogWarning("TargetHandler reference not set. Target data won't be refreshed automatically.");
+                }
             }
-            else
+            catch (System.Exception e)
             {
-                Debug.LogWarning("targetModelData is null. JSON data is available in wrapper.TargetList");
-                Debug.Log(json);
+                Debug.LogError($"Failed to write JSON file: {e.Message}");
             }
         });
     }

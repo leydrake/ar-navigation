@@ -2,15 +2,18 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using System.IO;
 
 public class TargetHandler : MonoBehaviour {
 
     [SerializeField]
     private NavigationController navigationController;
     [SerializeField]
-    private TextAsset targetModelData;
-    [SerializeField]
     private TMP_Dropdown targetDataDropdown;
+    
+    [Header("JSON File Settings")]
+    [SerializeField]
+    private string jsonFileName = "TargetData.json";
 
     [SerializeField]
     private GameObject targetObjectPrefab;
@@ -18,35 +21,56 @@ public class TargetHandler : MonoBehaviour {
     private Transform[] targetObjectsParentTransforms;
 
     private List<TargetFacade> currentTargetItems = new List<TargetFacade>();
+    private TargetListWrapper targetDataWrapper;
 
     private void Start() {
+        LoadTargetData();
         GenerateTargetItems();
         FillDropdownWithTargetItems();
     }
 
-    private void GenerateTargetItems() {
-        IEnumerable<Target> targets = GenerateTargetDataFromSource();
-        foreach (Target target in targets) {
-            currentTargetItems.Add(CreateTargetFacade(target));
+    private void LoadTargetData() {
+        string filePath = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+        
+        if (File.Exists(filePath)) {
+            string jsonContent = File.ReadAllText(filePath);
+            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
+            Debug.Log($"Loaded target data from: {filePath}");
+        } else {
+            Debug.LogWarning($"Target data file not found at: {filePath}. Creating empty data.");
+            targetDataWrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
         }
     }
 
-    private IEnumerable<Target> GenerateTargetDataFromSource() {
-        return JsonUtility.FromJson<TargetWrapper>(targetModelData.text).TargetList;
+    private void GenerateTargetItems() {
+        // Clear existing target items
+        foreach (var item in currentTargetItems) {
+            if (item != null && item.gameObject != null) {
+                Destroy(item.gameObject);
+            }
+        }
+        currentTargetItems.Clear();
+
+        // Generate new target items from loaded data
+        if (targetDataWrapper?.TargetList != null) {
+            foreach (TargetData targetData in targetDataWrapper.TargetList) {
+                currentTargetItems.Add(CreateTargetFacade(targetData));
+            }
+        }
     }
 
-    private TargetFacade CreateTargetFacade(Target target) {
-        GameObject targetObject = Instantiate(targetObjectPrefab, targetObjectsParentTransforms[target.FloorNumber], false);
+    private TargetFacade CreateTargetFacade(TargetData targetData) {
+        GameObject targetObject = Instantiate(targetObjectPrefab, targetObjectsParentTransforms[targetData.FloorNumber], false);
         targetObject.SetActive(true);
-        targetObject.name = $"{target.FloorNumber} - {target.Name}";
-        targetObject.transform.localPosition = target.Position;
-        targetObject.transform.localRotation = Quaternion.Euler(target.Rotation);
+        targetObject.name = $"{targetData.FloorNumber} - {targetData.Name}";
+        targetObject.transform.localPosition = new Vector3(targetData.Position.x, targetData.Position.y, targetData.Position.z);
+        targetObject.transform.localRotation = Quaternion.Euler(targetData.Rotation.x, targetData.Rotation.y, targetData.Rotation.z);
 
-        TargetFacade targetData = targetObject.GetComponent<TargetFacade>();
-        targetData.Name = target.Name;
-        targetData.FloorNumber = target.FloorNumber;
+        TargetFacade targetFacade = targetObject.GetComponent<TargetFacade>();
+        targetFacade.Name = targetData.Name;
+        targetFacade.FloorNumber = targetData.FloorNumber;
 
-        return targetData;
+        return targetFacade;
     }
 
     private void FillDropdownWithTargetItems() {
@@ -74,5 +98,13 @@ public class TargetHandler : MonoBehaviour {
     public TargetFacade GetCurrentTargetByTargetText(string targetText) {
         return currentTargetItems.Find(x =>
             x.Name.ToLower().Equals(targetText.ToLower()));
+    }
+
+    // Public method to refresh target data (call this after Firebase updates the JSON)
+    public void RefreshTargetData() {
+        LoadTargetData();
+        GenerateTargetItems();
+        FillDropdownWithTargetItems();
+        Debug.Log("Target data refreshed successfully!");
     }
 }
