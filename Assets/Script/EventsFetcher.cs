@@ -21,6 +21,15 @@ public class EventData
 	[FirestoreProperty]
 	public string time { get; set; }
 
+	[FirestoreProperty]
+	public string description { get; set; }
+
+	[FirestoreProperty]
+	public string startTime { get; set; }
+
+	[FirestoreProperty]
+	public string endTime { get; set; }
+
 	// Convenience field for the Firestore document id
 	public string id { get; set; }
 }
@@ -241,7 +250,10 @@ public class EventsFetcher : MonoBehaviour
 					name = dict.ContainsKey("name") ? dict["name"]?.ToString() : string.Empty,
 					location = dict.ContainsKey("location") ? dict["location"]?.ToString() : string.Empty,
 					image = dict.ContainsKey("image") ? dict["image"]?.ToString() : string.Empty,
-					time = dict.ContainsKey("time") ? dict["time"]?.ToString() : string.Empty
+					time = dict.ContainsKey("time") ? dict["time"]?.ToString() : string.Empty,
+					description = dict.ContainsKey("description") ? dict["description"]?.ToString() : string.Empty,
+					startTime = dict.ContainsKey("startTime") ? dict["startTime"]?.ToString() : string.Empty,
+					endTime = dict.ContainsKey("endTime") ? dict["endTime"]?.ToString() : string.Empty
 				};
 				
 				// Debug: Log the fallback data

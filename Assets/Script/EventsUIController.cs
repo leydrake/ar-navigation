@@ -36,6 +36,17 @@ public class EventsUIController : MonoBehaviour
 
 	private List<EventData> current = new List<EventData>();
 
+	// Modal elements
+	private VisualElement modalOverlay;
+	private VisualElement modalContent;
+	private VisualElement modalImage;
+	private Label modalTitle;
+	private Label modalDescription;
+	private Label modalLocation;
+	private Label modalStartTime;
+	private Label modalEndTime;
+	private VisualElement closeButton;
+
 
 	[SerializeField]
 	private string refreshButtonName = "RefreshButton";
@@ -123,6 +134,9 @@ public class EventsUIController : MonoBehaviour
 				OnEventsChanged(new List<EventData>(eventsFetcher.events));
 			}
 		}
+
+		// Create modal
+		CreateModal();
 	}
 
 	private void OnDestroy()
@@ -364,6 +378,9 @@ public class EventsUIController : MonoBehaviour
 		row.style.borderLeftColor = new Color(0.9f, 0.9f, 0.9f, 1f);
 		row.style.borderRightColor = new Color(0.8f, 0.8f, 0.8f, 1f);
 
+		// Make the card clickable
+		row.RegisterCallback<ClickEvent>(evt => ShowEventModal(data));
+
 		// Image container with question mark icon
 		var imgContainer = new VisualElement();
 		imgContainer.style.width = 100;
@@ -513,6 +530,226 @@ public class EventsUIController : MonoBehaviour
 		{
 			var searchFieldIndex = parent.IndexOf(searchField);
 			parent.Insert(searchFieldIndex, searchFieldShadow);
+		}
+	}
+
+	private void CreateModal()
+{
+    var root = uiDocument != null ? uiDocument.rootVisualElement : null;
+    if (root == null) return;
+
+    // Create modal overlay
+    modalOverlay = new VisualElement();
+    modalOverlay.style.position = Position.Absolute;
+    modalOverlay.style.left = 0;
+    modalOverlay.style.top = 0;
+    modalOverlay.style.right = 0;
+    modalOverlay.style.bottom = 0;
+    modalOverlay.style.backgroundColor = new Color(0, 0, 0, 0.5f);
+    modalOverlay.style.display = DisplayStyle.None;
+    modalOverlay.RegisterCallback<ClickEvent>(evt => HideEventModal());
+
+    // Modal content (double width/height)
+    modalContent = new VisualElement();
+    modalContent.style.position = Position.Absolute;
+    modalContent.style.left = Length.Percent(50);
+    modalContent.style.top = Length.Percent(50);
+    modalContent.style.width = 800;   // was 400
+    modalContent.style.height = 1000; // was 500
+    modalContent.style.marginLeft = -400; // half of new width
+    modalContent.style.marginTop = -500;  // half of new height
+    modalContent.style.backgroundColor = Color.white;
+    modalContent.style.borderTopLeftRadius = 24;
+    modalContent.style.borderTopRightRadius = 24;
+    modalContent.style.borderBottomLeftRadius = 24;
+    modalContent.style.borderBottomRightRadius = 24;
+    modalContent.style.paddingLeft = 40;
+    modalContent.style.paddingRight = 40;
+    modalContent.style.paddingTop = 40;
+    modalContent.style.paddingBottom = 40;
+
+    // Close button (double size)
+    closeButton = new VisualElement();
+    closeButton.style.position = Position.Absolute;
+    closeButton.style.top = 20;   // was 10
+    closeButton.style.right = 20; // was 10
+    closeButton.style.width = 60; // was 30
+    closeButton.style.height = 60; // was 30
+    closeButton.style.backgroundColor = new Color(0.9f, 0.9f, 0.9f);
+    closeButton.style.borderTopLeftRadius = 30;
+    closeButton.style.borderTopRightRadius = 30;
+    closeButton.style.borderBottomLeftRadius = 30;
+    closeButton.style.borderBottomRightRadius = 30;
+    closeButton.style.alignItems = Align.Center;
+    closeButton.style.justifyContent = Justify.Center;
+    closeButton.RegisterCallback<ClickEvent>(evt => HideEventModal());
+
+    var closeLabel = new Label("×");
+    closeLabel.style.fontSize = 40; // was 20
+    closeLabel.style.color = Color.black;
+    closeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+    closeButton.Add(closeLabel);
+
+    // Title (bigger font)
+    modalTitle = new Label("Event Details");
+    modalTitle.style.fontSize = 48; // was 24
+    modalTitle.style.color = new Color(0.2f, 0.4f, 0.2f);
+    modalTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
+    modalTitle.style.unityTextAlign = TextAnchor.MiddleCenter;
+    modalTitle.style.marginBottom = 40; // was 20
+
+    // Image placeholder (double height)
+    modalImage = new VisualElement();
+    modalImage.style.width = Length.Percent(100);
+    modalImage.style.height = 300; // was 150
+    modalImage.style.backgroundColor = new Color(0.95f, 0.95f, 0.95f);
+    modalImage.style.borderTopLeftRadius = 16;
+    modalImage.style.borderTopRightRadius = 16;
+    modalImage.style.borderBottomLeftRadius = 16;
+    modalImage.style.borderBottomRightRadius = 16;
+    modalImage.style.marginBottom = 40; // was 20
+    modalImage.style.alignItems = Align.Center;
+    modalImage.style.justifyContent = Justify.Center;
+
+    var imagePlaceholder = new Label("No image available");
+    imagePlaceholder.style.color = new Color(0.6f, 0.6f, 0.6f);
+    imagePlaceholder.style.fontSize = 28; // was 14
+    modalImage.Add(imagePlaceholder);
+
+    // Event info labels (double font size + spacing)
+    modalDescription = new Label();
+    modalDescription.style.fontSize = 28; // was 14
+    modalDescription.style.color = Color.black;
+    modalDescription.style.marginBottom = 20; // was 10
+    modalDescription.style.whiteSpace = WhiteSpace.Normal;
+
+    modalLocation = new Label();
+    modalLocation.style.fontSize = 28;
+    modalLocation.style.color = Color.black;
+    modalLocation.style.marginBottom = 20;
+    modalLocation.style.whiteSpace = WhiteSpace.Normal;
+
+    modalStartTime = new Label();
+    modalStartTime.style.fontSize = 28;
+    modalStartTime.style.color = Color.black;
+    modalStartTime.style.marginBottom = 20;
+    modalStartTime.style.whiteSpace = WhiteSpace.Normal;
+
+    modalEndTime = new Label();
+    modalEndTime.style.fontSize = 28;
+    modalEndTime.style.color = Color.black;
+    modalEndTime.style.marginBottom = 20;
+    modalEndTime.style.whiteSpace = WhiteSpace.Normal;
+
+    // Add elements
+    modalContent.Add(closeButton);
+    modalContent.Add(modalTitle);
+    modalContent.Add(modalImage);
+    modalContent.Add(modalDescription);
+    modalContent.Add(modalLocation);
+    modalContent.Add(modalStartTime);
+    modalContent.Add(modalEndTime);
+
+    modalOverlay.Add(modalContent);
+    root.Add(modalOverlay);
+}
+
+	private string FormatDateTime(string dateTimeString)
+	{
+		if (string.IsNullOrEmpty(dateTimeString))
+		{
+			return "No time set";
+		}
+
+		try
+		{
+			// Try to parse as ISO 8601 format (e.g., "2025-10-02T05:53:00.000Z")
+			if (DateTime.TryParse(dateTimeString, out DateTime dateTime))
+			{
+				// Format as "8:00PM 12/17/2003" style
+				return dateTime.ToString("h:mmtt -  M/d/yyyy");
+			}
+			
+			// If parsing fails, return the original string
+			return dateTimeString;
+		}
+		catch (Exception ex)
+		{
+			Debug.LogWarning($"[EventsUI] Failed to parse datetime '{dateTimeString}': {ex.Message}");
+			return dateTimeString;
+		}
+	}
+
+	private void ShowEventModal(EventData eventData)
+	{
+		if (modalOverlay == null) return;
+
+		// Populate modal with event data
+		modalTitle.text = string.IsNullOrEmpty(eventData.name) ? "Event Details" : eventData.name;
+		modalDescription.text = $"Description: {(!string.IsNullOrEmpty(eventData.description) ? eventData.description : "No description provided")}";
+		modalLocation.text = $"Location: {(!string.IsNullOrEmpty(eventData.location) ? eventData.location : "No location set")}";
+		modalStartTime.text = $"Start Time: {FormatDateTime(eventData.startTime)}";
+		modalEndTime.text = $"End Time: {FormatDateTime(eventData.endTime)}";
+
+		// Load event image if available
+		if (!string.IsNullOrEmpty(eventData.image))
+		{
+			StartCoroutine(LoadModalImage(eventData.image));
+		}
+		else
+		{
+			// Clear any existing image
+			modalImage.Clear();
+			var imagePlaceholder = new Label("No image available");
+			imagePlaceholder.style.color = new Color(0.6f, 0.6f, 0.6f);
+			imagePlaceholder.style.fontSize = 14;
+			modalImage.Add(imagePlaceholder);
+		}
+
+		// Show modal
+		modalOverlay.style.display = DisplayStyle.Flex;
+	}
+
+	private void HideEventModal()
+	{
+		if (modalOverlay != null)
+		{
+			modalOverlay.style.display = DisplayStyle.None;
+		}
+	}
+
+	private IEnumerator LoadModalImage(string url)
+	{
+		if (string.IsNullOrEmpty(url)) yield break;
+
+		using (UnityWebRequest req = UnityWebRequestTexture.GetTexture(url))
+		{
+			yield return req.SendWebRequest();
+
+			bool failed = req.result == UnityWebRequest.Result.ConnectionError ||
+						req.result == UnityWebRequest.Result.ProtocolError ||
+						req.result == UnityWebRequest.Result.DataProcessingError;
+
+			if (failed)
+			{
+				Debug.LogWarning($"[EventsUI] Failed to load modal image from '{url}': {req.error}");
+				yield break;
+			}
+
+			Texture2D tex = DownloadHandlerTexture.GetContent(req);
+			if (tex != null)
+			{
+				// Clear existing content
+				modalImage.Clear();
+				
+				// Create image element
+				var imageElement = new Image();
+				imageElement.image = tex;
+				imageElement.style.width = Length.Percent(100);
+				imageElement.style.height = Length.Percent(100);
+				imageElement.scaleMode = ScaleMode.ScaleToFit;
+				modalImage.Add(imageElement);
+			}
 		}
 	}
 }
