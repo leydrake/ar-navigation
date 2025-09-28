@@ -17,6 +17,9 @@ public class EventsUIController : MonoBehaviour
 	[SerializeField]
 	private string searchFieldName = "SearchInput";
 
+	private const string PlaceholderText = "Search events...";
+	private bool isPlaceholderActive = false;
+
 	[SerializeField]
 	private string scrollViewName = "EventsScrollView";
 
@@ -29,6 +32,7 @@ public class EventsUIController : MonoBehaviour
 	private TextField searchField;
 	private ScrollView listView;
 	private VisualElement refreshButton;
+	private VisualElement searchFieldShadow;
 
 	private List<EventData> current = new List<EventData>();
 
@@ -63,6 +67,13 @@ public class EventsUIController : MonoBehaviour
 		{
 			Debug.LogWarning($"EventsUIController: ScrollView '{scrollViewName}' not found in UXML.");
 		}
+		else
+		{
+			// Fix the scroll view to prevent layout shifts
+			listView.style.flexGrow = 1;
+			listView.style.flexShrink = 1;
+			listView.style.minHeight = 0;
+		}
 
 		if (refreshButton == null)
 		{
@@ -76,6 +87,16 @@ public class EventsUIController : MonoBehaviour
 
 		if (searchField != null)
 		{
+			// Set initial placeholder text
+			SetPlaceholder();
+			
+			
+			// Create shadow element
+			CreateSearchFieldShadow();
+			
+			// Register focus event callbacks for placeholder functionality
+			searchField.RegisterCallback<FocusInEvent>(evt => OnSearchFocusIn());
+			searchField.RegisterCallback<FocusOutEvent>(evt => OnSearchFocusOut());
 			searchField.RegisterValueChangedCallback(_ => ApplyFilter());
 		}
 
@@ -144,7 +165,9 @@ public class EventsUIController : MonoBehaviour
 	{
 		string query = searchField != null ? (searchField.value ?? string.Empty) : string.Empty;
 		query = query.Trim();
-		if (string.IsNullOrEmpty(query))
+		
+		// Don't filter if it's just the placeholder text
+		if (string.IsNullOrEmpty(query) || query == PlaceholderText)
 		{
 			RebuildList(current);
 			return;
@@ -152,7 +175,7 @@ public class EventsUIController : MonoBehaviour
 
 		string qLower = query.ToLowerInvariant();
 		var filtered = current.Where(e =>
-			(!string.IsNullOrEmpty(e.title) && e.title.ToLowerInvariant().Contains(qLower)) ||
+			(!string.IsNullOrEmpty(e.name) && e.name.ToLowerInvariant().Contains(qLower)) ||
 			(!string.IsNullOrEmpty(e.location) && e.location.ToLowerInvariant().Contains(qLower))
 		).ToList();
 
@@ -193,30 +216,34 @@ public class EventsUIController : MonoBehaviour
 		{
 			var row = new VisualElement();
 			row.style.flexDirection = FlexDirection.Row;
-			row.style.height = 96;
-			row.style.marginBottom = 8;
-			row.style.backgroundColor = new Color(1f, 1f, 1f, 1f);
-			row.style.borderBottomLeftRadius = 10;
-			row.style.borderBottomRightRadius = 10;
-			row.style.borderTopLeftRadius = 10;
-			row.style.borderTopRightRadius = 10;
-			row.style.paddingLeft = 8;
-			row.style.paddingRight = 8;
+			row.style.height = 180;
+			row.style.marginBottom = 16;
+			row.style.marginLeft = 16;
+			row.style.marginRight = 16;
+			row.style.backgroundColor = new Color(224f/255f, 224f/255f, 224f/255f, 1f); // rgb(224, 224, 224)
+			row.style.borderBottomLeftRadius = 8;
+			row.style.borderBottomRightRadius = 8;
+			row.style.borderTopLeftRadius = 8;
+			row.style.borderTopRightRadius = 8;
+			row.style.paddingLeft = 16;
+			row.style.paddingRight = 16;
+			row.style.paddingTop = 12;
+			row.style.paddingBottom = 12;
 			row.style.alignItems = Align.Center;
 
 			var img = new VisualElement();
-			img.style.width = 72;
-			img.style.height = 72;
-			img.style.backgroundColor = new Color(0.9f, 0.9f, 0.9f);
-			img.style.borderBottomLeftRadius = 8;
-			img.style.borderBottomRightRadius = 8;
-			img.style.borderTopLeftRadius = 8;
-			img.style.borderTopRightRadius = 8;
+			img.style.width = 100;
+			img.style.height = 100;
+			img.style.backgroundColor = new Color(240f/255f, 240f/255f, 240f/255f, 1f); // rgb(240, 240, 240)
+			img.style.borderBottomLeftRadius = 6;
+			img.style.borderBottomRightRadius = 6;
+			img.style.borderTopLeftRadius = 6;
+			img.style.borderTopRightRadius = 6;
 			row.Add(img);
 
 			var col = new VisualElement();
 			col.style.flexGrow = 1;
-			col.style.marginLeft = 8;
+			col.style.marginLeft = 12;
 			col.style.flexDirection = FlexDirection.Column;
 
 			var line1 = new VisualElement();
@@ -242,12 +269,25 @@ public class EventsUIController : MonoBehaviour
 	{
 		if (isLoading)
 		{
+			// Ensure header and search bar stay stable during loading
+			StabilizeHeaderLayout();
 			ShowSkeletons(4);
 		}
 		else
 		{
 			// Re-enable refresh button when loading is complete
 			OnLoadingFinished();
+		}
+	}
+
+	private void StabilizeHeaderLayout()
+	{
+		// Ensure scroll view doesn't affect header
+		if (listView != null)
+		{
+			listView.style.flexGrow = 1;
+			listView.style.flexShrink = 1;
+			listView.style.minHeight = 0;
 		}
 	}
 
@@ -299,57 +339,101 @@ public class EventsUIController : MonoBehaviour
 	{
 		var row = new VisualElement();
 		row.style.flexDirection = FlexDirection.Row;
-		row.style.height = 96;
-		row.style.marginBottom = 12;
-		row.style.marginLeft = 8;
-		row.style.marginRight = 8;
-		row.style.backgroundColor = new Color(1f, 1f, 1f, 1f);
+		row.style.height = 180;
+		row.style.marginBottom = 25;
+		row.style.marginLeft = 16;
+		row.style.marginRight = 16;
+		row.style.backgroundColor = new Color(224f/255f, 224f/255f, 224f/255f, 1f); // rgb(224, 224, 224)
 		row.style.borderBottomLeftRadius = 10;
 		row.style.borderBottomRightRadius = 10;
 		row.style.borderTopLeftRadius = 10;
 		row.style.borderTopRightRadius = 10;
 		row.style.paddingLeft = 16;
 		row.style.paddingRight = 16;
-		row.style.paddingTop = 12;
-		row.style.paddingBottom = 12;
+		row.style.paddingTop = 14;
+		row.style.paddingBottom = 14;
 		row.style.alignItems = Align.Center;
 
-		var img = new Image();
-		img.style.width = 72;
-		img.style.height = 72;
-		img.scaleMode = ScaleMode.ScaleToFit;
-		img.image = Texture2D.grayTexture;
-		row.Add(img);
+		// Add subtle border for depth
+		row.style.borderTopWidth = 1;
+		row.style.borderBottomWidth = 1;
+		row.style.borderLeftWidth = 1;
+		row.style.borderRightWidth = 1;
+		row.style.borderTopColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+		row.style.borderBottomColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+		row.style.borderLeftColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+		row.style.borderRightColor = new Color(0.8f, 0.8f, 0.8f, 1f);
 
+		// Image container with question mark icon
+		var imgContainer = new VisualElement();
+		imgContainer.style.width = 100;
+		imgContainer.style.height = 100;
+		imgContainer.style.backgroundColor = new Color(240f/255f, 240f/255f, 240f/255f, 1f); // rgb(240, 240, 240)
+		imgContainer.style.borderBottomLeftRadius = 6;
+		imgContainer.style.borderBottomRightRadius = 6;
+		imgContainer.style.borderTopLeftRadius = 6;
+		imgContainer.style.borderTopRightRadius = 6;
+		imgContainer.style.alignItems = Align.Center;
+		imgContainer.style.justifyContent = Justify.Center;
+
+		// Question mark icon
+		var questionMark = new Label("?");
+		questionMark.style.fontSize = 40;
+		questionMark.style.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+		questionMark.style.unityFontStyleAndWeight = FontStyle.Bold;
+		imgContainer.Add(questionMark);
+
+		// Actual image (hidden by default, shown when loaded)
+		var img = new Image();
+		img.style.width = 100;
+		img.style.height = 100;
+		img.scaleMode = ScaleMode.ScaleToFit;
+		img.style.display = DisplayStyle.None; // Hidden initially
+		imgContainer.Add(img);
+
+		row.Add(imgContainer);
+
+		// Text content
 		var col = new VisualElement();
 		col.style.flexGrow = 1;
 		col.style.marginLeft = 12;
 		col.style.flexDirection = FlexDirection.Column;
 		col.style.justifyContent = Justify.Center;
 
-		var title = new Label(string.IsNullOrEmpty(data.title) ? "(untitled)" : data.title);
+		// Title
+		var title = new Label(string.IsNullOrEmpty(data.name) ? "(untitled)" : data.name);
 		title.style.unityFontStyleAndWeight = FontStyle.Bold;
-		title.style.fontSize = titleFontSize;
+		title.style.fontSize = 24;
+		title.style.color = new Color(0f, 0f, 0f, 1f);
 		title.style.marginBottom = 4;
 
+		// Location
 		var location = new Label(string.IsNullOrEmpty(data.location) ? string.Empty : $"Location: {data.location}");
-		location.style.fontSize = locationFontSize;
-		location.style.color = new Color(0.25f, 0.25f, 0.25f);
+		location.style.fontSize = 20;
+		location.style.color = new Color(0.4f, 0.4f, 0.4f, 1f);
+		location.style.marginBottom = 4;
+
+		// Time
+		var time = new Label(string.IsNullOrEmpty(data.time) ? "No time set" : data.time);
+		time.style.fontSize = 20;
+		time.style.color = new Color(0.4f, 0.4f, 0.4f, 1f);
 
 		col.Add(title);
 		col.Add(location);
+		col.Add(time);
 		row.Add(col);
 
+		// Load image if available
 		if (!string.IsNullOrEmpty(data.image))
 		{
-			Debug.Log($"[EventsUI] Loading image for '{data.title}' from '{data.image}'");
-			StartCoroutine(LoadImageInto(img, data.image));
+			Debug.Log($"[EventsUI] Loading image for '{data.name}' from '{data.image}'");
+			StartCoroutine(LoadImageInto(img, imgContainer, questionMark, data.image));
 		}
 
 		return row;
 	}
 
-	private IEnumerator LoadImageInto(Image target, string url)
+	private IEnumerator LoadImageInto(Image target, VisualElement container, VisualElement questionMark, string url)
 	{
 		if (target == null || string.IsNullOrEmpty(url))
 		{
@@ -374,8 +458,61 @@ public class EventsUIController : MonoBehaviour
 			if (tex != null)
 			{
 				target.image = tex;
+				target.style.display = DisplayStyle.Flex; // Show the image
+				questionMark.style.display = DisplayStyle.None; // Hide the question mark
 				Debug.Log($"[EventsUI] Image set successfully from '{url}'");
 			}
+		}
+	}
+
+	private void OnSearchFocusIn()
+	{
+		if (isPlaceholderActive)
+		{
+			searchField.SetValueWithoutNotify(string.Empty);
+			searchField.RemoveFromClassList("placeholder");
+			isPlaceholderActive = false;
+		}
+	}
+
+	private void OnSearchFocusOut()
+	{
+		if (string.IsNullOrEmpty(searchField.value))
+		{
+			SetPlaceholder();
+		}
+	}
+
+	private void SetPlaceholder()
+	{
+		searchField.SetValueWithoutNotify(PlaceholderText);
+		searchField.AddToClassList("placeholder");
+		isPlaceholderActive = true;
+	}
+
+	private void CreateSearchFieldShadow()
+	{
+		if (searchField == null) return;
+
+		// Create shadow element
+		searchFieldShadow = new VisualElement();
+		searchFieldShadow.style.position = Position.Absolute;
+		searchFieldShadow.style.backgroundColor = new Color(0, 0, 0, 0.1f); // Light gray shadow
+		searchFieldShadow.style.borderTopLeftRadius = 8;
+		searchFieldShadow.style.borderTopRightRadius = 8;
+		searchFieldShadow.style.borderBottomLeftRadius = 8;
+		searchFieldShadow.style.borderBottomRightRadius = 8;
+		
+		// Position shadow slightly offset to create shadow effect
+		searchFieldShadow.style.left = 2;
+		searchFieldShadow.style.top = 2;
+		
+		// Insert shadow behind the search field
+		var parent = searchField.parent;
+		if (parent != null)
+		{
+			var searchFieldIndex = parent.IndexOf(searchField);
+			parent.Insert(searchFieldIndex, searchFieldShadow);
 		}
 	}
 }

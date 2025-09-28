@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "55012323145",
+    "project_id": "navigatecampus",
+    "storage_bucket": "navigatecampus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55012323145:android:b495e39ed2adcbceb2b498",
+        "android_client_info": {
+          "package_name": "com.leynard.CampusNavigator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzljKEHwjnT_otgfb3KixfA2L-BKeJrXg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

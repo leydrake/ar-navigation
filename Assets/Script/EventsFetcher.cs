@@ -10,13 +10,16 @@ using UnityEngine.Networking;
 public class EventData
 {
 	[FirestoreProperty]
-	public string title { get; set; }
+	public string name { get; set; }
 
 	[FirestoreProperty]
 	public string location { get; set; }
 
 	[FirestoreProperty]
 	public string image { get; set; }
+
+	[FirestoreProperty]
+	public string time { get; set; }
 
 	// Convenience field for the Firestore document id
 	public string id { get; set; }
@@ -222,6 +225,10 @@ public class EventsFetcher : MonoBehaviour
 			{
 				EventData data = doc.ConvertTo<EventData>();
 				data.id = doc.Id;
+				
+				// Debug: Log the actual data being received
+				Debug.Log($"[EventsFetcher] Document {doc.Id} - Title: '{data.name}', Location: '{data.location}', Image: '{data.image}'");
+				
 				loaded.Add(data);
 			}
 			catch (Exception ex)
@@ -231,10 +238,16 @@ public class EventsFetcher : MonoBehaviour
 				var fallback = new EventData
 				{
 					id = doc.Id,
-					title = dict.ContainsKey("title") ? dict["title"]?.ToString() : string.Empty,
+					name = dict.ContainsKey("name") ? dict["name"]?.ToString() : string.Empty,
 					location = dict.ContainsKey("location") ? dict["location"]?.ToString() : string.Empty,
-					image = dict.ContainsKey("image") ? dict["image"]?.ToString() : string.Empty
+					image = dict.ContainsKey("image") ? dict["image"]?.ToString() : string.Empty,
+					time = dict.ContainsKey("time") ? dict["time"]?.ToString() : string.Empty
 				};
+				
+				// Debug: Log the fallback data
+				Debug.Log($"[EventsFetcher] Fallback Document {doc.Id} - Title: '{fallback.name}', Location: '{fallback.location}', Image: '{fallback.image}'");
+				Debug.Log($"[EventsFetcher] Available keys in document: {string.Join(", ", dict.Keys)}");
+				
 				loaded.Add(fallback);
 			}
 		}
