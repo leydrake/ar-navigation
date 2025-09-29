@@ -215,6 +215,27 @@ public class EventsFetcher : MonoBehaviour
 		{
 			HandleFetchError(fetchException.Message);
 		}
+		else
+		{
+			// Deliver results on the main thread immediately (do not rely on Update)
+			if (pendingEvents != null)
+			{
+				try
+				{
+					EventsChanged?.Invoke(pendingEvents);
+				}
+				catch (Exception cbEx)
+				{
+					Debug.LogError($"[EventsFetcher] Error while invoking EventsChanged (post-fetch): {cbEx.Message}");
+				}
+				finally
+				{
+					pendingEvents = null;
+					hasPendingEvents = false;
+				}
+			}
+			try { LoadingChanged?.Invoke(false); } catch (Exception) {}
+		}
 	}
 
 	private void ProcessFetchResult(QuerySnapshot snapshot)
@@ -277,6 +298,7 @@ public class EventsFetcher : MonoBehaviour
 	{
 		Debug.LogError($"[EventsFetcher] Fetch error: {errorMessage}");
 		ErrorOccurred?.Invoke(errorMessage);
+		try { LoadingChanged?.Invoke(false); } catch (Exception) {}
 		
 		// Retry logic
 		if (retryCount < maxRetryAttempts)
@@ -287,7 +309,25 @@ public class EventsFetcher : MonoBehaviour
 		else
 		{
 			Debug.LogError("[EventsFetcher] Max retry attempts reached. Giving up.");
-			try { LoadingChanged?.Invoke(false); } catch (Exception) {}
+		}
+	}
+
+	/// <summary>
+	/// Emits the currently cached events to listeners immediately.
+	/// Useful when reopening a UI that subscribes after a previous fetch.
+	/// </summary>
+	public void EmitCachedEvents()
+	{
+		if (events != null)
+		{
+			try
+			{
+				EventsChanged?.Invoke(new List<EventData>(events));
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError($"[EventsFetcher] Error emitting cached events: {ex.Message}");
+			}
 		}
 	}
 

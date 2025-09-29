@@ -10,6 +10,24 @@ public class ToggleMenu : MonoBehaviour
     public Button burgerButton;
     public MenuType menuType = MenuType.SlidingPanel;
     
+    [Header("UI References")]
+    public EventsUIController eventsUIController;
+    public EventsUIController eventsUIPrefab;
+    
+    [Header("Canvas Sorting")]
+    public int menuPanelSortingOrder = 100;
+    public int burgerButtonSortingOrder = 101;
+    public bool useCanvasSorting = true;
+    
+    [Header("Hierarchy Control")]
+    public bool useTransformHierarchy = true;
+    
+    [Header("Auto Close Settings")]
+    public bool autoCloseOnItemClick = true;
+    
+    [Header("Burger Button Control")]
+    public bool keepBurgerButtonOnTop = true;
+    
     [Header("Animation Settings")]
     public float animationDuration = 0.3f;
     public AnimationCurve animationCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
@@ -27,6 +45,8 @@ public class ToggleMenu : MonoBehaviour
     private Vector2 originalSize;
     private RectTransform menuRectTransform;
     private CanvasGroup menuCanvasGroup;
+    private Canvas menuPanelCanvas;
+    private Canvas burgerButtonCanvas;
     
     public enum MenuType
     {
@@ -48,6 +68,9 @@ public class ToggleMenu : MonoBehaviour
         menuRectTransform = menuPanel.GetComponent<RectTransform>();
         menuCanvasGroup = menuPanel.GetComponent<CanvasGroup>();
         
+        // Get or create Canvas components for proper sorting
+        SetupCanvasSorting();
+        
         // Store original values
         originalPosition = menuRectTransform.anchoredPosition;
         originalSize = menuRectTransform.sizeDelta;
@@ -58,8 +81,75 @@ public class ToggleMenu : MonoBehaviour
             burgerButton.onClick.AddListener(ToggleMenuVisibility);
         }
         
+        // Setup auto-close for menu items
+        if (autoCloseOnItemClick)
+        {
+            SetupMenuItemsAutoClose();
+        }
+        
         // Initially hide the menu
         SetMenuVisibility(false, false);
+    }
+    
+    private void SetupMenuItemsAutoClose()
+    {
+        if (menuPanel == null) return;
+        
+        // Find all buttons in the menu panel
+        Button[] menuButtons = menuPanel.GetComponentsInChildren<Button>();
+        
+        foreach (Button button in menuButtons)
+        {
+            // Skip the burger button itself if it's inside the menu panel
+            if (button == burgerButton) continue;
+            
+            // Add listener to close menu when clicked
+            button.onClick.AddListener(() => OnMenuItemClicked(button));
+        }
+        
+        Debug.Log($"Setup auto-close for {menuButtons.Length} menu items");
+    }
+    
+    private void OnMenuItemClicked(Button clickedButton)
+    {
+        if (autoCloseOnItemClick && isMenuOpen)
+        {
+            Debug.Log($"Menu item '{clickedButton.name}' clicked. Hiding both menu panel and burger button.");
+            
+            // Check if this is the events menu item
+            if (clickedButton.name.ToLower().Contains("event") || clickedButton.name.ToLower().Contains("calendar"))
+            {
+                OpenEventsFromMenu();
+            }
+            
+            HideMenuAndBurgerButton();
+        }
+    }
+    
+    private void SetupCanvasSorting()
+    {
+        if (!useCanvasSorting) return;
+        
+        // Find the root Canvas
+        Canvas rootCanvas = GetComponentInParent<Canvas>();
+        if (rootCanvas == null)
+        {
+            rootCanvas = FindObjectOfType<Canvas>();
+        }
+        
+        if (rootCanvas != null)
+        {
+            // Simply adjust the root canvas sorting order to be higher
+            // This ensures the entire UI hierarchy appears on top
+            rootCanvas.sortingOrder = Mathf.Max(rootCanvas.sortingOrder, menuPanelSortingOrder);
+        }
+        
+        // Try to find existing Canvas components on the UI elements
+        menuPanelCanvas = menuPanel.GetComponentInChildren<Canvas>();
+        if (burgerButton != null)
+        {
+            burgerButtonCanvas = burgerButton.GetComponentInChildren<Canvas>();
+        }
     }
     
     public void ToggleMenuVisibility()
@@ -86,11 +176,84 @@ public class ToggleMenu : MonoBehaviour
         }
     }
     
+    public void CloseMenuPanelOnly()
+    {
+        if (isMenuOpen)
+        {
+            isMenuOpen = false;
+            SetMenuPanelVisibility(false, true);
+        }
+    }
+    
+    public void HideMenuAndBurgerButton()
+    {
+        if (isMenuOpen)
+        {
+            isMenuOpen = false;
+            SetMenuPanelVisibility(false, true);
+            HideBurgerButton();
+        }
+    }
+    
+    public void ShowMenuAndBurgerButton()
+    {
+        ShowBurgerButton();
+        if (!isMenuOpen)
+        {
+            isMenuOpen = true;
+            SetMenuPanelVisibility(true, true);
+        }
+    }
+    
+    private void HideBurgerButton()
+    {
+        if (burgerButton != null)
+        {
+            CanvasGroup burgerCanvasGroup = burgerButton.GetComponent<CanvasGroup>();
+            if (burgerCanvasGroup == null)
+            {
+                burgerCanvasGroup = burgerButton.gameObject.AddComponent<CanvasGroup>();
+            }
+            
+            burgerCanvasGroup.alpha = 0f;
+            burgerCanvasGroup.interactable = false;
+            burgerCanvasGroup.blocksRaycasts = false;
+            
+            Debug.Log("Burger button hidden");
+        }
+    }
+    
+    private void ShowBurgerButton()
+    {
+        if (burgerButton != null)
+        {
+            CanvasGroup burgerCanvasGroup = burgerButton.GetComponent<CanvasGroup>();
+            if (burgerCanvasGroup == null)
+            {
+                burgerCanvasGroup = burgerButton.gameObject.AddComponent<CanvasGroup>();
+            }
+            
+            burgerCanvasGroup.alpha = 1f;
+            burgerCanvasGroup.interactable = true;
+            burgerCanvasGroup.blocksRaycasts = true;
+            
+            Debug.Log("Burger button shown");
+        }
+    }
+    
     private void SetMenuVisibility(bool visible, bool animate)
     {
         if (currentAnimation != null)
         {
             StopCoroutine(currentAnimation);
+        }
+        
+        // Only ensure proper sorting when opening the menu
+        if (visible)
+        {
+            EnsureMenuOnTop();
+            // Hide events UI when menu opens
+            HideEventsUI();
         }
         
         if (animate)
@@ -103,8 +266,46 @@ public class ToggleMenu : MonoBehaviour
         }
     }
     
+    private void SetMenuPanelVisibility(bool visible, bool animate)
+    {
+        if (currentAnimation != null)
+        {
+            StopCoroutine(currentAnimation);
+        }
+        
+        // Only hide/show the menu panel, keep burger button visible
+        if (animate)
+        {
+            currentAnimation = StartCoroutine(AnimateMenuPanel(visible));
+        }
+        else
+        {
+            SetMenuPanelState(visible);
+        }
+    }
+    
     private void SetMenuState(bool visible)
     {
+        if (menuCanvasGroup != null)
+        {
+            menuCanvasGroup.alpha = visible ? 1f : 0f;
+            menuCanvasGroup.interactable = visible;
+            menuCanvasGroup.blocksRaycasts = visible;
+        }
+        
+        if (menuType == MenuType.Dropdown)
+        {
+            SetDropdownState(visible);
+        }
+        else
+        {
+            SetSlidingPanelState(visible);
+        }
+    }
+    
+    private void SetMenuPanelState(bool visible)
+    {
+        // Only control the menu panel visibility, not the burger button
         if (menuCanvasGroup != null)
         {
             menuCanvasGroup.alpha = visible ? 1f : 0f;
@@ -251,6 +452,102 @@ public class ToggleMenu : MonoBehaviour
         currentAnimation = null;
     }
     
+    private IEnumerator AnimateMenuPanel(bool visible)
+    {
+        float elapsedTime = 0f;
+        Vector3 startPosition = menuRectTransform.anchoredPosition;
+        Vector2 startSize = menuRectTransform.sizeDelta;
+        float startAlpha = menuCanvasGroup != null ? menuCanvasGroup.alpha : 1f;
+        
+        Vector3 targetPosition;
+        Vector2 targetSize;
+        float targetAlpha;
+        
+        if (visible)
+        {
+            targetPosition = originalPosition;
+            targetSize = originalSize;
+            targetAlpha = 1f;
+            
+            if (menuType == MenuType.Dropdown)
+            {
+                targetSize.y = dropdownHeight;
+            }
+            
+            // Enable interaction immediately when opening
+            if (menuCanvasGroup != null)
+            {
+                menuCanvasGroup.interactable = true;
+                menuCanvasGroup.blocksRaycasts = true;
+            }
+        }
+        else
+        {
+            targetPosition = startPosition;
+            targetSize = startSize;
+            targetAlpha = 0f;
+            
+            if (menuType == MenuType.Dropdown)
+            {
+                targetSize.y = 0f;
+            }
+            else
+            {
+                switch (slideDirection)
+                {
+                    case SlideDirection.FromTop:
+                        targetPosition.y += slideOffset.y;
+                        break;
+                    case SlideDirection.FromBottom:
+                        targetPosition.y -= slideOffset.y;
+                        break;
+                    case SlideDirection.FromLeft:
+                        targetPosition.x -= slideOffset.x;
+                        break;
+                    case SlideDirection.FromRight:
+                        targetPosition.x += slideOffset.x;
+                        break;
+                }
+            }
+        }
+        
+        while (elapsedTime < animationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / animationDuration;
+            float curveValue = animationCurve.Evaluate(progress);
+            
+            // Animate position
+            menuRectTransform.anchoredPosition = Vector3.Lerp(startPosition, targetPosition, curveValue);
+            
+            // Animate size (for dropdown)
+            if (menuType == MenuType.Dropdown)
+            {
+                menuRectTransform.sizeDelta = Vector2.Lerp(startSize, targetSize, curveValue);
+            }
+            
+            // Animate alpha
+            if (menuCanvasGroup != null)
+            {
+                menuCanvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, curveValue);
+            }
+            
+            yield return null;
+        }
+        
+        // Ensure final state
+        SetMenuPanelState(visible);
+        
+        // Disable interaction when closing
+        if (!visible && menuCanvasGroup != null)
+        {
+            menuCanvasGroup.interactable = false;
+            menuCanvasGroup.blocksRaycasts = false;
+        }
+        
+        currentAnimation = null;
+    }
+    
     // Public methods for external control
     public bool IsMenuOpen()
     {
@@ -267,5 +564,288 @@ public class ToggleMenu : MonoBehaviour
     {
         slideDirection = newDirection;
         SetMenuState(isMenuOpen);
+    }
+    
+    // Canvas sorting control methods
+    public void SetMenuPanelSortingOrder(int sortingOrder)
+    {
+        menuPanelSortingOrder = sortingOrder;
+        if (menuPanelCanvas != null)
+        {
+            menuPanelCanvas.sortingOrder = sortingOrder;
+        }
+    }
+    
+    public void SetBurgerButtonSortingOrder(int sortingOrder)
+    {
+        burgerButtonSortingOrder = sortingOrder;
+        if (burgerButtonCanvas != null)
+        {
+            burgerButtonCanvas.sortingOrder = sortingOrder;
+        }
+    }
+    
+    public void EnsureMenuOnTop()
+    {
+        if (!useCanvasSorting) return;
+        
+        // Find the root Canvas and ensure it's on top
+        Canvas rootCanvas = GetComponentInParent<Canvas>();
+        if (rootCanvas == null)
+        {
+            rootCanvas = FindObjectOfType<Canvas>();
+        }
+        
+        if (rootCanvas != null)
+        {
+            // Ensure the root canvas has a high sorting order
+            rootCanvas.sortingOrder = Mathf.Max(rootCanvas.sortingOrder, menuPanelSortingOrder);
+        }
+        
+        // Ensure proper layering: menu panel first, then burger button on top
+        EnsureBurgerButtonOnTop();
+    }
+    
+    public void EnsureBurgerButtonOnTop()
+    {
+        if (!keepBurgerButtonOnTop) return;
+        
+        // Use Transform hierarchy approach (more reliable)
+        if (useTransformHierarchy)
+        {
+            EnsureBurgerButtonOnTopTransform();
+        }
+        
+        // Also try Canvas sorting approach
+        if (useCanvasSorting)
+        {
+            EnsureBurgerButtonOnTopCanvas();
+        }
+    }
+    
+    private void EnsureBurgerButtonOnTopTransform()
+    {
+        if (burgerButton != null && menuPanel != null)
+        {
+            // Move burger button to the end of its parent's children list
+            // This makes it render on top of other UI elements
+            burgerButton.transform.SetAsLastSibling();
+            
+            // Also ensure menu panel is rendered before burger button
+            menuPanel.transform.SetSiblingIndex(menuPanel.transform.GetSiblingIndex());
+            
+            Debug.Log("Burger button moved to top using Transform hierarchy");
+        }
+    }
+    
+    private void EnsureBurgerButtonOnTopCanvas()
+    {
+        // First ensure menu panel has its sorting order
+        if (menuPanelCanvas != null)
+        {
+            menuPanelCanvas.sortingOrder = menuPanelSortingOrder;
+        }
+        
+        // Then ensure burger button is on top of menu panel
+        if (burgerButtonCanvas != null)
+        {
+            burgerButtonCanvas.sortingOrder = burgerButtonSortingOrder;
+        }
+        
+        // Also try to find Canvas components on the actual GameObjects
+        Canvas menuCanvas = menuPanel.GetComponent<Canvas>();
+        if (menuCanvas != null)
+        {
+            menuCanvas.sortingOrder = menuPanelSortingOrder;
+        }
+        
+        if (burgerButton != null)
+        {
+            Canvas buttonCanvas = burgerButton.GetComponent<Canvas>();
+            if (buttonCanvas != null)
+            {
+                buttonCanvas.sortingOrder = burgerButtonSortingOrder;
+            }
+        }
+        
+        // Ensure burger button sorting order is always higher than menu panel
+        if (burgerButtonSortingOrder <= menuPanelSortingOrder)
+        {
+            burgerButtonSortingOrder = menuPanelSortingOrder + 1;
+            Debug.Log($"Adjusted burger button sorting order to {burgerButtonSortingOrder} to ensure it's above menu panel");
+        }
+    }
+    
+    // Emergency method to disable canvas sorting if it causes issues
+    public void DisableCanvasSorting()
+    {
+        useCanvasSorting = false;
+        Debug.Log("Canvas sorting disabled. Menu should now be visible.");
+    }
+    
+    // Emergency method to disable transform hierarchy if it causes issues
+    public void DisableTransformHierarchy()
+    {
+        useTransformHierarchy = false;
+        Debug.Log("Transform hierarchy disabled.");
+    }
+    
+    // Public method to force burger button on top (can be called from other scripts)
+    public void ForceBurgerButtonOnTop()
+    {
+        EnsureBurgerButtonOnTop();
+        Debug.Log("Burger button forced to top using all available methods");
+    }
+    
+    // Simple method that just uses Transform.SetAsLastSibling (most reliable)
+    public void MoveBurgerButtonToTop()
+    {
+        if (burgerButton != null)
+        {
+            burgerButton.transform.SetAsLastSibling();
+            Debug.Log("Burger button moved to top using SetAsLastSibling");
+        }
+    }
+    
+    // Public methods for external control
+    public void EnableAutoCloseOnItemClick()
+    {
+        autoCloseOnItemClick = true;
+        SetupMenuItemsAutoClose();
+        Debug.Log("Auto-close on item click enabled");
+    }
+    
+    public void DisableAutoCloseOnItemClick()
+    {
+        autoCloseOnItemClick = false;
+        Debug.Log("Auto-close on item click disabled");
+    }
+    
+    // Method to manually close menu (can be called from other scripts)
+    public void CloseMenuFromExternal()
+    {
+        if (isMenuOpen)
+        {
+            CloseMenu();
+            Debug.Log("Menu closed from external call");
+        }
+    }
+    
+    // Method to refresh menu item listeners (useful if menu items are added dynamically)
+    public void RefreshMenuItems()
+    {
+        if (autoCloseOnItemClick)
+        {
+            SetupMenuItemsAutoClose();
+        }
+    }
+    
+    // Method to disable burger button sorting (if it's causing issues)
+    public void DisableBurgerButtonSorting()
+    {
+        keepBurgerButtonOnTop = false;
+        Debug.Log("Burger button sorting disabled. Button should remain visible.");
+    }
+    
+    // Method to enable burger button sorting
+    public void EnableBurgerButtonSorting()
+    {
+        keepBurgerButtonOnTop = true;
+        Debug.Log("Burger button sorting enabled.");
+    }
+    
+    // Public methods for external control of menu and burger button visibility
+    public void HideBothMenuAndBurger()
+    {
+        HideMenuAndBurgerButton();
+        Debug.Log("Both menu and burger button hidden from external call");
+    }
+    
+    public void ShowBothMenuAndBurger()
+    {
+        ShowMenuAndBurgerButton();
+        Debug.Log("Both menu and burger button shown from external call");
+    }
+    
+    public void HideOnlyBurgerButton()
+    {
+        HideBurgerButton();
+        Debug.Log("Only burger button hidden from external call");
+    }
+    
+    public void ShowOnlyBurgerButton()
+    {
+        ShowBurgerButton();
+        Debug.Log("Only burger button shown from external call");
+    }
+    
+    private void HideEventsUI()
+    {
+        if (eventsUIController != null)
+        {
+            eventsUIController.HideEventsUI();
+        }
+        else
+        {
+            // Fallback: try to find it automatically
+            EventsUIController eventsUI = FindObjectOfType<EventsUIController>();
+            if (eventsUI != null)
+            {
+                eventsUI.HideEventsUI();
+            }
+        }
+    }
+    
+    private void ShowEventsUI()
+    {
+        EnsureEventsUI();
+        if (eventsUIController == null) return;
+        // Prefer a stronger refresh if available
+        var forceRefreshMethod = eventsUIController.GetType().GetMethod("ForceRefreshEventsUI");
+        if (forceRefreshMethod != null)
+        {
+            forceRefreshMethod.Invoke(eventsUIController, null);
+        }
+        else
+        {
+            eventsUIController.ShowEventsUI();
+        }
+    }
+
+    public void OpenEventsFromMenu()
+    {
+        EnsureEventsUI();
+        if (eventsUIController == null)
+        {
+            Debug.LogWarning("Cannot open events - EventsUIController missing");
+            return;
+        }
+        eventsUIController.ShowEventsUI();
+        // Close menu but keep burger hidden per your flow
+        HideMenuAndBurgerButton();
+    }
+
+    private void EnsureEventsUI()
+    {
+        if (eventsUIController != null) return;
+        // Try find existing instance first (even inactive)
+#if UNITY_2022_2_OR_NEWER
+        eventsUIController = FindFirstObjectByType<EventsUIController>(FindObjectsInactive.Include);
+#else
+        eventsUIController = FindObjectOfType<EventsUIController>(true);
+#endif
+        if (eventsUIController != null) return;
+
+        // Instantiate from prefab if provided
+        if (eventsUIPrefab != null)
+        {
+            var instance = Instantiate(eventsUIPrefab);
+            eventsUIController = instance;
+            Debug.Log("Instantiated EventsUIController from prefab");
+        }
+        else
+        {
+            Debug.LogWarning("No EventsUIController instance found and no prefab assigned. Assign 'eventsUIPrefab' in ToggleMenu.");
+        }
     }
 }

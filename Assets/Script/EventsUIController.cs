@@ -32,7 +32,12 @@ public class EventsUIController : MonoBehaviour
 	private TextField searchField;
 	private ScrollView listView;
 	private VisualElement refreshButton;
+	private VisualElement backButton;
+	private VisualElement healthButton;
 	private VisualElement searchFieldShadow;
+	private bool uiWired = false;
+	[SerializeField]
+	private bool verboseLogging = false;
 
 	private List<EventData> current = new List<EventData>();
 
@@ -51,6 +56,12 @@ public class EventsUIController : MonoBehaviour
 	[SerializeField]
 	private string refreshButtonName = "RefreshButton";
 
+	[SerializeField]
+	private string backButtonName = "back-button";
+
+	[SerializeField]
+	private string healthButtonName = "health-button";
+
 	private void Awake()
 	{
 		if (uiDocument == null)
@@ -68,6 +79,7 @@ public class EventsUIController : MonoBehaviour
 		searchField = root.Q<TextField>(searchFieldName);
 		listView = root.Q<ScrollView>(scrollViewName);
 		refreshButton = root.Q<VisualElement>(refreshButtonName);
+		backButton = root.Q<VisualElement>(backButtonName);
 
 		if (searchField == null)
 		{
@@ -94,6 +106,16 @@ public class EventsUIController : MonoBehaviour
 		{
 			// Register for click events on the VisualElement
 			refreshButton.RegisterCallback<ClickEvent>(OnRefreshClicked);
+		}
+
+		if (backButton == null)
+		{
+			Debug.LogWarning($"EventsUIController: VisualElement '{backButtonName}' not found in UXML.");
+		}
+		else
+		{
+			// Register for click events on the back button
+			backButton.RegisterCallback<ClickEvent>(OnBackButtonClicked);
 		}
 
 		if (searchField != null)
@@ -151,6 +173,11 @@ public class EventsUIController : MonoBehaviour
 		{
 			refreshButton.UnregisterCallback<ClickEvent>(OnRefreshClicked);
 		}
+
+		if (backButton != null)
+		{
+			backButton.UnregisterCallback<ClickEvent>(OnBackButtonClicked);
+		}
 	}
 
 	private void Start()
@@ -171,8 +198,11 @@ public class EventsUIController : MonoBehaviour
 
 	private void OnEventsChanged(List<EventData> list)
 	{
+		Debug.Log($"=== OnEventsChanged called with {list?.Count ?? -1} events ===");
 		current = list ?? new List<EventData>();
+		Debug.Log($"Current data set to {current.Count} events");
 		RebuildList(current);
+		Debug.Log("RebuildList completed");
 	}
 
 	private void ApplyFilter()
@@ -198,14 +228,18 @@ public class EventsUIController : MonoBehaviour
 
 	private void RebuildList(List<EventData> list)
 	{
+		Debug.Log($"=== RebuildList called with {list?.Count ?? -1} items ===");
+		
 		if (listView == null)
 		{
 			Debug.LogWarning("[EventsUI] RebuildList called but listView is null.");
 			return;
 		}
 
+		Debug.Log("Clearing listView");
 		listView.Clear();
 
+		Debug.Log($"Adding {list.Count} items to listView");
 		foreach (var item in list)
 		{
 			var row = BuildCard(item);
@@ -214,12 +248,15 @@ public class EventsUIController : MonoBehaviour
 
 		if (list.Count == 0)
 		{
+			Debug.Log("No items found, adding empty state message");
 			var empty = new Label("No events found.");
 			empty.style.unityTextAlign = TextAnchor.MiddleCenter;
 			empty.style.color = new Color(0.4f, 0.4f, 0.4f);
 			empty.style.marginTop = 16;
 			listView.Add(empty);
 		}
+		
+		Debug.Log("RebuildList completed successfully");
 	}
 
 	private void ShowSkeletons(int count)
@@ -314,27 +351,52 @@ public class EventsUIController : MonoBehaviour
 	}
 
 	/// <summary>
+	/// Called when the back button is clicked
+	/// </summary>
+	private void OnBackButtonClicked(ClickEvent evt)
+	{
+		GoBackToMenu();
+	}
+
+	/// <summary>
 	/// Public method to refresh events data
 	/// Can be called from other scripts or UI elements
 	/// </summary>
 	public void RefreshEvents()
 	{
+		Debug.Log("=== RefreshEvents called ===");
+		
 		if (eventsFetcher == null)
 		{
 			Debug.LogWarning("[EventsUI] Cannot refresh - EventsFetcher is null");
+			// Try to show existing data if available
+			if (current != null && current.Count > 0)
+			{
+				Debug.Log($"Showing {current.Count} existing events data");
+				RebuildList(current);
+			}
+			else
+			{
+				Debug.Log("No existing data to show");
+			}
 			return;
 		}
+		
+		Debug.Log("EventsFetcher found, proceeding with refresh");
 		
 		// Disable refresh button during loading to prevent multiple requests
 		if (refreshButton != null)
 		{
 			refreshButton.SetEnabled(false);
+			Debug.Log("Refresh button disabled");
 		}
 		
 		// Force refresh by clearing current data first
+		Debug.Log($"Clearing {current.Count} current items");
 		current.Clear();
 		RebuildList(current);
 		
+		Debug.Log("Calling eventsFetcher.FetchAllEvents()");
 		eventsFetcher.FetchAllEvents();
 	}
 
@@ -347,6 +409,213 @@ public class EventsUIController : MonoBehaviour
 		{
 			refreshButton.SetEnabled(true);
 		}
+	}
+
+	/// <summary>
+	/// Called when the back button is clicked - returns to the main menu
+	/// </summary>
+	public void GoBackToMenu()
+	{
+		// Simply hide the events UI; keep data so it can re-show quickly next time
+		HideEventsUI();
+		
+		// Find the ToggleMenu component
+		ToggleMenu toggleMenu = FindObjectOfType<ToggleMenu>();
+		
+		if (toggleMenu != null)
+		{
+			toggleMenu.ShowBothMenuAndBurger();
+			Debug.Log("Back button clicked - showing menu panel and burger button, events UI reset");
+		}
+		else
+		{
+			Debug.LogWarning("ToggleMenu component not found! Please make sure it exists in the scene.");
+		}
+	}
+
+	/// <summary>
+	/// Hide the events UI
+	/// </summary>
+	public void HideEventsUI()
+	{
+		if (uiDocument != null)
+		{
+			uiDocument.rootVisualElement.style.display = DisplayStyle.None;
+			Debug.Log("Events UI hidden");
+		}
+	}
+
+	/// <summary>
+	/// Show the events UI and refresh data
+	/// </summary>
+	public void ShowEventsUI()
+	{
+		Debug.Log("=== ShowEventsUI called ===");
+		
+		if (uiDocument != null)
+		{
+			Debug.Log("UIDocument found, setting display to Flex");
+			uiDocument.rootVisualElement.style.display = DisplayStyle.Flex;
+			
+			// Rewire UI every time in case the visual tree was rebuilt
+			WireUi();
+			
+			// Reset search field if needed
+			if (searchField != null)
+			{
+				Debug.Log("Resetting search field");
+				searchField.SetValueWithoutNotify(string.Empty);
+				SetPlaceholder();
+			}
+			
+			// Always show whatever data we currently have immediately
+			if (current != null)
+			{
+				RebuildList(current);
+			}
+			
+			// Check current data state
+			Debug.Log($"Current data count: {(current != null ? current.Count : -1)}");
+			Debug.Log($"EventsFetcher is null: {eventsFetcher == null}");
+			
+			// Refresh the events data when showing the UI
+			if (eventsFetcher != null)
+			{
+				Debug.Log("EventsFetcher found, calling RefreshEvents");
+				RefreshEvents();
+			}
+			else
+			{
+				Debug.Log("EventsFetcher is null, trying to show existing data");
+				// If no fetcher, try to populate with existing data
+				if (current != null && current.Count > 0)
+				{
+					Debug.Log($"Rebuilding list with {current.Count} existing items");
+					RebuildList(current);
+				}
+				else
+				{
+					Debug.Log("No existing data to show, showing empty state");
+					RebuildList(new List<EventData>());
+				}
+			}
+			
+			Debug.Log("Events UI shown and data refreshed");
+		}
+		else
+		{
+			Debug.LogError("UIDocument is null!");
+		}
+	}
+
+	private void WireUi()
+	{
+		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
+		if (root == null)
+		{
+			Debug.LogWarning("[EventsUI] WireUi called but root is null");
+			return;
+		}
+
+		// Re-query elements (UI Toolkit can rebuild the visual tree)
+		var newSearch = root.Q<TextField>(searchFieldName);
+		var newList = root.Q<ScrollView>(scrollViewName);
+		var newRefresh = root.Q<VisualElement>(refreshButtonName);
+		var newBack = root.Q<VisualElement>(backButtonName);
+		var newHealth = root.Q<VisualElement>(healthButtonName);
+
+		// Update references
+		searchField = newSearch ?? searchField;
+		listView = newList ?? listView;
+		refreshButton = newRefresh ?? refreshButton;
+		backButton = newBack ?? backButton;
+		healthButton = newHealth ?? healthButton;
+
+		// Ensure basic listView layout settings again
+		if (listView != null)
+		{
+			listView.style.flexGrow = 1;
+			listView.style.flexShrink = 1;
+			listView.style.minHeight = 0;
+		}
+
+		// Safe re-registration of callbacks
+		if (refreshButton != null)
+		{
+			refreshButton.UnregisterCallback<ClickEvent>(OnRefreshClicked);
+			refreshButton.RegisterCallback<ClickEvent>(OnRefreshClicked);
+			refreshButton.SetEnabled(true);
+		}
+
+		if (backButton != null)
+		{
+			backButton.UnregisterCallback<ClickEvent>(OnBackButtonClicked);
+			backButton.RegisterCallback<ClickEvent>(OnBackButtonClicked);
+		}
+
+		if (healthButton != null)
+		{
+			healthButton.UnregisterCallback<ClickEvent>(OnHealthClicked);
+			healthButton.RegisterCallback<ClickEvent>(OnHealthClicked);
+		}
+
+		// Placeholder handling for search
+		if (searchField != null && !uiWired)
+		{
+			searchField.RegisterCallback<FocusInEvent>(evt => OnSearchFocusIn());
+			searchField.RegisterCallback<FocusOutEvent>(evt => OnSearchFocusOut());
+			searchField.RegisterValueChangedCallback(_ => ApplyFilter());
+		}
+
+		uiWired = true;
+	}
+
+	private void OnHealthClicked(ClickEvent evt)
+	{
+		HealthCheck();
+	}
+
+	[ContextMenu("Events UI - HealthCheck")]
+	public void HealthCheck()
+	{
+		try
+		{
+			Debug.Log("[EventsUI] === HealthCheck ===");
+			Debug.Log($"UIDocument: {(uiDocument != null)} | Root: {(uiDocument != null && uiDocument.rootVisualElement != null)}");
+			Debug.Log($"Refs -> search:{(searchField!=null)} list:{(listView!=null)} refresh:{(refreshButton!=null)} back:{(backButton!=null)} health:{(healthButton!=null)}");
+			Debug.Log($"Current items: {(current!=null?current.Count:-1)}");
+			var fetcher = eventsFetcher;
+			if (fetcher == null)
+			{
+#if UNITY_2022_2_OR_NEWER
+				fetcher = FindFirstObjectByType<EventsFetcher>(FindObjectsInactive.Include);
+#else
+				fetcher = FindObjectOfType<EventsFetcher>(true);
+#endif
+			}
+			Debug.Log($"EventsFetcher present: {(fetcher!=null)}");
+			if (fetcher != null)
+			{
+				fetcher.EmitCachedEvents();
+				Debug.Log("[EventsUI] Emitted cached events.");
+			}
+			// Rebuild view with whatever we have
+			if (current != null)
+			{
+				RebuildList(current);
+				Debug.Log("[EventsUI] Rebuilt list from current cache.");
+			}
+		}
+		catch (System.Exception ex)
+		{
+			Debug.LogError($"[EventsUI] HealthCheck error: {ex.Message}");
+		}
+	}
+
+	public void SetVerboseLogging(bool on)
+	{
+		verboseLogging = on;
+		Debug.Log($"[EventsUI] verboseLogging set to {on}");
 	}
 
 	private VisualElement BuildCard(EventData data)
@@ -751,6 +1020,30 @@ public class EventsUIController : MonoBehaviour
 				modalImage.Add(imageElement);
 			}
 		}
+	}
+	
+	/// <summary>
+	/// Force refresh the events UI - use this if normal refresh isn't working
+	/// </summary>
+	public void ForceRefreshEventsUI()
+	{
+		Debug.Log("=== ForceRefreshEventsUI called ===");
+		
+		// Show UI first
+		if (uiDocument != null)
+		{
+			uiDocument.rootVisualElement.style.display = DisplayStyle.Flex;
+		}
+		
+		// Wait a frame then refresh
+		StartCoroutine(DelayedRefresh());
+	}
+	
+	private IEnumerator DelayedRefresh()
+	{
+		yield return null; // Wait one frame
+		Debug.Log("Performing delayed refresh");
+		RefreshEvents();
 	}
 }
 
