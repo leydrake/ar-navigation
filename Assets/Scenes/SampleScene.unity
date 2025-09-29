@@ -3626,11 +3626,11 @@ RectTransform:
   m_Father: {fileID: 142912446}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0.09, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1500, y: 1920}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &398898678
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3644,7 +3644,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.972549, g: 0.9764706, b: 0.9843137, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4413,7 +4413,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 119, y: -130.7}
+  m_AnchoredPosition: {x: 115.7, y: -129}
   m_SizeDelta: {x: 160, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &665867198
@@ -4480,7 +4480,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b43cfcbd797791d47ab397e154918584, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 29a8f2840e8000a418646aa070811cbc, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4917,6 +4917,7 @@ GameObject:
   m_Component:
   - component: {fileID: 705507995}
   - component: {fileID: 705507994}
+  - component: {fileID: 705507996}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -5001,6 +5002,29 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &705507996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 705507993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &735466010
 GameObject:
   m_ObjectHideFlags: 0
@@ -8094,6 +8118,7 @@ MonoBehaviour:
   burgerButton: {fileID: 665867198}
   menuType: 1
   eventsUIController: {fileID: 1807665804}
+  eventsUIPrefab: {fileID: 0}
   menuPanelSortingOrder: 100
   burgerButtonSortingOrder: 101
   useCanvasSorting: 1
@@ -8126,7 +8151,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   slideDirection: 2
-  slideOffset: {x: 0, y: 100}
+  slideOffset: {x: 1200, y: 0}
   dropdownHeight: 1920
 --- !u!4 &1335373257
 Transform:
@@ -9483,7 +9508,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -100.000015, y: -150}
+  m_AnchoredPosition: {x: -409.4, y: -96}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1577749885
@@ -9913,7 +9938,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Home
+  m_text: 'Events
 
 '
   m_isRightToLeft: 0
@@ -9942,8 +9967,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 64
+  m_fontSizeBase: 64
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -10671,10 +10696,10 @@ RectTransform:
   m_Father: {fileID: 398898677}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -80, y: 46576.562}
-  m_SizeDelta: {x: 160, y: -1825.2639}
+  m_AnchorMin: {x: 0, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -2383.4375}
+  m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0, y: -25}
 --- !u!114 &1774767795
 MonoBehaviour:
@@ -10862,8 +10887,10 @@ MonoBehaviour:
   scrollViewName: EventsScrollView
   titleFontSize: 36
   locationFontSize: 24
+  verboseLogging: 0
   refreshButtonName: RefreshButton
   backButtonName: back-button
+  healthButtonName: health-button
 --- !u!114 &1807665805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11011,7 +11038,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 1.98}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 400, y: 1538.79}
+  m_AnchoredPosition: {x: 400, y: 1761.95}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1828601337

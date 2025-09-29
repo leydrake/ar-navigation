@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "com.immersal.core": "file:C:/Users/drans/Documents/imdk-unity-main/imdk-unity-main",
     "com.unity.ai.navigation": "1.1.7",
     "com.unity.collab-proxy": "2.9.3",
     "com.unity.feature.development": "1.0.1",
+    "com.unity.render-pipelines.universal": "14.0.7",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.timeline": "1.7.4",
     "com.unity.ugui": "1.0.0",
@@ -41,5 +43,8 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
+  },
+  "resolutions": {
+    "com.unity.render-pipelines.universal": "14.0.7"
   }
 }
