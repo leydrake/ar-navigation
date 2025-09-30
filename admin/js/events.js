@@ -16,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const eventsRef = collection(db, "events");
+const coordinatesRef = collection(db, "coordinates");
 
 // Permission checking functions
 function checkEventsPermission() {
@@ -82,25 +83,60 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const eventForm = document.getElementById('eventForm');
 const eventImage = document.getElementById('eventImage');
 const imagePreview = document.getElementById('imagePreview');
-const eventTitle = document.getElementById('eventTitle');
+const eventName = document.getElementById('eventName');
+const eventDescription = document.getElementById('eventDescription');
 const eventLocation = document.getElementById('eventLocation');
+const eventStartTime = document.getElementById('eventStartTime');
+const eventEndTime = document.getElementById('eventEndTime');
 const locationDropdown = document.getElementById('locationDropdown');
 
-// Sample locations for dropdown
-const locations = [
-    'Activity Center',
-    'AVR',
-    'Admin Building',
-    'MPG Building',
-    'BSBA Building',
-    'Pancho Hall',
-    'Library',
-    'Gymnasium',
-    'Canteen'
-];
+// View modal elements
+const viewEventModal = document.getElementById('viewEventModal');
+const closeViewModalBtn = document.getElementById('closeViewModalBtn');
+const editEventBtn = document.getElementById('editEventBtn');
+const deleteEventBtn = document.getElementById('deleteEventBtn');
+const viewEventImage = document.getElementById('viewEventImage');
+const viewEventName = document.getElementById('viewEventName');
+const viewEventDescription = document.getElementById('viewEventDescription');
+const viewEventLocation = document.getElementById('viewEventLocation');
+const viewEventStartTime = document.getElementById('viewEventStartTime');
+const viewEventEndTime = document.getElementById('viewEventEndTime');
+
+// Locations will be fetched from coordinates collection
+let locations = [];
 
 let editingEventId = null;
 let editingEventImage = '';
+let viewingEventId = null;
+
+// Fetch locations from coordinates collection
+async function fetchLocations() {
+    try {
+        const querySnapshot = await getDocs(coordinatesRef);
+        locations = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.name) {
+                locations.push(data.name);
+            }
+        });
+        console.log('Fetched locations:', locations);
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+        // Fallback to default locations if fetch fails
+        locations = [
+            'Activity Center',
+            'AVR',
+            'Admin Building',
+            'MPG Building',
+            'BSBA Building',
+            'Pancho Hall',
+            'Library',
+            'Gymnasium',
+            'Canteen'
+        ];
+    }
+}
 
 // Fetch and render events
 async function fetchAndRenderEvents() {
@@ -139,78 +175,28 @@ function renderEvents(events) {
     events.forEach((event, idx) => {
         const card = document.createElement('div');
         card.className = 'event-card';
+        card.setAttribute('data-id', event.id);
         card.innerHTML = `
             <div class="event-img-placeholder">
                 ${event.image ? `<img src="${event.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;"/>` : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" fill="#f0f0f0"/><text x="12" y="16" text-anchor="middle" font-size="18" fill="#bbb">?</text></svg>`}
             </div>
             <div class="event-details">
-                <div class="event-title">${event.title}</div>
+                <div class="event-title">${event.name || event.title || 'Untitled Event'}</div>
                 <div class="event-location">Location: ${event.location}</div>
+                <div class="event-time">${event.startTime ? new Date(event.startTime).toLocaleString() : 'No time set'}</div>
             </div>
-            <button class="event-edit-btn" aria-label="Edit" data-id="${event.id}">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 20h9" stroke="#206233" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" stroke="#206233" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <button class="event-delete-btn" aria-label="Delete" data-id="${event.id}">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6h18" stroke="#206233" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6h16z" stroke="#206233" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M10 11v6M14 11v6" stroke="#206233" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
         `;
         eventsList.appendChild(card);
     });
     
-    // Add event listeners for delete
-    document.querySelectorAll('.event-delete-btn').forEach(btn => {
-        btn.onclick = async function() {
-            // Check permissions before allowing delete
+    // Add event listeners for card clicks (view modal)
+    document.querySelectorAll('.event-card').forEach(card => {
+        card.onclick = async function(e) {
+            // Check permissions before allowing view
             if (!checkEventsPermission()) return;
             
             const id = this.getAttribute('data-id');
-            const confirmed = confirm('Are you sure you want to delete this event?');
-            if (!confirmed) return;
-            try {
-                await deleteDoc(doc(db, "events", id));
-                await fetchAndRenderEvents();
-            } catch (error) {
-                console.error('Error deleting event:', error);
-                alert('Error deleting event: ' + error.message);
-            }
-        };
-    });
-    
-    // Edit event
-    document.querySelectorAll('.event-edit-btn').forEach(btn => {
-        btn.onclick = async function() {
-            // Check permissions before allowing edit
-            if (!checkEventsPermission()) return;
-            
-            const id = this.getAttribute('data-id');
-            try {
-                const eventDoc = await getDoc(doc(db, "events", id));
-                if (eventDoc.exists()) {
-                    const data = eventDoc.data();
-                    eventTitle.value = data.title;
-                    eventLocation.value = data.location;
-                    if (data.image) {
-                        imagePreview.src = data.image;
-                        imagePreview.style.display = 'block';
-                        editingEventImage = data.image;
-                    } else {
-                        imagePreview.style.display = 'none';
-                        editingEventImage = '';
-                    }
-                    editingEventId = id;
-                    addEventModal.style.display = 'flex';
-                }
-            } catch (error) {
-                console.error('Error loading event for edit:', error);
-                alert('Error loading event: ' + error.message);
-            }
+            await openViewModal(id);
         };
     });
 }
@@ -235,6 +221,107 @@ closeModalBtn.onclick = function() {
     imagePreview.style.display = 'none';
 };
 
+// View modal functions
+async function openViewModal(eventId) {
+    try {
+        const eventDoc = await getDoc(doc(db, "events", eventId));
+        if (eventDoc.exists()) {
+            const data = eventDoc.data();
+            viewingEventId = eventId;
+            
+            // Populate view modal with event data
+            viewEventName.textContent = data.name || data.title || 'Untitled Event';
+            viewEventDescription.textContent = data.description || 'No description provided';
+            viewEventLocation.textContent = data.location || 'No location specified';
+            viewEventStartTime.textContent = data.startTime ? new Date(data.startTime).toLocaleString() : 'No start time set';
+            viewEventEndTime.textContent = data.endTime ? new Date(data.endTime).toLocaleString() : 'No end time set';
+            
+            if (data.image) {
+                viewEventImage.src = data.image;
+                viewEventImage.style.display = 'block';
+            } else {
+                viewEventImage.style.display = 'none';
+            }
+            
+            viewEventModal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error loading event for view:', error);
+        alert('Error loading event: ' + error.message);
+    }
+}
+
+// View modal event listeners
+closeViewModalBtn.onclick = function() {
+    viewEventModal.style.display = 'none';
+    viewingEventId = null;
+};
+
+editEventBtn.onclick = async function() {
+    if (!viewingEventId) return;
+    
+    // Check permissions before allowing edit
+    if (!checkEventsPermission()) return;
+    
+    try {
+        const eventDoc = await getDoc(doc(db, "events", viewingEventId));
+        if (eventDoc.exists()) {
+            const data = eventDoc.data();
+            eventName.value = data.name || data.title || '';
+            eventDescription.value = data.description || '';
+            eventLocation.value = data.location || '';
+            
+            // Format datetime for input fields
+            if (data.startTime) {
+                const startDate = new Date(data.startTime);
+                eventStartTime.value = startDate.toISOString().slice(0, 16);
+            }
+            if (data.endTime) {
+                const endDate = new Date(data.endTime);
+                eventEndTime.value = endDate.toISOString().slice(0, 16);
+            }
+            
+            if (data.image) {
+                imagePreview.src = data.image;
+                imagePreview.style.display = 'block';
+                editingEventImage = data.image;
+            } else {
+                imagePreview.style.display = 'none';
+                editingEventImage = '';
+            }
+            editingEventId = viewingEventId;
+            
+            // Close view modal and open edit modal
+            viewEventModal.style.display = 'none';
+            addEventModal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error loading event for edit:', error);
+        alert('Error loading event: ' + error.message);
+    }
+};
+
+deleteEventBtn.onclick = async function() {
+    if (!viewingEventId) return;
+    
+    // Check permissions before allowing delete
+    if (!checkEventsPermission()) return;
+    
+    const confirmed = confirm('Are you sure you want to delete this event?');
+    if (!confirmed) return;
+    
+    try {
+        await deleteDoc(doc(db, "events", viewingEventId));
+        viewEventModal.style.display = 'none';
+        viewingEventId = null;
+        await fetchAndRenderEvents();
+        alert('Event deleted successfully!');
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        alert('Error deleting event: ' + error.message);
+    }
+};
+
 // Image preview with size validation and compression
 eventImage.onchange = function(e) {
     const file = e.target.files[0];
@@ -245,8 +332,12 @@ eventImage.onchange = function(e) {
             alert('Image file is too large. Please select an image smaller than 1MB.');
             eventImage.value = ''; // Clear the input
             imagePreview.style.display = 'none';
+            updateImageUploadText('Click to upload image');
             return;
         }
+        
+        // Update upload button text
+        updateImageUploadText(`Selected: ${file.name}`);
         
         // Compress the image before displaying
         const canvas = document.createElement('canvas');
@@ -284,8 +375,66 @@ eventImage.onchange = function(e) {
         img.src = URL.createObjectURL(file);
     } else {
         imagePreview.style.display = 'none';
+        updateImageUploadText('Click to upload image');
     }
 };
+
+// Function to update image upload button text
+function updateImageUploadText(text) {
+    const uploadText = document.querySelector('.image-upload-text');
+    if (uploadText) {
+        uploadText.textContent = text;
+    }
+}
+
+// Add drag and drop functionality
+const imageUploadLabel = document.querySelector('.image-upload-label');
+if (imageUploadLabel) {
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        imageUploadLabel.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        imageUploadLabel.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        imageUploadLabel.addEventListener(eventName, unhighlight, false);
+    });
+
+    // Handle dropped files
+    imageUploadLabel.addEventListener('drop', handleDrop, false);
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        imageUploadLabel.style.background = '#e8f5e8';
+        imageUploadLabel.style.borderColor = '#174b25';
+    }
+
+    function unhighlight(e) {
+        imageUploadLabel.style.background = '#f8f9fa';
+        imageUploadLabel.style.borderColor = '#206233';
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            eventImage.files = files;
+            // Trigger the change event
+            const event = new Event('change', { bubbles: true });
+            eventImage.dispatchEvent(event);
+        }
+    }
+}
 
 // Searchable dropdown for location
 let filteredLocations = [];
@@ -320,8 +469,11 @@ eventForm.onsubmit = async function(e) {
     // Check permissions before allowing submit
     if (!checkEventsPermission()) return;
     
-    const title = eventTitle.value.trim();
+    const name = eventName.value.trim();
+    const description = eventDescription.value.trim();
     const location = eventLocation.value.trim();
+    const startTime = eventStartTime.value;
+    const endTime = eventEndTime.value;
     let image = '';
     
     if (eventImage.files[0]) {
@@ -337,33 +489,49 @@ eventForm.onsubmit = async function(e) {
         image = editingEventImage;
     }
     
-    if (!title || !location) {
-        alert('Please fill in both title and location');
+    if (!name || !description || !location || !startTime || !endTime) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Validate that end time is after start time
+    if (new Date(endTime) <= new Date(startTime)) {
+        alert('End time must be after start time');
         return;
     }
     
     // Ask for confirmation before adding/updating
     let confirmMessage = '';
     if (editingEventId) {
-        confirmMessage = `Do you want to update the event "${title}"?`;
+        confirmMessage = `Do you want to update the event "${name}"?`;
     } else {
-        confirmMessage = `Do you want to add the event "${title}"?`;
+        confirmMessage = `Do you want to add the event "${name}"?`;
     }
     
     const confirmed = confirm(confirmMessage);
     
     if (confirmed) {
         try {
+            // Prepare event data
+            const eventData = {
+                name,
+                description,
+                location,
+                startTime: new Date(startTime).toISOString(),
+                endTime: new Date(endTime).toISOString(),
+                image
+            };
+            
             // User clicked "OK" - proceed with adding/updating
             if (editingEventId) {
                 // Update existing event
-                console.log('Updating event:', editingEventId, { title, location, image: image.substring(0, 100) + '...' });
-                await updateDoc(doc(db, "events", editingEventId), { title, location, image });
+                console.log('Updating event:', editingEventId, eventData);
+                await updateDoc(doc(db, "events", editingEventId), eventData);
                 console.log('Event updated successfully');
             } else {
                 // Add new event
-                console.log('Adding new event:', { title, location, image: image.substring(0, 100) + '...' });
-                await addDoc(eventsRef, { title, location, image });
+                console.log('Adding new event:', eventData);
+                await addDoc(eventsRef, eventData);
                 console.log('Event added successfully');
             }
             
@@ -390,8 +558,11 @@ eventForm.onsubmit = async function(e) {
 };
 
 // Initial fetch
-document.addEventListener('DOMContentLoaded', function() {
-    fetchAndRenderEvents();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Fetch locations first, then events
+    await fetchLocations();
+    await fetchAndRenderEvents();
+    
     const refreshBtn = document.getElementById('refreshEventsBtn');
     if (refreshBtn) {
         refreshBtn.onclick = async function() {
@@ -399,6 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
             refreshBtn.setAttribute('aria-busy', 'true');
             refreshBtn.disabled = true;
             try {
+                await fetchLocations();
                 await fetchAndRenderEvents();
             } finally {
                 refreshBtn.disabled = false;

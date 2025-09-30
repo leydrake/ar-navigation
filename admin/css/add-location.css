@@ -99,7 +99,8 @@ body, html {
     color: #222;
 }
 
-.location-form input[type="text"] {
+.location-form input[type="text"],
+.location-form select {
     padding: 10px;
     border: none;
     border-radius: 4px;
@@ -115,8 +116,31 @@ body, html {
     background: #fcf9f5;
     font-size: 16px;
     margin-bottom: 8px;
+    appearance: textfield;
     -moz-appearance: textfield;
 }
+
+/* Disabled fields – greyed out and non-interactive */
+.location-form input[disabled],
+.location-form select[disabled] {
+    background: #ededed;
+    color: #7a7a7a;
+    cursor: not-allowed;
+}
+
+.location-form input[disabled]:focus,
+.location-form select[disabled]:focus {
+    outline: none;
+}
+
+/* Dropdown styling */
+.location-form select {
+    cursor: pointer;
+}
+
+/* Remove grid since we reverted to single column */
+.fields-grid { display: contents; }
+.field-group { display: contents; }
 
 /* Remove spinners in WebKit */
 .location-form input[type="number"]::-webkit-outer-spin-button,

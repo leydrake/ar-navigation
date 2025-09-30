@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/admin-tools.css">
+    
 </head>
 <body>
     <!-- Skeleton Loading State -->
@@ -214,7 +217,10 @@
             // Show analytics section if super_admin or has analytics permission
             if (role === 'super_admin' || permissions.includes('analytics')) {
                 analyticsSection.style.display = 'block';
-                loadAnalyticsData();
+                // Add a small delay to ensure DOM is fully rendered
+                setTimeout(() => {
+                    loadAnalyticsData();
+                }, 100);
             }
 
             // Show feedback overview if super_admin or has feedback permission
@@ -591,11 +597,16 @@
                 const successDataSnapshot = await db.collection('analytics').doc('success_rate').get();
                 const successRate = successDataSnapshot.exists ? successDataSnapshot.data().rate || 0 : 0;
 
-                // Update summary cards
-                document.getElementById('activeUsers').textContent = activeUsers.toLocaleString();
-                document.getElementById('navigationSessions').textContent = navigationSessions.toLocaleString();
-                document.getElementById('popularDestinations').textContent = popularDestinations.toLocaleString();
-                document.getElementById('successRate').textContent = successRate.toFixed(1) + '%';
+                // Update summary cards with null checks
+                const activeUsersEl = document.getElementById('activeUsers');
+                const navigationSessionsEl = document.getElementById('navigationSessions');
+                const popularDestinationsEl = document.getElementById('popularDestinations');
+                const successRateEl = document.getElementById('successRate');
+
+                if (activeUsersEl) activeUsersEl.textContent = activeUsers.toLocaleString();
+                if (navigationSessionsEl) navigationSessionsEl.textContent = navigationSessions.toLocaleString();
+                if (popularDestinationsEl) popularDestinationsEl.textContent = popularDestinations.toLocaleString();
+                if (successRateEl) successRateEl.textContent = successRate.toFixed(1) + '%';
 
             } catch (error) {
                 console.error('Error loading summary data:', error);
@@ -628,7 +639,13 @@
                     data.push(daySnapshot.exists ? daySnapshot.data().count || 0 : 0);
                 }
 
-                const ctx = document.getElementById('visitorTrendChart').getContext('2d');
+                const chartElement = document.getElementById('visitorTrendChart');
+                if (!chartElement) {
+                    console.warn('Chart element not found');
+                    return;
+                }
+                
+                const ctx = chartElement.getContext('2d');
                 
                 if (visitorChart) {
                     visitorChart.destroy();

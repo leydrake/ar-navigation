@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events Admin</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/events.css">
 </head>
 <body>
@@ -65,20 +67,75 @@
                 <form id="eventForm">
                     <label>Image
                         <input type="file" id="eventImage" accept="image/*">
+                        <label for="eventImage" class="image-upload-label">
+                            <span class="image-upload-icon">📷</span>
+                            <span class="image-upload-text">Click to upload image</span>
+                            <span class="image-upload-subtext">or drag and drop (max 1MB)</span>
+                        </label>
                         <img id="imagePreview" style="display:none; max-width:100px; margin-top:8px;"/>
                     </label>
-                    <label>Title
-                        <input type="text" id="eventTitle" required>
+                    <label>Event Name
+                        <input type="text" id="eventName" required placeholder="e.g., Math Club Meeting">
+                    </label>
+                    <label>Description
+                        <textarea id="eventDescription" required placeholder="Short info about the event" rows="3"></textarea>
                     </label>
                     <label>Location
                         <input type="text" id="eventLocation" autocomplete="off" required placeholder="Search location...">
                         <ul id="locationDropdown" class="dropdown-list" style="display:none;"></ul>
                     </label>
+                    <div class="datetime-container">
+                        <label>Start Date & Time
+                            <input type="datetime-local" id="eventStartTime" required>
+                        </label>
+                        <label>End Date & Time
+                            <input type="datetime-local" id="eventEndTime" required>
+                        </label>
+                    </div>
                     <div class="modal-actions">
                         <button type="submit">Add</button>
                         <button type="button" id="closeModalBtn">Cancel</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- View Event Modal -->
+        <div class="modal-overlay" id="viewEventModal" style="display:none;">
+            <div class="modal-content view-modal">
+                <h2>Event Details</h2>
+                <div class="event-view-content">
+                    <div class="event-image-container">
+                        <img id="viewEventImage" style="max-width:200px; max-height:200px; object-fit:cover; border-radius:8px;"/>
+                    </div>
+                    <div class="event-info">
+                        <div class="event-field">
+                            <label>Event Name:</label>
+                            <div id="viewEventName" class="event-value"></div>
+                        </div>
+                        <div class="event-field">
+                            <label>Description:</label>
+                            <div id="viewEventDescription" class="event-value"></div>
+                        </div>
+                        <div class="event-field">
+                            <label>Location:</label>
+                            <div id="viewEventLocation" class="event-value"></div>
+                        </div>
+                        <div class="event-field">
+                            <label>Start Time:</label>
+                            <div id="viewEventStartTime" class="event-value"></div>
+                        </div>
+                        <div class="event-field">
+                            <label>End Time:</label>
+                            <div id="viewEventEndTime" class="event-value"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="editEventBtn" class="edit-btn">Edit</button>
+                    <button id="deleteEventBtn" class="delete-btn">Delete</button>
+                    <button id="closeViewModalBtn" class="cancel-btn">Close</button>
+                </div>
             </div>
         </div>
     </div>

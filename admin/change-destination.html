@@ -4,11 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Change Destination</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="./css/change-destination.css">
-    <link rel="stylesheet" href="../css/index.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Skeleton Loading State (mirrors events.html look & feel) -->
+    <div id="loadingState" class="skeleton-container" style="display: none;">
+        <div class="skeleton-header">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-lines">
+                <div class="skeleton-line skeleton-line-lg"></div>
+                <div class="skeleton-line skeleton-line-sm"></div>
+            </div>
+        </div>
+        <div class="skeleton-search"></div>
+        <div class="skeleton-events-list">
+            <div class="skeleton-event-card"></div>
+            <div class="skeleton-event-card"></div>
+            <div class="skeleton-event-card"></div>
+        </div>
+    </div>
+
+    <div class="container" id="destinationsContainer" style="display: none;">
         <header class="header">
             <div class="header-inner">
                 <button class="back-btn" aria-label="Back" onclick="goBackToAdminTools()">
@@ -22,74 +40,111 @@
                 </div>
             </div>
         </header>
+
         <div class="search-bar">
-            <input type="text" placeholder="Search Destination" />
+            <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="#444" stroke-width="2"/>
+                <path d="M21 21l-4.35-4.35" stroke="#444" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input id="searchInput" type="text" placeholder="Search Destination" />
         </div>
-        <div class="destination-list">
-            <div class="destination-item">
-                <img class="destination-img" src="../images/bulsu-bustos-logo.png" alt="Admin Building">
-                <div class="destination-info">
-                    <span class="destination-name">Admin Building</span>
-                    <span class="destination-distance">Distance<br><b>2 M</b></span>
-                </div>
-                <div class="destination-actions">
-                    <button class="edit-btn" aria-label="Edit"><span>&#9998;</span></button>
-                    <button class="delete-btn" aria-label="Delete"><span>&#128465;</span></button>
-                </div>
-            </div>
-            <div class="destination-item">
-                <img class="destination-img" src="../images/bulsu-bustos.png" alt="Activity Center">
-                <div class="destination-info">
-                    <span class="destination-name">Activity Center</span>
-                    <span class="destination-distance">Distance<br><b>2 M</b></span>
-                </div>
-                <div class="destination-actions">
-                    <button class="edit-btn" aria-label="Edit"><span>&#9998;</span></button>
-                    <button class="delete-btn" aria-label="Delete"><span>&#128465;</span></button>
-                </div>
-            </div>
-            <div class="destination-item">
-                <img class="destination-img" src="../images/bulsu-bustos-logo.png" alt="MPG Building">
-                <div class="destination-info">
-                    <span class="destination-name">MPG Building</span>
-                    <span class="destination-distance">Distance<br><b>2 M</b></span>
-                </div>
-                <div class="destination-actions">
-                    <button class="edit-btn" aria-label="Edit"><span>&#9998;</span></button>
-                    <button class="delete-btn" aria-label="Delete"><span>&#128465;</span></button>
-                </div>
-            </div>
-            <div class="destination-item">
-                <img class="destination-img" src="../images/bulsu-bustos.png" alt="BSBA Building">
-                <div class="destination-info">
-                    <span class="destination-name">BSBA Building</span>
-                    <span class="destination-distance">Distance<br><b>2 M</b></span>
-                </div>
-                <div class="destination-actions">
-                    <button class="edit-btn" aria-label="Edit"><span>&#9998;</span></button>
-                    <button class="delete-btn" aria-label="Delete"><span>&#128465;</span></button>
+
+        <div class="destination-list" id="destinationList">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- View Destination Modal -->
+    <div class="modal-overlay" id="viewDestinationModal" style="display:none;">
+        <div class="modal-content view-modal">
+            <h2>Destination Details</h2>
+            <div class="event-view-content">
+                <div class="event-image-container" id="viewDestMedia"></div>
+                <div class="event-info">
+                    <div class="event-field">
+                        <label>Name:</label>
+                        <div id="viewDestName" class="event-value"></div>
+                    </div>
+                    <div class="event-field">
+                        <label>Building:</label>
+                        <div id="viewDestBuilding" class="event-value"></div>
+                    </div>
+                    <div class="event-field">
+                        <label>Floor:</label>
+                        <div id="viewDestFloor" class="event-value"></div>
+                    </div>
+                    <div class="event-field">
+                        <label>Coordinates (x, y, z):</label>
+                        <div id="viewDestCoords" class="event-value"></div>
+                    </div>
+                    <div class="event-field">
+                        <label>Description:</label>
+                        <div id="viewDestDescription" class="event-value"></div>
+                    </div>
                 </div>
             </div>
-            <div class="destination-item">
-                <img class="destination-img" src="../images/bulsu-bustos-logo.png" alt="Pancho Hall">
-                <div class="destination-info">
-                    <span class="destination-name">Pancho Hall</span>
-                    <span class="destination-distance">Distance<br><b>2 M</b></span>
-                </div>
-                <div class="destination-actions">
-                    <button class="edit-btn" aria-label="Edit"><span>&#9998;</span></button>
-                    <button class="delete-btn" aria-label="Delete"><span>&#128465;</span></button>
-                </div>
+            <div class="modal-actions">
+                <button id="editDestBtn" class="edit-btn">Edit</button>
+                <button id="deleteDestBtn" class="delete-btn">Delete</button>
+                <button id="closeViewModalBtn" class="cancel-btn">Close</button>
             </div>
         </div>
     </div>
 
+    <!-- Edit Destination Modal -->
+    <div class="modal-overlay" id="editDestinationModal" style="display:none;">
+        <div class="modal-content">
+            <h2>Edit Destination</h2>
+            <form id="destForm">
+                <label>Name
+                    <input type="text" id="destName" required placeholder="e.g., Admin Building">
+                </label>
+                <label>Building
+                    <input type="text" id="destBuilding" placeholder="e.g., Main">
+                </label>
+                <label>Floor
+                    <input type="number" id="destFloor" placeholder="e.g., 2">
+                </label>
+                <div class="datetime-container">
+                    <label>X
+                        <input type="number" id="destX" step="any" placeholder="e.g., 97.34">
+                    </label>
+                    <label>Y
+                        <input type="number" id="destY" step="any" placeholder="e.g., 1">
+                    </label>
+                </div>
+                <label>Z
+                    <input type="number" id="destZ" step="any" placeholder="e.g., -102.77">
+                </label>
+                <label>Image URL
+                    <input type="url" id="destImage" placeholder="https://...">
+                </label>
+                <label>Description
+                    <textarea id="destDescription" rows="3" placeholder="Short description"></textarea>
+                </label>
+                <div class="modal-actions">
+                    <button type="submit">Save</button>
+                    <button type="button" id="closeEditModalBtn" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    <script>            
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <!-- Auth check script -->
+    <script src="js/auth-check.js"></script>
+
+    <!-- Page logic -->
+    <script type="module" src="js/change-destination.js"></script>
+
+    <script>
         function goBackToAdminTools(){
-            window.location.href = "./admin-tools.html"
+            window.location.href = "./admin-tools.html";
         }
-
     </script>
 </body>
 </html>
