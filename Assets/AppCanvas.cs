@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class AppCanvas : MonoBehaviour
 {
@@ -39,6 +40,32 @@ public class AppCanvas : MonoBehaviour
     private float dragStartYPosition;
     private Coroutine currentAnimation;
     
+    [Header("Search UI")]
+    public Dropdown myDropdown;
+    public InputField searchInput;
+
+	[Header("Search UI - TextMeshPro (optional)")]
+	public TMP_Dropdown myTMPDropdown;
+	public TMP_InputField searchTMPInput;
+
+	[Header("Popup Option Panel")]
+	public GameObject optionsPanel; // Panel to show/hide
+	public Button openOptionsButton; // Button to open panel
+	public Button closeOptionsButton; // Button to close panel
+	public RectTransform optionsContainer; // Parent container for option items
+	public GameObject optionItemPrefab; // Prefab expected to have a Button and a Text/TMP_Text
+	
+	[Tooltip("When opening, move panel to end of sibling order and (optionally) bump sorting.")]
+	public bool ensureOptionsPanelOnTop = true;
+	[Tooltip("If a Canvas exists on the panel, temporarily override sorting with this order while open.")]
+	public bool overridePanelSortingWhileOpen = false;
+	public int optionsPanelSortingOrder = 1000;
+
+	private readonly List<GameObject> spawnedOptionItems = new List<GameObject>();
+	private bool savedPanelOverrideSorting;
+	private int savedPanelSortingOrder;
+	private bool hasSavedSortingState = false;
+    
     [Header("Container State")]
     private bool showingAdvancedOptions = false;
     
@@ -53,6 +80,42 @@ public class AppCanvas : MonoBehaviour
         
         // Initialize container visibility
         InitializeContainers();
+
+        // Wire dropdown -> search bar sync
+		if (myDropdown != null)
+		{
+			myDropdown.onValueChanged.AddListener(OnDropdownChanged);
+		}
+		if (myTMPDropdown != null)
+		{
+			myTMPDropdown.onValueChanged.AddListener(OnTMPDropdownChanged);
+		}
+		SyncSearchInputToCurrentSelection();
+
+		// Wire popup panel open/close
+		if (openOptionsButton != null)
+		{
+			openOptionsButton.onClick.AddListener(OpenOptionsPanel);
+		}
+		if (closeOptionsButton != null)
+		{
+			closeOptionsButton.onClick.AddListener(CloseOptionsPanel);
+		}
+		// Ensure panel starts hidden if assigned
+		if (optionsPanel != null)
+		{
+			optionsPanel.SetActive(false);
+		}
+
+		// Optional: live search filtering while panel is open
+		if (searchInput != null)
+		{
+			searchInput.onValueChanged.AddListener(OnSearchValueChanged);
+		}
+		if (searchTMPInput != null)
+		{
+			searchTMPInput.onValueChanged.AddListener(OnTMPSearchValueChanged);
+		}
     }
     
     private void InitializeContainers()
@@ -375,6 +438,251 @@ public class AppCanvas : MonoBehaviour
         panel.anchoredPosition = endPosition;
         isAnimating = false;
         currentAnimation = null;
+    }
+    
+    private void OnDropdownChanged(int index)
+    {
+		SyncSearchInputToCurrentSelection();
+    }
+
+	private void OnTMPDropdownChanged(int index)
+	{
+		SyncSearchInputToCurrentSelection();
+	}
+
+	private void SyncSearchInputToCurrentSelection()
+	{
+		string selectedText = GetSelectedOptionText();
+		if (string.IsNullOrEmpty(selectedText)) return;
+		// Prefer TMP input if assigned; otherwise use legacy UI input
+		if (searchTMPInput != null)
+		{
+			searchTMPInput.text = selectedText;
+		}
+		else if (searchInput != null)
+		{
+			searchInput.text = selectedText;
+		}
+	}
+
+	private string GetSelectedOptionText()
+	{
+		if (myTMPDropdown != null)
+		{
+			int idx = myTMPDropdown.value;
+			if (idx >= 0 && idx < myTMPDropdown.options.Count)
+			{
+				return myTMPDropdown.options[idx].text;
+			}
+		}
+		if (myDropdown != null)
+		{
+			int idx = myDropdown.value;
+			if (idx >= 0 && idx < myDropdown.options.Count)
+			{
+				return myDropdown.options[idx].text;
+			}
+		}
+		return null;
+	}
+
+	// ===== Popup Panel Logic =====
+	public void OpenOptionsPanel()
+	{
+		if (optionsPanel == null || optionsContainer == null || optionItemPrefab == null) return;
+		optionsPanel.SetActive(true);
+		if (ensureOptionsPanelOnTop)
+		{
+			// Bring to front within its parent hierarchy
+			optionsPanel.transform.SetAsLastSibling();
+			// Optionally bump sorting if a Canvas is present on the panel
+			if (overridePanelSortingWhileOpen)
+			{
+				Canvas panelCanvas = optionsPanel.GetComponent<Canvas>();
+				if (panelCanvas != null)
+				{
+					if (!hasSavedSortingState)
+					{
+						savedPanelOverrideSorting = panelCanvas.overrideSorting;
+						savedPanelSortingOrder = panelCanvas.sortingOrder;
+						hasSavedSortingState = true;
+					}
+					panelCanvas.overrideSorting = true;
+					panelCanvas.sortingOrder = optionsPanelSortingOrder;
+				}
+			}
+		}
+		BuildOptionsList(GetCurrentSearchFilter());
+	}
+
+	public void CloseOptionsPanel()
+	{
+		if (optionsPanel == null) return;
+		optionsPanel.SetActive(false);
+		// Restore sorting state if we changed it
+		if (overridePanelSortingWhileOpen)
+		{
+			Canvas panelCanvas = optionsPanel.GetComponent<Canvas>();
+			if (panelCanvas != null && hasSavedSortingState)
+			{
+				panelCanvas.overrideSorting = savedPanelOverrideSorting;
+				panelCanvas.sortingOrder = savedPanelSortingOrder;
+				hasSavedSortingState = false;
+			}
+		}
+		ClearSpawnedOptions();
+	}
+
+	private void BuildOptionsList(string filter)
+	{
+		ClearSpawnedOptions();
+		List<string> optionTexts = GetAllOptionTexts();
+		if (optionTexts == null || optionTexts.Count == 0) return;
+
+		string filterLower = string.IsNullOrEmpty(filter) ? null : filter.ToLowerInvariant();
+		for (int i = 0; i < optionTexts.Count; i++)
+		{
+			string text = optionTexts[i];
+			if (filterLower != null && (text == null || !text.ToLowerInvariant().Contains(filterLower)))
+			{
+				continue;
+			}
+			int optionIndex = i; // capture
+			GameObject item = Instantiate(optionItemPrefab, optionsContainer);
+			SetLabelTextOnItem(item, text);
+			Button btn = item.GetComponent<Button>();
+			if (btn != null)
+			{
+				btn.onClick.AddListener(() => OnOptionItemClicked(optionIndex));
+			}
+			spawnedOptionItems.Add(item);
+		}
+	}
+
+	private void ClearSpawnedOptions()
+	{
+		for (int i = 0; i < spawnedOptionItems.Count; i++)
+		{
+			if (spawnedOptionItems[i] != null)
+			{
+				Destroy(spawnedOptionItems[i]);
+			}
+		}
+		spawnedOptionItems.Clear();
+	}
+
+	private void OnOptionItemClicked(int index)
+	{
+		// Prefer TMP dropdown if present, else legacy UI
+		if (myTMPDropdown != null)
+		{
+			if (index >= 0 && index < myTMPDropdown.options.Count)
+			{
+				myTMPDropdown.value = index;
+				myTMPDropdown.RefreshShownValue();
+			}
+		}
+		else if (myDropdown != null)
+		{
+			if (index >= 0 && index < myDropdown.options.Count)
+			{
+				myDropdown.value = index;
+				myDropdown.RefreshShownValue();
+			}
+		}
+		SyncSearchInputToCurrentSelection();
+		CloseOptionsPanel();
+	}
+
+	private void SetLabelTextOnItem(GameObject item, string text)
+	{
+		// Try TMP_Text first
+		TMP_Text tmpLabel = item.GetComponentInChildren<TMP_Text>();
+		if (tmpLabel != null)
+		{
+			tmpLabel.text = text;
+			return;
+		}
+		// Fallback to legacy Text
+		Text uiLabel = item.GetComponentInChildren<Text>();
+		if (uiLabel != null)
+		{
+			uiLabel.text = text;
+		}
+	}
+
+	private List<string> GetAllOptionTexts()
+	{
+		if (myTMPDropdown != null)
+		{
+			List<string> list = new List<string>(myTMPDropdown.options.Count);
+			for (int i = 0; i < myTMPDropdown.options.Count; i++)
+			{
+				list.Add(myTMPDropdown.options[i].text);
+			}
+			return list;
+		}
+		if (myDropdown != null)
+		{
+			List<string> list = new List<string>(myDropdown.options.Count);
+			for (int i = 0; i < myDropdown.options.Count; i++)
+			{
+				list.Add(myDropdown.options[i].text);
+			}
+			return list;
+		}
+		return null;
+	}
+
+	private string GetCurrentSearchFilter()
+	{
+		if (searchTMPInput != null) return searchTMPInput.text;
+		if (searchInput != null) return searchInput.text;
+		return null;
+	}
+
+	private void OnSearchValueChanged(string _)
+	{
+		if (optionsPanel != null && optionsPanel.activeSelf)
+		{
+			BuildOptionsList(GetCurrentSearchFilter());
+		}
+	}
+
+	private void OnTMPSearchValueChanged(string _)
+	{
+		if (optionsPanel != null && optionsPanel.activeSelf)
+		{
+			BuildOptionsList(GetCurrentSearchFilter());
+		}
+	}
+
+    private void OnDestroy()
+    {
+        if (myDropdown != null)
+        {
+            myDropdown.onValueChanged.RemoveListener(OnDropdownChanged);
+        }
+		if (myTMPDropdown != null)
+		{
+			myTMPDropdown.onValueChanged.RemoveListener(OnTMPDropdownChanged);
+		}
+		if (openOptionsButton != null)
+		{
+			openOptionsButton.onClick.RemoveListener(OpenOptionsPanel);
+		}
+		if (closeOptionsButton != null)
+		{
+			closeOptionsButton.onClick.RemoveListener(CloseOptionsPanel);
+		}
+		if (searchInput != null)
+		{
+			searchInput.onValueChanged.RemoveListener(OnSearchValueChanged);
+		}
+		if (searchTMPInput != null)
+		{
+			searchTMPInput.onValueChanged.RemoveListener(OnTMPSearchValueChanged);
+		}
     }
     
     // Public method to be called by the Advance Options button
