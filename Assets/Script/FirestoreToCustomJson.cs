@@ -102,8 +102,8 @@ public class FirestoreToCustomJson : MonoBehaviour
             // Write the JSON data to file
             try
             {
-                // Use Application.streamingAssetsPath for writable location
-                string fullPath = Path.Combine(Application.streamingAssetsPath, "TargetData.json");
+                // Use persistentDataPath for a writable location on all platforms
+                string fullPath = Path.Combine(Application.persistentDataPath, "TargetData.json");
                 
                 // Ensure the directory exists
                 string directory = Path.GetDirectoryName(fullPath);

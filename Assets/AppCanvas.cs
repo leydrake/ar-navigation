@@ -8,6 +8,12 @@ public class AppCanvas : MonoBehaviour
     [Header("UI References")]
     public RectTransform bottomPanel;
     public RectTransform dragHandle;
+    public RectTransform bottomPanel2; // Second bottom panel reference
+    public RectTransform dragHandle2; // Second drag handle reference
+    
+    [Header("Container References")]
+    public RectTransform simpleContainer;    // Container with Destination and Advance Options buttons
+    public RectTransform advancedContainer;  // Container with current advanced settings
     
     [Header("Collider Settings")]
     public bool useCollider = true;
@@ -17,16 +23,24 @@ public class AppCanvas : MonoBehaviour
     public float originalYPosition = 0f;    // Original position (where it starts)
     public float collapsedYPosition = -550f; // Position when collapsed
     
+    [Header("Advanced Panel States")]
+    public float advancedOriginalYPosition = 0f;    // Original position for advanced panel
+    public float advancedCollapsedYPosition = -550f; // Position when advanced panel is collapsed
+    
     [Header("Animation Settings")]
     public float animationDuration = 0.3f;
     public AnimationCurve animationCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     
     private bool isCollapsed = false;
+    private bool isAdvancedCollapsed = false; // Separate collapse state for advanced panel
     private bool isDragging = false;
     private bool isAnimating = false;
     private Vector2 dragStartPosition;
     private float dragStartYPosition;
     private Coroutine currentAnimation;
+    
+    [Header("Container State")]
+    private bool showingAdvancedOptions = false;
     
     void Start()
     {
@@ -35,6 +49,39 @@ public class AppCanvas : MonoBehaviour
         {
             // Use the current Y position as the original position
             originalYPosition = bottomPanel.anchoredPosition.y;
+        }
+        
+        // Initialize container visibility
+        InitializeContainers();
+    }
+    
+    private void InitializeContainers()
+    {
+        // Start with simple container visible and advanced container hidden
+        if (simpleContainer != null)
+        {
+            simpleContainer.gameObject.SetActive(true);
+        }
+        
+        if (advancedContainer != null)
+        {
+            advancedContainer.gameObject.SetActive(false);
+        }
+        
+        // Initialize panel states
+        showingAdvancedOptions = false;
+        isCollapsed = false;
+        isAdvancedCollapsed = false;
+        
+        // Initialize panel positions
+        if (bottomPanel != null)
+        {
+            bottomPanel.anchoredPosition = new Vector2(bottomPanel.anchoredPosition.x, originalYPosition);
+        }
+        
+        if (bottomPanel2 != null)
+        {
+            bottomPanel2.anchoredPosition = new Vector2(bottomPanel2.anchoredPosition.x, advancedOriginalYPosition);
         }
     }
     
@@ -45,7 +92,8 @@ public class AppCanvas : MonoBehaviour
     
     private void HandleDragInput()
     {
-        if (dragHandle == null || bottomPanel == null) return;
+        // Check if we have at least one drag handle and panel
+        if ((dragHandle == null && dragHandle2 == null) || (bottomPanel == null && bottomPanel2 == null)) return;
         
         Vector2 inputPos = Vector2.zero;
         
@@ -90,49 +138,122 @@ public class AppCanvas : MonoBehaviour
     
     private void HandleDragStart(Vector2 inputPos)
     {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            dragHandle, inputPos, null, out Vector2 localPoint);
-        
-        if (dragHandle.rect.Contains(localPoint))
+        // Check first drag handle
+        if (dragHandle != null)
         {
-            isDragging = true;
-            dragStartPosition = inputPos;
-            dragStartYPosition = bottomPanel.anchoredPosition.y;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragHandle, inputPos, null, out Vector2 localPoint);
+            
+            if (dragHandle.rect.Contains(localPoint))
+            {
+                isDragging = true;
+                dragStartPosition = inputPos;
+                dragStartYPosition = bottomPanel != null ? bottomPanel.anchoredPosition.y : 0f;
+                return;
+            }
+        }
+        
+        // Check second drag handle
+        if (dragHandle2 != null)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragHandle2, inputPos, null, out Vector2 localPoint);
+            
+            if (dragHandle2.rect.Contains(localPoint))
+            {
+                isDragging = true;
+                dragStartPosition = inputPos;
+                dragStartYPosition = bottomPanel2 != null ? bottomPanel2.anchoredPosition.y : 0f;
+            }
         }
     }
     
     private void HandleClick(Vector2 inputPos)
     {
-        if (dragHandle == null) return;
-        
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            dragHandle, inputPos, null, out Vector2 localPoint);
-        
-        Debug.Log($"Click detected at: {inputPos}, Local point: {localPoint}, Handle rect: {dragHandle.rect}");
-        
-        if (dragHandle.rect.Contains(localPoint))
+        // Check first drag handle
+        if (dragHandle != null)
         {
-            Debug.Log("Click is within drag handle!");
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragHandle, inputPos, null, out Vector2 localPoint);
             
-            // Toggle between collapsed and original position
-            if (isCollapsed)
+            Debug.Log($"Click detected at: {inputPos}, Local point: {localPoint}, Handle rect: {dragHandle.rect}");
+            
+            if (dragHandle.rect.Contains(localPoint))
             {
-                Debug.Log("Expanding to original position");
-                // Expand to original position with animation
-                isCollapsed = false;
-                AnimateToPosition(originalYPosition);
+                Debug.Log("Click is within first drag handle!");
+                TogglePanelState(bottomPanel);
+                return;
+            }
+        }
+        
+        // Check second drag handle
+        if (dragHandle2 != null)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragHandle2, inputPos, null, out Vector2 localPoint);
+            
+            Debug.Log($"Click detected at: {inputPos}, Local point: {localPoint}, Handle2 rect: {dragHandle2.rect}");
+            
+            if (dragHandle2.rect.Contains(localPoint))
+            {
+                Debug.Log("Click is within second drag handle!");
+                TogglePanelState(bottomPanel2);
+                return;
+            }
+        }
+        
+        Debug.Log("Click is NOT within any drag handle");
+    }
+    
+    private void TogglePanelState(RectTransform panel)
+    {
+        if (panel == null) return;
+        
+        // Determine which panel states to use based on the panel
+        float originalPos, collapsedPos;
+        bool currentCollapsedState;
+        
+        if (panel == bottomPanel2) // Advanced panel
+        {
+            originalPos = advancedOriginalYPosition;
+            collapsedPos = advancedCollapsedYPosition;
+            currentCollapsedState = isAdvancedCollapsed;
+        }
+        else // Simple panel
+        {
+            originalPos = originalYPosition;
+            collapsedPos = collapsedYPosition;
+            currentCollapsedState = isCollapsed;
+        }
+        
+        // Toggle between collapsed and original position
+        if (currentCollapsedState)
+        {
+            Debug.Log("Expanding to original position");
+            // Expand to original position with animation
+            if (panel == bottomPanel2)
+            {
+                isAdvancedCollapsed = false;
             }
             else
             {
-                Debug.Log("Collapsing to -550");
-                // Collapse to -550 with animation
-                isCollapsed = true;
-                AnimateToPosition(collapsedYPosition);
+                isCollapsed = false;
             }
+            AnimateToPosition(originalPos, panel);
         }
         else
         {
-            Debug.Log("Click is NOT within drag handle");
+            Debug.Log("Collapsing panel");
+            // Collapse with animation
+            if (panel == bottomPanel2)
+            {
+                isAdvancedCollapsed = true;
+            }
+            else
+            {
+                isCollapsed = true;
+            }
+            AnimateToPosition(collapsedPos, panel);
         }
     }
     
@@ -186,20 +307,38 @@ public class AppCanvas : MonoBehaviour
                 }
                 
                 // Always collapse when dragging down
-                isCollapsed = true;
-                AnimateToPosition(collapsedYPosition);
+                RectTransform activePanel = GetCurrentActivePanel();
+                if (activePanel == bottomPanel2) // Advanced panel
+                {
+                    isAdvancedCollapsed = true;
+                    AnimateToPosition(advancedCollapsedYPosition, activePanel);
+                }
+                else // Simple panel
+                {
+                    isCollapsed = true;
+                    AnimateToPosition(collapsedYPosition, activePanel);
+                }
             }
             else if (dragDelta > 0) // Dragged up (positive delta)
             {
                 Debug.Log("Dragging up - expanding");
                 // Always expand when dragging up
-                isCollapsed = false;
-                AnimateToPosition(originalYPosition);
+                RectTransform activePanel = GetCurrentActivePanel();
+                if (activePanel == bottomPanel2) // Advanced panel
+                {
+                    isAdvancedCollapsed = false;
+                    AnimateToPosition(advancedOriginalYPosition, activePanel);
+                }
+                else // Simple panel
+                {
+                    isCollapsed = false;
+                    AnimateToPosition(originalYPosition, activePanel);
+                }
             }
         }
     }
     
-    private void AnimateToPosition(float targetYPosition)
+    private void AnimateToPosition(float targetYPosition, RectTransform panel = null)
     {
         if (isAnimating) return;
         
@@ -208,14 +347,16 @@ public class AppCanvas : MonoBehaviour
             StopCoroutine(currentAnimation);
         }
         
-        currentAnimation = StartCoroutine(AnimatePanel(targetYPosition));
+        // Use the specified panel, or default to bottomPanel
+        RectTransform targetPanel = panel != null ? panel : bottomPanel;
+        currentAnimation = StartCoroutine(AnimatePanel(targetYPosition, targetPanel));
     }
     
-    private IEnumerator AnimatePanel(float targetYPosition)
+    private IEnumerator AnimatePanel(float targetYPosition, RectTransform panel)
     {
         isAnimating = true;
         
-        Vector2 startPosition = bottomPanel.anchoredPosition;
+        Vector2 startPosition = panel.anchoredPosition;
         Vector2 endPosition = new Vector2(startPosition.x, targetYPosition);
         
         float elapsedTime = 0f;
@@ -226,13 +367,81 @@ public class AppCanvas : MonoBehaviour
             float progress = elapsedTime / animationDuration;
             float curveValue = animationCurve.Evaluate(progress);
             
-            bottomPanel.anchoredPosition = Vector2.Lerp(startPosition, endPosition, curveValue);
+            panel.anchoredPosition = Vector2.Lerp(startPosition, endPosition, curveValue);
             
             yield return null;
         }
         
-        bottomPanel.anchoredPosition = endPosition;
+        panel.anchoredPosition = endPosition;
         isAnimating = false;
         currentAnimation = null;
+    }
+    
+    // Public method to be called by the Advance Options button
+    public void OnAdvanceOptionsClicked()
+    {
+        ShowAdvancedOptions();
+    }
+    
+    // Public method to be called by a back button in advanced container
+    public void OnBackToSimpleClicked()
+    {
+        ShowSimpleOptions();
+    }
+    
+    private void ShowAdvancedOptions()
+    {
+        if (showingAdvancedOptions) return;
+        
+        showingAdvancedOptions = true;
+        
+        // Hide simple container and show advanced container
+        if (simpleContainer != null)
+        {
+            simpleContainer.gameObject.SetActive(false);
+        }
+        
+        if (advancedContainer != null)
+        {
+            advancedContainer.gameObject.SetActive(true);
+        }
+        
+        Debug.Log("Switched to Advanced Options");
+    }
+    
+    private void ShowSimpleOptions()
+    {
+        if (!showingAdvancedOptions) return;
+        
+        showingAdvancedOptions = false;
+        
+        // Hide advanced container and show simple container
+        if (advancedContainer != null)
+        {
+            advancedContainer.gameObject.SetActive(false);
+        }
+        
+        if (simpleContainer != null)
+        {
+            simpleContainer.gameObject.SetActive(true);
+        }
+        
+        Debug.Log("Switched to Simple Options");
+    }
+    
+    private RectTransform GetCurrentActivePanel()
+    {
+        // Return the panel that corresponds to the currently active container
+        if (showingAdvancedOptions && bottomPanel2 != null)
+        {
+            return bottomPanel2;
+        }
+        else if (bottomPanel != null)
+        {
+            return bottomPanel;
+        }
+        
+        // Fallback to first panel
+        return bottomPanel;
     }
 }

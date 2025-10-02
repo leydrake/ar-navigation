@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using ZXing;
+using ZXing.Common;
+using System.Collections.Generic;
 
 public class QrCodeRecenter : MonoBehaviour {
 
@@ -16,10 +18,28 @@ public class QrCodeRecenter : MonoBehaviour {
     [SerializeField]
     private TargetHandler targetHandler;
     [SerializeField]
+    private Transform indicatorSphere;
+    [SerializeField]
     private GameObject qrCodeScanningPanel;
+    [SerializeField]
+    private Transform minimapCamera; // optional: top-down minimap camera
+    [SerializeField]
+    private float minimapHeight = 20f; // height above target for minimap camera
+    [SerializeField]
+    private bool minimapNorthUp = true; // keep minimap facing world north if true
 
     private Texture2D cameraImageTexture;
-    private IBarcodeReader reader = new BarcodeReader(); // create a barcode reader instance
+    private IBarcodeReader reader = new BarcodeReader
+    {
+        AutoRotate = true,
+        TryInverted = true,
+        Options = new DecodingOptions
+        {
+            PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE },
+            TryHarder = true,
+            ReturnCodabarStartEnd = false,
+        }
+    }; // configured QR code reader instance
     private bool scanningEnabled = false;
 public static QrCodeRecenter Instance { get; private set; }
     public bool hasScannedSuccessfully { get; private set; } = false;
@@ -43,9 +63,25 @@ public static QrCodeRecenter Instance { get; private set; }
         cameraManager.frameReceived -= OnCameraFrameReceived;
     }
 
+    private System.Collections.IEnumerator Start()
+    {
+        if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
+        {
+            yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
+        }
+
+        // Show prompt and begin scanning at startup
+        qrCodeScanningPanel.SetActive(true);
+        StartScanning();
+    }
+
     private void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs) {
 
         if (!scanningEnabled) {
+            return;
+        }
+
+        if (!cameraManager.permissionGranted) {
             return;
         }
 
@@ -84,6 +120,12 @@ public static QrCodeRecenter Instance { get; private set; }
         // In this example, you apply it to a texture to visualize it.
 
         // You've got the data; let's put it into a texture so you can visualize it.
+        if (cameraImageTexture != null)
+        {
+            Destroy(cameraImageTexture);
+            cameraImageTexture = null;
+        }
+
         cameraImageTexture = new Texture2D(
             conversionParams.outputDimensions.x,
             conversionParams.outputDimensions.y,
@@ -101,29 +143,93 @@ public static QrCodeRecenter Instance { get; private set; }
 
         // Do something with the result
         if (result != null) {
+            hasScannedSuccessfully = true;
             SetQrCodeRecenterTarget(result.Text);
-            ToggleScanning();
+            StopScanning();
         }
     }
 
     private void SetQrCodeRecenterTarget(string targetText) {
-        TargetFacade currentTarget = targetHandler.GetCurrentTargetByTargetText(targetText);
-        if (currentTarget != null) {
-            // Reset position and rotation of ARSession
-            session.Reset();
-
-            // Add offset for recentering
-            sessionOrigin.transform.position = currentTarget.transform.position;
-            sessionOrigin.transform.rotation = currentTarget.transform.rotation;
+        Transform targetTransform = ResolveTargetTransform(targetText);
+        if (targetTransform == null) {
+            return;
         }
+
+        // Reset position and rotation of ARSession
+        session.Reset();
+
+        // Recenter the AR origin to the target
+        sessionOrigin.transform.position = targetTransform.position;
+        sessionOrigin.transform.rotation = targetTransform.rotation;
+
+        // Move indicator sphere to the target as well (if assigned)
+        if (indicatorSphere != null) {
+            indicatorSphere.position = targetTransform.position;
+            indicatorSphere.rotation = targetTransform.rotation;
+        }
+
+        // Position the minimap camera above the target (if assigned)
+        if (minimapCamera != null) {
+            Vector3 overhead = targetTransform.position + Vector3.up * minimapHeight;
+            minimapCamera.position = overhead;
+            if (minimapNorthUp) {
+                minimapCamera.rotation = Quaternion.Euler(90f, 0f, 0f);
+            } else {
+                minimapCamera.rotation = Quaternion.LookRotation(Vector3.down, targetTransform.forward);
+            }
+        }
+    }
+
+    private Transform ResolveTargetTransform(string targetText)
+    {
+        // Try handler first
+        if (targetHandler != null)
+        {
+            TargetFacade viaHandler = targetHandler.GetCurrentTargetByTargetText(targetText);
+            if (viaHandler != null) return viaHandler.transform;
+        }
+
+        // Try exact GameObject name
+        GameObject go = GameObject.Find(targetText);
+        if (go != null) return go.transform;
+
+        // If text is "Sogo", try "Target(Sogo)"
+        string wrapped = "Target(" + targetText + ")";
+        go = GameObject.Find(wrapped);
+        if (go != null) return go.transform;
+
+        // If text looks like "Target(Name)", also try just the inner name
+        int openIdx = targetText.IndexOf('(');
+        int closeIdx = targetText.IndexOf(')');
+        if (openIdx >= 0 && closeIdx > openIdx)
+        {
+            string inner = targetText.Substring(openIdx + 1, closeIdx - openIdx - 1);
+            go = GameObject.Find(inner);
+            if (go != null) return go.transform;
+        }
+
+        return null;
     }
 
     public void ChangeActiveFloor(string floorEntrance) {
         SetQrCodeRecenterTarget(floorEntrance);
     }
 
+    public void StartScanning() {
+        scanningEnabled = true;
+        qrCodeScanningPanel.SetActive(true);
+    }
+
+    public void StopScanning() {
+        scanningEnabled = false;
+        qrCodeScanningPanel.SetActive(false);
+    }
+
     public void ToggleScanning() {
-        scanningEnabled = !scanningEnabled;
-        qrCodeScanningPanel.SetActive(scanningEnabled);
+        if (scanningEnabled) {
+            StopScanning();
+        } else {
+            StartScanning();
+        }
     }
 }

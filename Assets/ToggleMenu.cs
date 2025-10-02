@@ -32,6 +32,11 @@ public class ToggleMenu : MonoBehaviour
     public float animationDuration = 0.3f;
     public AnimationCurve animationCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     
+	[Header("Click Blocking")]
+	public bool blockOutsideClicks = true;
+	public bool dimBackgroundWhileOpen = false;
+	[Range(0f, 0.95f)] public float dimAlpha = 0.4f;
+	
     [Header("Sliding Panel Settings")]
     public SlideDirection slideDirection = SlideDirection.FromTop;
     public Vector2 slideOffset = new Vector2(0, 100);
@@ -47,6 +52,10 @@ public class ToggleMenu : MonoBehaviour
     private CanvasGroup menuCanvasGroup;
     private Canvas menuPanelCanvas;
     private Canvas burgerButtonCanvas;
+	
+	// Runtime-created overlay to block clicks outside the menu
+	private GameObject clickBlockerOverlay;
+	private UnityEngine.UI.Image clickBlockerImage;
     
     public enum MenuType
     {
@@ -87,9 +96,82 @@ public class ToggleMenu : MonoBehaviour
             SetupMenuItemsAutoClose();
         }
         
-        // Initially hide the menu
+		// Prepare click blocker overlay (created on demand)
+		CreateOrSetupClickBlockerOverlay();
+		
+		// Initially hide the menu
         SetMenuVisibility(false, false);
     }
+
+	private void CreateOrSetupClickBlockerOverlay()
+	{
+		if (!blockOutsideClicks) return;
+		if (menuPanel == null) return;
+		if (clickBlockerOverlay != null && clickBlockerImage != null) return;
+
+		// Create a full-screen overlay as a sibling of the menu panel so we can control layering
+		clickBlockerOverlay = new GameObject("ClickBlockerOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+		var overlayRect = clickBlockerOverlay.GetComponent<RectTransform>();
+		clickBlockerImage = clickBlockerOverlay.GetComponent<UnityEngine.UI.Image>();
+
+		// Parent it beside the menu panel for reliable sibling ordering
+		clickBlockerOverlay.transform.SetParent(menuPanel.transform.parent, false);
+
+		// Stretch to full parent
+		overlayRect.anchorMin = Vector2.zero;
+		overlayRect.anchorMax = Vector2.one;
+		overlayRect.offsetMin = Vector2.zero;
+		overlayRect.offsetMax = Vector2.zero;
+
+		// Transparent by default but must be a raycast target to block clicks
+		clickBlockerImage.color = new Color(0f, 0f, 0f, 0f);
+		clickBlockerImage.raycastTarget = true;
+
+		// Place it directly beneath the menu panel, so the panel remains clickable
+		PositionOverlayBelowMenuPanel();
+
+		// Do not show initially
+		clickBlockerOverlay.SetActive(false);
+	}
+
+	private void PositionOverlayBelowMenuPanel()
+	{
+		if (clickBlockerOverlay == null || menuPanel == null) return;
+		// Ensure overlay exists in the same hierarchy and sits just below the menu panel
+		int menuIndex = menuPanel.transform.GetSiblingIndex();
+		clickBlockerOverlay.transform.SetSiblingIndex(Mathf.Max(0, menuIndex));
+		menuPanel.transform.SetSiblingIndex(clickBlockerOverlay.transform.GetSiblingIndex() + 1);
+	}
+
+	private void ShowClickBlocker()
+	{
+		if (!blockOutsideClicks) return;
+		CreateOrSetupClickBlockerOverlay();
+		if (clickBlockerOverlay == null) return;
+
+		// Optional dim
+		if (dimBackgroundWhileOpen)
+		{
+			clickBlockerImage.color = new Color(0f, 0f, 0f, Mathf.Clamp01(dimAlpha));
+		}
+		else
+		{
+			clickBlockerImage.color = new Color(0f, 0f, 0f, 0f);
+		}
+
+		PositionOverlayBelowMenuPanel();
+
+		// Keep burger button on top above both panel and overlay
+		EnsureBurgerButtonOnTop();
+
+		clickBlockerOverlay.SetActive(true);
+	}
+
+	private void HideClickBlocker()
+	{
+		if (clickBlockerOverlay == null) return;
+		clickBlockerOverlay.SetActive(false);
+	}
     
     private void SetupMenuItemsAutoClose()
     {
@@ -249,12 +331,17 @@ public class ToggleMenu : MonoBehaviour
         }
         
         // Only ensure proper sorting when opening the menu
-        if (visible)
+		if (visible)
         {
             EnsureMenuOnTop();
             // Hide events UI when menu opens
             HideEventsUI();
+			ShowClickBlocker();
         }
+		else
+		{
+			HideClickBlocker();
+		}
         
         if (animate)
         {
@@ -273,7 +360,7 @@ public class ToggleMenu : MonoBehaviour
             StopCoroutine(currentAnimation);
         }
         
-        // Only hide/show the menu panel, keep burger button visible
+		// Only hide/show the menu panel, keep burger button visible
         if (animate)
         {
             currentAnimation = StartCoroutine(AnimateMenuPanel(visible));
@@ -282,6 +369,16 @@ public class ToggleMenu : MonoBehaviour
         {
             SetMenuPanelState(visible);
         }
+
+		// Manage click blocker with panel-only toggles too
+		if (visible)
+		{
+			ShowClickBlocker();
+		}
+		else
+		{
+			HideClickBlocker();
+		}
     }
     
     private void SetMenuState(bool visible)

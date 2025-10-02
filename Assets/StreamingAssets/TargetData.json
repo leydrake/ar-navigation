@@ -15,6 +15,20 @@
             }
         },
         {
+            "Name": "test1",
+            "FloorNumber": 0,
+            "Position": {
+                "x": 97.33999633789063,
+                "y": 1.0,
+                "z": -102.7699966430664
+            },
+            "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
             "Name": "RandomTest_184837",
             "FloorNumber": 0,
             "Position": {

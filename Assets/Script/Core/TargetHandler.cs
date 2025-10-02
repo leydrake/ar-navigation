@@ -3,6 +3,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using System.IO;
+using UnityEngine.Networking;
 
 public class TargetHandler : MonoBehaviour {
 
@@ -30,17 +31,61 @@ public class TargetHandler : MonoBehaviour {
     }
 
     private void LoadTargetData() {
-        string filePath = Path.Combine(Application.streamingAssetsPath, jsonFileName);
-        
-        if (File.Exists(filePath)) {
-            string jsonContent = File.ReadAllText(filePath);
-            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
-            Debug.Log($"Loaded target data from: {filePath}");
+        // Prefer persistentDataPath if a file exists there (mobile-friendly and writable)
+        string persistentPath = Path.Combine(Application.persistentDataPath, jsonFileName);
+        if (File.Exists(persistentPath)) {
+            try {
+                string jsonContent = File.ReadAllText(persistentPath);
+                targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
+                Debug.Log($"Loaded target data from persistent path: {persistentPath}");
+                return;
+            } catch (System.Exception e) {
+                Debug.LogWarning($"Failed reading persistent JSON, will try StreamingAssets. Error: {e.Message}");
+            }
+        }
+
+        // Fallback to StreamingAssets. On Android, StreamingAssets is inside the APK and not directly accessible via File IO.
+        string streamingPath = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Use UnityWebRequest to read from jar file
+        string jsonContentFromSA = ReadTextFromStreamingAssets(streamingPath);
+        if (!string.IsNullOrEmpty(jsonContentFromSA)) {
+            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContentFromSA);
+            Debug.Log($"Loaded target data from StreamingAssets (Android): {streamingPath}");
         } else {
-            Debug.LogWarning($"Target data file not found at: {filePath}. Creating empty data.");
+            Debug.LogWarning($"Target data not found or empty at StreamingAssets (Android): {streamingPath}. Creating empty data.");
             targetDataWrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
         }
+#else
+        if (File.Exists(streamingPath)) {
+            string jsonContent = File.ReadAllText(streamingPath);
+            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
+            Debug.Log($"Loaded target data from StreamingAssets: {streamingPath}");
+        } else {
+            Debug.LogWarning($"Target data file not found at: {streamingPath}. Creating empty data.");
+            targetDataWrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
+        }
+#endif
     }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    private string ReadTextFromStreamingAssets(string path) {
+        // Blocking read; safe for small JSON file during Start()
+        using (UnityWebRequest request = UnityWebRequest.Get(path)) {
+            var op = request.SendWebRequest();
+            while (!op.isDone) { }
+            bool failed = request.result == UnityWebRequest.Result.ConnectionError ||
+                          request.result == UnityWebRequest.Result.ProtocolError ||
+                          request.result == UnityWebRequest.Result.DataProcessingError;
+            if (failed) {
+                Debug.LogWarning($"Failed to read StreamingAssets JSON: {request.error}");
+                return null;
+            }
+            return request.downloadHandler.text;
+        }
+    }
+#endif
 
     private void GenerateTargetItems() {
         // Clear existing target items
