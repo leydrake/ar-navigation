@@ -40,6 +40,7 @@ public class ToggleMenu : MonoBehaviour
     [Header("Sliding Panel Settings")]
     public SlideDirection slideDirection = SlideDirection.FromTop;
     public Vector2 slideOffset = new Vector2(0, 100);
+    public float panelWidth = -1f; // -1 means use original width, otherwise override
     
     [Header("Dropdown Settings")]
     public float dropdownHeight = 200f;
@@ -430,6 +431,13 @@ public class ToggleMenu : MonoBehaviour
     private void SetSlidingPanelState(bool visible)
     {
         Vector3 targetPosition = originalPosition;
+        Vector2 targetSize = originalSize;
+        
+        // Apply custom width if specified
+        if (panelWidth > 0)
+        {
+            targetSize.x = panelWidth;
+        }
         
         if (!visible)
         {
@@ -451,6 +459,7 @@ public class ToggleMenu : MonoBehaviour
         }
         
         menuRectTransform.anchoredPosition = targetPosition;
+        menuRectTransform.sizeDelta = targetSize;
     }
     
     private IEnumerator AnimateMenu(bool visible)
@@ -469,6 +478,12 @@ public class ToggleMenu : MonoBehaviour
             targetPosition = originalPosition;
             targetSize = originalSize;
             targetAlpha = 1f;
+            
+            // Apply custom width if specified
+            if (panelWidth > 0)
+            {
+                targetSize.x = panelWidth;
+            }
             
             if (menuType == MenuType.Dropdown)
             {
@@ -566,6 +581,12 @@ public class ToggleMenu : MonoBehaviour
             targetSize = originalSize;
             targetAlpha = 1f;
             
+            // Apply custom width if specified
+            if (panelWidth > 0)
+            {
+                targetSize.x = panelWidth;
+            }
+            
             if (menuType == MenuType.Dropdown)
             {
                 targetSize.y = dropdownHeight;
@@ -661,6 +682,13 @@ public class ToggleMenu : MonoBehaviour
     {
         slideDirection = newDirection;
         SetMenuState(isMenuOpen);
+    }
+    
+    public void SetPanelWidth(float newWidth)
+    {
+        panelWidth = newWidth;
+        SetMenuState(isMenuOpen);
+        Debug.Log($"Panel width set to {newWidth}");
     }
     
     // Canvas sorting control methods
