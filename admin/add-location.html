@@ -35,13 +35,30 @@
         </div>
         <div class="location-form-area">
             <form class="location-form">
-                <label for="arlocation-select">AR Location</label>
-                <select id="arlocation-select" name="arlocation-select">
-                    <option value="" selected>Select coordinates...</option>
-                </select>
-
-                <label for="location-name">Location Name</label>
-                <input type="text" id="location-name" name="location-name" required />
+                <div class="field-grid-2col">
+                    <div class="field">
+                        <label for="arlocation-select">AR Location</label>
+                        <select id="arlocation-select" name="arlocation-select">
+                            <option value="" selected>Select coordinates...</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="location-name">Location Name</label>
+                        <input type="text" id="location-name" name="location-name" required />
+                    </div>
+                    <div class="field">
+                        <label for="building-select">Building</label>
+                        <select id="building-select" name="building-select">
+                            <option value="" selected>Select building...</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="floor-select">Floor</label>
+                        <select id="floor-select" name="floor-select" disabled>
+                            <option value="" selected>Select floor...</option>
+                        </select>
+                    </div>
+                </div>
 
                 <label for="location-x">X</label>
                 <input type="number" id="location-x" name="location-x" step="any" required disabled />
@@ -62,7 +79,7 @@
     </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         // Reuse the same Firebase config as other admin pages
         const firebaseConfig = {
@@ -86,9 +103,14 @@
         const yInput = document.getElementById('location-y');
         const zInput = document.getElementById('location-z');
         const imageInput = document.getElementById('location-image');
+        const buildingSelect = document.getElementById('building-select');
+        const floorSelect = document.getElementById('floor-select');
 
         // Keep a local cache of ARLocations keyed by document id
         const arLocationsById = new Map();
+        // Cache for buildings and floors
+        const buildingsById = new Map();
+        const floorsById = new Map();
 
         async function loadARLocations() {
             try {
@@ -135,6 +157,79 @@
             }
         });
 
+        async function loadBuildings() {
+            try {
+                const q = query(collection(db, 'buildings'), orderBy('name'));
+                const snap = await getDocs(q);
+                buildingSelect.innerHTML = '<option value="" selected>Select building...</option>';
+                buildingsById.clear();
+                snap.forEach((docSnap) => {
+                    const data = docSnap.data() || {};
+                    const b = {
+                        id: docSnap.id,
+                        name: String(data.name || 'Unnamed Building')
+                    };
+                    buildingsById.set(b.id, b);
+                    const option = document.createElement('option');
+                    option.value = b.id;
+                    option.textContent = b.name;
+                    buildingSelect.appendChild(option);
+                });
+                buildingSelect.disabled = false;
+            } catch (error) {
+                console.error('Failed to load buildings:', error);
+                alert('Could not load buildings.');
+            }
+        }
+
+        async function loadFloorsForBuilding(buildingId) {
+            try {
+                floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
+                floorsById.clear();
+                if (!buildingId) {
+                    floorSelect.disabled = true;
+                    return;
+                }
+                const q = query(collection(db, 'floors'), where('buildingId', '==', buildingId));
+                const snap = await getDocs(q);
+                const floors = [];
+                snap.forEach((docSnap) => {
+                    const data = docSnap.data() || {};
+                    const f = {
+                        id: docSnap.id,
+                        name: String(data.name || 'Unnamed Floor'),
+                        number: Number.isFinite(data.number) ? data.number : null
+                    };
+                    floors.push(f);
+                    floorsById.set(f.id, f);
+                });
+                // Sort by number then name
+                floors.sort((a,b) => {
+                    const an = a.number ?? Number.POSITIVE_INFINITY;
+                    const bn = b.number ?? Number.POSITIVE_INFINITY;
+                    if (an !== bn) return an - bn;
+                    return a.name.localeCompare(b.name);
+                });
+                for (const f of floors) {
+                    const option = document.createElement('option');
+                    option.value = f.id;
+                    option.textContent = f.number != null ? `Floor ${f.number} — ${f.name}` : f.name;
+                    floorSelect.appendChild(option);
+                }
+                floorSelect.disabled = false;
+            } catch (error) {
+                console.error('Failed to load floors:', error);
+                alert('Could not load floors.');
+            }
+        }
+
+        buildingSelect.addEventListener('change', (e) => {
+            const buildingId = e.target.value || '';
+            loadFloorsForBuilding(buildingId);
+        });
+
+        // Inline add buttons removed per design; creation happens in Building Management page
+
         async function saveCoordinates() {
             const name = nameInput.value.trim();
             const x = parseFloat(xInput.value);
@@ -142,8 +237,14 @@
             const z = parseFloat(zInput.value);
             const selectedOption = arLocationSelect.options[arLocationSelect.selectedIndex];
             const selectedARId = selectedOption?.dataset?.id || null;
+            const buildingId = buildingSelect.value || null;
+            const floorId = floorSelect.value || null;
             if (!name || [x,y,z].some(Number.isNaN)) {
                 alert('Please provide a name and valid numeric X, Y, Z.');
+                return;
+            }
+            if (!buildingId) {
+                alert('Please select a building.');
                 return;
             }
 
@@ -155,6 +256,8 @@
                     x,
                     y,
                     z,
+                    buildingId,
+                    floorId,
                     createdAt: serverTimestamp()
                 });
                 // Remove the source ARLocation document if one is selected
@@ -193,12 +296,16 @@
             if (imageInput) {
                 imageInput.value = '';
             }
+            buildingSelect.value = '';
+            floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
+            floorSelect.disabled = true;
         }
 
         clearBtn.addEventListener('click', clearAllFields);
 
         // Initial load
         loadARLocations();
+        loadBuildings();
     </script>
 </body>
 </html>

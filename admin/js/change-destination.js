@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 // Firebase config (same as events.js)
 const firebaseConfig = {
@@ -16,6 +16,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const coordinatesRef = collection(db, "coordinates");
+const buildingsRef = collection(db, "buildings");
+const floorsRef = collection(db, "floors");
 
 // DOM elements
 const loadingState = document.getElementById('loadingState');
@@ -52,6 +54,10 @@ let allDestinations = [];
 let filteredDestinations = [];
 let viewingId = null;
 
+// Caches for building/floor metadata
+const buildingIdToName = new Map();
+const floorIdToMeta = new Map(); // id -> { number, name, buildingId }
+
 function showLoading() {
   if (loadingState) loadingState.style.display = '';
   if (container) container.style.display = 'none';
@@ -71,17 +77,55 @@ function safeText(value, fallback = '—') {
 function normalizeCoordinateData(id, data) {
   // Try to normalize various potential field shapes
   const name = data.name || data.title || data.label || `Location ${id}`;
-  const building = data.building || data.block || '';
-  const floor = data.floor !== undefined ? data.floor : (data.level !== undefined ? data.level : '');
+  const buildingId = data.buildingId || '';
+  const floorId = data.floorId || '';
+  const legacyBuilding = data.building || data.block || '';
+  const legacyFloor = data.floor !== undefined ? data.floor : (data.level !== undefined ? data.level : '');
   const x = data.x ?? (data.coords && data.coords.x);
   const y = data.y ?? (data.coords && data.coords.y);
   const z = data.z ?? (data.coords && data.coords.z);
   const image = data.image || data.thumbnail || data.photoUrl || '';
   const description = data.description || data.details || '';
-  return { id, name, building, floor, x, y, z, image, description };
+
+  // Resolve human-friendly fields
+  const buildingName = buildingId ? (buildingIdToName.get(buildingId) || '') : (legacyBuilding || '');
+  let floorDisplay = '';
+  if (floorId) {
+    const meta = floorIdToMeta.get(floorId);
+    if (meta) floorDisplay = (meta.number !== undefined && meta.number !== null && !Number.isNaN(meta.number)) ? meta.number : (meta.name || '');
+  } else if (legacyFloor !== '' && legacyFloor !== null && legacyFloor !== undefined) {
+    floorDisplay = legacyFloor;
+  }
+
+  return { id, name, buildingId, floorId, buildingName, floorDisplay, x, y, z, image, description };
+}
+
+async function preloadBuildingsAndFloors() {
+  buildingIdToName.clear();
+  floorIdToMeta.clear();
+  const [buildingsSnap, floorsSnap] = await Promise.all([
+    getDocs(query(buildingsRef, orderBy('name'))),
+    getDocs(floorsRef)
+  ]);
+  buildingsSnap.forEach(d => {
+    const data = d.data() || {};
+    buildingIdToName.set(d.id, String(data.name || ''));
+  });
+  floorsSnap.forEach(d => {
+    const data = d.data() || {};
+    floorIdToMeta.set(d.id, {
+      number: typeof data.number === 'number' ? data.number : parseInt(String(data.number ?? ''), 10),
+      name: String(data.name || ''),
+      buildingId: String(data.buildingId || '')
+    });
+  });
 }
 
 async function fetchDestinations() {
+  // Ensure metadata is loaded so names are resolved
+  if (buildingIdToName.size === 0 || floorIdToMeta.size === 0) {
+    await preloadBuildingsAndFloors();
+  }
   const docs = await getDocs(coordinatesRef);
   const items = [];
   docs.forEach(d => {
@@ -119,8 +163,7 @@ function renderDestinations(list) {
       <div class="destination-info">
         <span class="destination-name">${safeText(item.name, 'Unnamed')}</span>
         <span class="destination-distance">
-          ${safeText(item.building, '')}${item.building ? '<br>' : ''}
-          ${item.floor !== '' && item.floor !== null ? `Floor <b>${safeText(item.floor, '?')}</b>` : ''}
+          ${safeText(item.buildingName, '')}
         </span>
       </div>
     `;
@@ -137,8 +180,8 @@ async function openViewModal(id) {
 
     viewingId = id;
     viewDestName.textContent = safeText(item.name, 'Unnamed');
-    viewDestBuilding.textContent = safeText(item.building, '—');
-    viewDestFloor.textContent = item.floor === '' || item.floor === null ? '—' : String(item.floor);
+    viewDestBuilding.textContent = safeText(item.buildingName, '—');
+    viewDestFloor.textContent = (item.floorDisplay === '' || item.floorDisplay === null || item.floorDisplay === undefined) ? '—' : String(item.floorDisplay);
     const hasXYZ = [item.x, item.y, item.z].some(v => v !== undefined && v !== null);
     viewDestCoords.textContent = hasXYZ ? `${item.x ?? '—'}, ${item.y ?? '—'}, ${item.z ?? '—'}` : '—';
     viewDestDescription.textContent = safeText(item.description, 'No description');
@@ -181,8 +224,20 @@ if (editDestBtn) {
 
       // Pre-fill form
       destName.value = item.name || '';
-      destBuilding.value = item.building || '';
-      destFloor.value = item.floor !== undefined && item.floor !== null ? item.floor : '';
+      // Building select expects an ID when using dropdown
+      destBuilding.value = item.buildingId || '';
+      // Reload floors for the selected building and then set the floor
+      if (destBuilding.value) {
+        const buildingId = destBuilding.value;
+        // Load floors options similar to inline script
+        if (typeof window.setEditModalBuildingAndFloor === 'function') {
+          await window.setEditModalBuildingAndFloor(buildingId, item.floorId || '');
+        } else {
+          destFloor.value = item.floorId || '';
+        }
+      } else {
+        destFloor.value = item.floorId || '';
+      }
       destX.value = item.x !== undefined && item.x !== null ? item.x : '';
       destY.value = item.y !== undefined && item.y !== null ? item.y : '';
       destZ.value = item.z !== undefined && item.z !== null ? item.z : '';
@@ -232,12 +287,29 @@ if (destForm) {
 
     const payload = {
       name: destName.value.trim(),
-      building: destBuilding.value.trim() || '',
       description: destDescription.value.trim() || ''
     };
 
-    const floorVal = destFloor.value;
-    if (floorVal !== '') payload.floor = isNaN(Number(floorVal)) ? floorVal : Number(floorVal);
+    // Save by IDs primarily (aligning with add-location.html)
+    const bId = (destBuilding.value || '').trim();
+    const fId = (destFloor.value || '').trim();
+    payload.buildingId = bId || null;
+    payload.floorId = fId || null;
+    // Also maintain legacy fields for backward compatibility in UI (optional)
+    if (bId) {
+      payload.building = buildingIdToName.get(bId) || '';
+    } else {
+      payload.building = '';
+    }
+
+    const floorMeta = fId ? floorIdToMeta.get(fId) : null;
+    if (floorMeta && floorMeta.number !== undefined && floorMeta.number !== null && !Number.isNaN(floorMeta.number)) {
+      payload.floor = floorMeta.number;
+    } else if (destFloor.value !== '') {
+      payload.floor = destFloor.value; // keep whatever is selected/displayed
+    } else {
+      payload.floor = '';
+    }
 
     const xVal = destX.value;
     const yVal = destY.value;

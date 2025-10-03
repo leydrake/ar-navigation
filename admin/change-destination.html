@@ -100,10 +100,14 @@
                     <input type="text" id="destName" required placeholder="e.g., Admin Building">
                 </label>
                 <label>Building
-                    <input type="text" id="destBuilding" placeholder="e.g., Main">
+                    <select id="destBuilding">
+                        <option value="" selected>Select building...</option>
+                    </select>
                 </label>
                 <label>Floor
-                    <input type="number" id="destFloor" placeholder="e.g., 2">
+                    <select id="destFloor" disabled>
+                        <option value="" selected>Select floor...</option>
+                    </select>
                 </label>
                 <div class="datetime-container">
                     <label>X
@@ -145,6 +149,196 @@
         function goBackToAdminTools(){
             window.location.href = "./admin-tools.html";
         }
+    </script>
+    <script>
+        (function(){
+            // Ensure Firebase is initialized
+            const firebaseConfig = {
+                apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+                authDomain: "navigatecampus.firebaseapp.com",
+                projectId: "navigatecampus",
+                storageBucket: "navigatecampus.appspot.com",
+                messagingSenderId: "55012323145",
+                appId: "1:55012323145:web:3408681d5a450f05b2b498",
+                measurementId: "G-39WFZN3VPV"
+            };
+
+            function safeGetDb() {
+                try {
+                    if (window.firebase) {
+                        if (!firebase.apps || !firebase.apps.length) {
+                            firebase.initializeApp(firebaseConfig);
+                        }
+                        return firebase.firestore();
+                    }
+                } catch(e) { /* ignore */ }
+                return null;
+            }
+
+            const buildingsById = new Map();
+            const floorsByBuildingId = new Map();
+
+            async function loadBuildingsIntoSelect() {
+                const db = safeGetDb();
+                const buildingSelect = document.getElementById('destBuilding');
+                if (!db || !buildingSelect) return;
+                try {
+                    const snap = await db.collection('buildings').orderBy('name').get();
+                    buildingsById.clear();
+                    buildingSelect.innerHTML = '<option value="" selected>Select building...</option>';
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data() || {};
+                        const id = docSnap.id;
+                        const name = String(data.name || 'Unnamed Building');
+                        const code = data.code ? ` (${data.code})` : '';
+                        buildingsById.set(id, { id, name: String(data.name||''), code: String(data.code||'') });
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = name + code;
+                        buildingSelect.appendChild(opt);
+                    });
+                } catch (err) {
+                    console.warn('Failed to load buildings for edit modal:', err);
+                }
+            }
+
+            async function loadFloorsForBuildingIntoSelect(buildingId) {
+                const db = safeGetDb();
+                const floorSelect = document.getElementById('destFloor');
+                if (!db || !floorSelect) return;
+                floorSelect.disabled = true;
+                floorSelect.innerHTML = '<option value="" selected>Loading floors...</option>';
+                try {
+                    if (!buildingId) {
+                        floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
+                        floorSelect.disabled = true;
+                        return;
+                    }
+                    if (!floorsByBuildingId.has(buildingId)) {
+                        const snap = await db.collection('floors').where('buildingId', '==', buildingId).get();
+                        const floors = [];
+                        snap.forEach(docSnap => {
+                            const data = docSnap.data() || {};
+                            const number = typeof data.number === 'number' ? data.number : parseInt(String(data.number||'0'), 10) || 0;
+                            floors.push({ id: docSnap.id, number, name: String(data.name||'') });
+                        });
+                        floors.sort((a,b)=> (a.number||0) - (b.number||0));
+                        floorsByBuildingId.set(buildingId, floors);
+                    }
+                    const floors = floorsByBuildingId.get(buildingId) || [];
+                    floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
+                    floors.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = `Floor ${f.number}${f.name ? ' - ' + f.name : ''}`;
+                        opt.dataset.number = String(f.number);
+                        opt.dataset.name = f.name || '';
+                        floorSelect.appendChild(opt);
+                    });
+                    floorSelect.disabled = floors.length === 0;
+                } catch (err) {
+                    console.warn('Failed to load floors for edit modal:', err);
+                    floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
+                    floorSelect.disabled = true;
+                }
+            }
+
+            function setupEditModalDropdowns() {
+                const buildingSelect = document.getElementById('destBuilding');
+                const floorSelect = document.getElementById('destFloor');
+                if (!buildingSelect || !floorSelect) return;
+                buildingSelect.addEventListener('change', (e) => {
+                    const buildingId = e.target.value;
+                    floorSelect.value = '';
+                    loadFloorsForBuildingIntoSelect(buildingId);
+                });
+            }
+
+            // Allow external code to preset selections when opening the modal
+            window.setEditModalBuildingAndFloor = async function(buildingId, floorId) {
+                await loadBuildingsIntoSelect();
+                const buildingSelect = document.getElementById('destBuilding');
+                const floorSelect = document.getElementById('destFloor');
+                if (buildingSelect) {
+                    buildingSelect.value = buildingId || '';
+                }
+                await loadFloorsForBuildingIntoSelect(buildingId || '');
+                if (floorSelect) {
+                    floorSelect.value = floorId || '';
+                }
+            }
+
+            async function reconcileEditModalSelections() {
+                const buildingSelect = document.getElementById('destBuilding');
+                const floorSelect = document.getElementById('destFloor');
+                if (!buildingSelect || !floorSelect) return;
+
+                // If the current buildingSelect.value is not a known id, try matching by name or code
+                const currentBuildingValue = buildingSelect.value;
+                const knownIds = new Set(Array.from(buildingsById.keys()));
+                if (currentBuildingValue && !knownIds.has(currentBuildingValue)) {
+                    const target = currentBuildingValue.trim().toLowerCase();
+                    let matchedId = '';
+                    for (const [id, b] of buildingsById.entries()) {
+                        if ((b.name || '').toLowerCase() === target || (b.code || '').toLowerCase() === target) {
+                            matchedId = id; break;
+                        }
+                    }
+                    if (matchedId) buildingSelect.value = matchedId;
+                }
+
+                const selectedBuildingId = buildingSelect.value || '';
+                await loadFloorsForBuildingIntoSelect(selectedBuildingId);
+
+                // If floorSelect.value is not one of the option values (IDs), try matching by number
+                const currentFloorValue = floorSelect.value;
+                const optionValues = new Set(Array.from(floorSelect.options).map(o => o.value));
+                if (currentFloorValue && !optionValues.has(currentFloorValue)) {
+                    const numeric = parseInt(String(currentFloorValue), 10);
+                    if (!Number.isNaN(numeric)) {
+                        for (const opt of Array.from(floorSelect.options)) {
+                            const num = parseInt(opt.dataset.number || '', 10);
+                            if (!Number.isNaN(num) && num === numeric) {
+                                floorSelect.value = opt.value;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                await loadBuildingsIntoSelect();
+                // Display the first building initially if none selected
+                const buildingSelect = document.getElementById('destBuilding');
+                if (buildingSelect && !buildingSelect.value && buildingSelect.options.length > 1) {
+                    buildingSelect.selectedIndex = 1;
+                    loadFloorsForBuildingIntoSelect(buildingSelect.value);
+                }
+                setupEditModalDropdowns();
+
+                // Observe when the Edit modal opens to reconcile values
+                const editModal = document.getElementById('editDestinationModal');
+                if (editModal) {
+                    const obs = new MutationObserver(() => {
+                        const style = window.getComputedStyle(editModal);
+                        if (style.display !== 'none') {
+                            reconcileEditModalSelections();
+                        }
+                    });
+                    obs.observe(editModal, { attributes: true, attributeFilter: ['style', 'class'] });
+                }
+
+                // Also reconcile when clicking the Edit button in the view modal
+                const editBtn = document.getElementById('editDestBtn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', async () => {
+                        await loadBuildingsIntoSelect();
+                        await reconcileEditModalSelections();
+                    });
+                }
+            });
+        })();
     </script>
 </body>
 </html>

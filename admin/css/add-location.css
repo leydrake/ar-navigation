@@ -75,7 +75,7 @@ body, html {
 
 .location-form-area {
     width: 90%;
-    max-width: 340px;
+    max-width: 500px;
     background: #e0e0e0;
     border-radius: 10px;
     margin: 24px 0 0 0;
@@ -138,6 +138,25 @@ body, html {
     cursor: pointer;
 }
 
+/* Two-column grid for key fields */
+.field-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 380px) {
+    .field-grid-2col {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Remove grid since we reverted to single column */
 .fields-grid { display: contents; }
 .field-group { display: contents; }
@@ -174,7 +193,7 @@ body, html {
 
 .save-changes-btn {
     width: 90%;
-    max-width: 340px;
+    max-width: 500px;
     margin: 32px 0 0 0;
     background: #206233;
     color: #fff;
@@ -206,7 +225,7 @@ body, html {
 
 .clear-fields-btn {
     width: 90%;
-    max-width: 340px;
+    max-width: 500px;
     margin: 12px 0 0 0;
     background: transparent;
     color: #206233;
