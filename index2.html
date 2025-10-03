@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigate My Campus - Home</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="./icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="./icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="./icons/AR_ICON_W_Border.png">
+    <link rel="apple-touch-icon" href="./icons/AR_ICON_W_Border.png">
+    <link rel="stylesheet" href="./css/index2.css">
+    
+    
+</head>
+<body>
+    <div class="landing-container">
+        <div class="main-panel">
+            <!-- Left Content Area -->
+            <div class="content-left">
+                <div class="content-header">
+                    <h1 class="main-heading">
+                        <span class="heading-primary">Navigate My Campus                        </span>
+                        <span class="heading-secondary">Your smart guide to exploring BulSU Bustos Campus with ease.</span>
+                    </h1>
+                </div>
+                
+                <div class="content-body">
+                    <div class="description-box">
+                        <p class="description-text">
+                            Navigate My Campus is an AR-powered navigation app designed to help students, staff, and visitors easily find their way around the BulSU Bustos Campus.
+                            With real-time directions, virtual signposts, and interactive maps, exploring the campus has never been this simple.
+                        </p>
+                    </div>
+                    
+                    <button class="download-btn" onclick="downloadApp()">
+                        <svg class="download-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Download
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Phone Mockup Area -->
+            <div class="content-right">
+                <div class="phone-screen">
+                    <!-- Replace this img tag with your own phone image -->
+                    <img src="./images/iphoneMOCKUP.png" alt="Phone Mockup" class="phone-image">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Background decorative elements -->
+        <div class="bg-decorations">
+            <div class="bg-curve-1"></div>
+            <div class="bg-curve-2"></div>
+            <div class="bg-curve-3"></div>
+        </div>
+    </div>
+
+    <script>
+        function downloadApp() {
+            // Add download functionality
+            console.log('Download app clicked');
+            alert('Download functionality would be implemented here');
+        }
+
+        // Add smooth scrolling behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add intersection observer for animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe elements for animation
+            document.querySelectorAll('.content-left, .content-right').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
