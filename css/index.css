@@ -1,32 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  body {
-    background-color: #f0f0f0;
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(250, 247, 243, 0.8) 0%,
-        rgba(159, 185, 164, 0.8) 30%,
-        rgba(93, 140, 106, 0.8) 60%,
-        rgba(62, 119, 79, 0.8) 80%,
-        rgba(27, 95, 48, 0.8) 100%
-      ),
-      url('../images/bulsu-bustos.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    min-height: 100vh;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-  }
 
   /* Side Panel Styles */
   .side-panel {
@@ -84,6 +56,22 @@
   .panel-content {
     padding: 20px 0;
   }
+  /* Scrollable TOS content inside panel */
+  #tosContent h3 {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    color: #1b5f30;
+  }
+  #tosContent p, #tosContent li {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.95rem;
+    color: #333;
+    line-height: 1.5;
+  }
+  #tosContent ul {
+    padding-left: 1.2rem;
+  }
 
   .menu-item {
     display: flex;
@@ -112,189 +100,53 @@
     transform: rotate(180deg);
     opacity: 0.6;
   }
-
-  /* Overlay Styles */
+  /* Overlay for side panel */
   .overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
     opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 900;
   }
-
   .overlay.active {
     opacity: 1;
-    visibility: visible;
+    pointer-events: auto;
   }
-
-  .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .gradient-background {
+    background: linear-gradient(-45deg, 
+        #1B5F30,   /* deep green */
+        #2E7A49,   /* lighter green accent */
+        #6FBF82,   /* soft fresh green */
+        #FFFFFF    /* subtle white */
+      );  background-size: 180% 180%;
+      animation: gradient-animation 12s ease infinite;
+    }
+    #title img{
+      width:337px;
+      
+    }
+    @keyframes gradient-animation {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
     
-    height: 100%;
-    width: 100%;
-  }
-  .campus-logo {
-    display: flex;
-    justify-content: center;
-  
-  }
-  .campus-logo img {
-    width: 100%;
-    max-width: 150px;
-    height: auto;
-  }
-  .ar-logo {
-      display: flex;
-      justify-content: center;
-  }
-  .ar-logo img {
-      width: 100%;
-      max-width: 350px;
-      height: auto;
-      transition: max-width 0.3s ease;
-  }
-
-  .title {
-      display: flex;
-      justify-content: center;
-  }
-  .title h1 {
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 24px;
-    color: #fff;
-    transition: font-size 0.3s ease;
-  }
-
-  /* Responsive adjustments for smaller screen heights */
-  @media screen and (max-height: 600px) {
-    .ar-logo img {
-      max-width: 280px;
+    .icon-square {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.75rem;
     }
-    .title h1 {
-      font-size: 20px;
-    }
-  }
-
-  @media screen and (max-height: 500px) {
-    .ar-logo img {
-      max-width: 220px;
-    }
-    .title h1 {
-      font-size: 18px;
-    }
-  }
-
-  @media screen and (max-height: 400px) {
-    .ar-logo img {
-      max-width: 180px;
-    }
-    .title h1 {
-      font-size: 16px;
-    }
-  }
-
-  /* Responsive adjustments for side panel */
-  @media screen and (max-width: 400px) {
-    .side-panel {
-      width: 280px;
-      right: -280px;
-    }
-  }
-
-  .footer-nav {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100vw;
-    background: #faf7f3;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 0 16px 0;
-    border-top: 2px solid #3e774f;
-    z-index: 100;
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
-  }
-
-  .start-btn {
-    background: #1b5f30;
-    color: #fff;
-    font-size: 1.5rem;
-    border: none;
-    border-radius: 10px;
-    padding: 18px 0;
-    width: 90%;
-    max-width: 420px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: background 0.2s;
-  }
-  .start-btn:hover {
-    background: #3e774f;
-  }
-
-  .tos-message {
-    color: #888;
-    font-size: 1rem;
-    text-align: center;
-    font-family: 'Inter', Arial, sans-serif;
-  }
-
-  /* Large AR Icon Styles */
-  .ar-icon-large {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px 0;
-    animation: pulse 2s infinite;
-  }
-
-  .ar-icon-big {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    box-shadow: 0 8px 25px rgba(27, 95, 48, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .ar-icon-big:hover {
-    transform: scale(1.1);
-    box-shadow: 0 12px 35px rgba(27, 95, 48, 0.4);
-  }
-
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  /* Responsive adjustments for AR icon */
-  @media screen and (max-width: 480px) {
-    .ar-icon-big {
-      width: 100px;
+    
+    .profile-img {
       height: 100px;
+      border-radius: 50%;
     }
-  }
-
-  @media screen and (max-width: 360px) {
-    .ar-icon-big {
-      width: 80px;
-      height: 80px;
-    }
-  }
+    
