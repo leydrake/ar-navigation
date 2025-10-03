@@ -13,6 +13,11 @@ public class NavMeshDistanceUI : MonoBehaviour
     void Start()
     {
         path = new NavMeshPath();
+        if (distanceText != null)
+        {
+            distanceText.richText = true;
+            distanceText.enableAutoSizing = false;
+        }
     }
 
     void Update()
@@ -26,12 +31,12 @@ public class NavMeshDistanceUI : MonoBehaviour
             {
                 float distance = GetPathLength(player.position, targetPos);
 
-                // Show meters in UI
-                distanceText.text = $"{distance:F1} m away";
+                // Styled label and value using TMP rich-text
+                distanceText.text = $"<size=36><color=#000000>Distance</color></size>\n<size=64><b><color=#000000>{distance:F1} M</color></b></size>";
             }
             else
             {
-                distanceText.text = "No target selected";
+                distanceText.text = "<size=44><color=#FF0000CC>no location selected</color></size>";
             }
         }
     }

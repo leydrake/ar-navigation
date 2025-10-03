@@ -152,26 +152,38 @@ public static QrCodeRecenter Instance { get; private set; }
     private void SetQrCodeRecenterTarget(string targetText) {
         Transform targetTransform = ResolveTargetTransform(targetText);
         if (targetTransform == null) {
+			Debug.LogWarning($"QrCodeRecenter: No target found for '{targetText}'. Ensure the QR text matches a GameObject name or handler mapping.");
             return;
         }
 
-        // Reset position and rotation of ARSession
-        session.Reset();
+		// Do NOT reset AR session here; resetting can cause vertical (Y) shifts depending on provider
 
-        // Recenter the AR origin to the target
-        sessionOrigin.transform.position = targetTransform.position;
-        sessionOrigin.transform.rotation = targetTransform.rotation;
+		// Move the AR camera to the target position (preserve current Y) and align forward horizontally
+		// This computes and applies the necessary origin transform internally
+		Vector3 currentCameraWorldPos = sessionOrigin.Camera != null ? sessionOrigin.Camera.transform.position : sessionOrigin.transform.position;
+		Vector3 targetXZWithCurrentY = new Vector3(targetTransform.position.x, currentCameraWorldPos.y, targetTransform.position.z);
+		sessionOrigin.MoveCameraToWorldLocation(targetXZWithCurrentY);
+		Vector3 desiredForward = targetTransform.forward;
+		desiredForward.y = 0f;
+		if (desiredForward.sqrMagnitude < 0.0001f) {
+			desiredForward = Vector3.forward; // fallback to world forward
+		}
+		desiredForward.Normalize();
+		sessionOrigin.MatchOriginUpCameraForward(Vector3.up, desiredForward);
 
-        // Move indicator sphere to the target as well (if assigned)
-        if (indicatorSphere != null) {
-            indicatorSphere.position = targetTransform.position;
-            indicatorSphere.rotation = targetTransform.rotation;
-        }
+		Debug.Log($"QrCodeRecenter: Recentered to target '{targetTransform.name}'.");
 
-        // Position the minimap camera above the target (if assigned)
-        if (minimapCamera != null) {
-            Vector3 overhead = targetTransform.position + Vector3.up * minimapHeight;
-            minimapCamera.position = overhead;
+		// Move indicator sphere to camera XZ (preserve its Y) so it matches what the user sees
+		if (indicatorSphere != null) {
+			Vector3 indicatorCurrent = indicatorSphere.position;
+			indicatorSphere.position = new Vector3(currentCameraWorldPos.x, indicatorCurrent.y, currentCameraWorldPos.z);
+			indicatorSphere.rotation = targetTransform.rotation;
+		}
+
+		// Position the minimap camera to camera XZ (preserve its Y) so it overlays correctly
+		if (minimapCamera != null) {
+			Vector3 miniCurrent = minimapCamera.position;
+			minimapCamera.position = new Vector3(currentCameraWorldPos.x, miniCurrent.y, currentCameraWorldPos.z);
             if (minimapNorthUp) {
                 minimapCamera.rotation = Quaternion.Euler(90f, 0f, 0f);
             } else {
@@ -232,4 +244,13 @@ public static QrCodeRecenter Instance { get; private set; }
             StartScanning();
         }
     }
+#if UNITY_EDITOR
+	private void Update() {
+		if (Input.GetKeyDown(KeyCode.Space)) {
+			hasScannedSuccessfully = true;
+			StopScanning();
+			SetQrCodeRecenterTarget("Target(Sogo)");
+		}
+	}
+#endif
 }

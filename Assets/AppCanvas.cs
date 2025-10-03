@@ -4,6 +4,21 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public enum SearchMethod
+{
+	Name,       // Search by GameObject name only
+	Text,       // Search by Text component only
+	TMP_Text,   // Search by TMP_Text component only
+	All         // Search by all available text sources
+}
+
+public enum SearchMode
+{
+	Contains,    // Search term can be anywhere in the text
+	StartsWith,  // Text must start with search term
+	Exact        // Text must exactly match search term
+}
+
 public class AppCanvas : MonoBehaviour
 {
     [Header("UI References")]
@@ -48,12 +63,27 @@ public class AppCanvas : MonoBehaviour
 	public TMP_Dropdown myTMPDropdown;
 	public TMP_InputField searchTMPInput;
 
+	[Header("Search UI - Options Panel (optional)")]
+	public InputField panelSearchInput; // Search field inside the popup panel (UGUI)
+	public TMP_InputField panelSearchTMPInput; // Search field inside the popup panel (TMP)
+
 	[Header("Popup Option Panel")]
 	public GameObject optionsPanel; // Panel to show/hide
 	public Button openOptionsButton; // Button to open panel
 	public Button closeOptionsButton; // Button to close panel
 	public RectTransform optionsContainer; // Parent container for option items
 	public GameObject optionItemPrefab; // Prefab expected to have a Button and a Text/TMP_Text
+	
+	[Header("Search Filtering")]
+	public RectTransform locationsContainer; // Container with location items to filter
+	[Tooltip("How to search for text in location items: Name, Text, TMP_Text, or All")]
+	public SearchMethod searchMethod = SearchMethod.All;
+	[Tooltip("Search in children recursively (not just direct children)")]
+	public bool searchRecursively = true;
+	[Tooltip("Case sensitive search")]
+	public bool caseSensitive = false;
+	[Tooltip("Search mode: Contains (anywhere), StartsWith, or Exact")]
+	public SearchMode searchMode = SearchMode.Contains;
 	
 	[Tooltip("When opening, move panel to end of sibling order and (optionally) bump sorting.")]
 	public bool ensureOptionsPanelOnTop = true;
@@ -115,6 +145,15 @@ public class AppCanvas : MonoBehaviour
 		if (searchTMPInput != null)
 		{
 			searchTMPInput.onValueChanged.AddListener(OnTMPSearchValueChanged);
+		}
+		// Wire panel-local search inputs (live filter only when panel is open)
+		if (panelSearchInput != null)
+		{
+			panelSearchInput.onValueChanged.AddListener(OnPanelSearchValueChanged);
+		}
+		if (panelSearchTMPInput != null)
+		{
+			panelSearchTMPInput.onValueChanged.AddListener(OnPanelTMPSearchValueChanged);
 		}
     }
     
@@ -239,11 +278,8 @@ public class AppCanvas : MonoBehaviour
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 dragHandle, inputPos, null, out Vector2 localPoint);
             
-            Debug.Log($"Click detected at: {inputPos}, Local point: {localPoint}, Handle rect: {dragHandle.rect}");
-            
             if (dragHandle.rect.Contains(localPoint))
             {
-                Debug.Log("Click is within first drag handle!");
                 TogglePanelState(bottomPanel);
                 return;
             }
@@ -255,17 +291,12 @@ public class AppCanvas : MonoBehaviour
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 dragHandle2, inputPos, null, out Vector2 localPoint);
             
-            Debug.Log($"Click detected at: {inputPos}, Local point: {localPoint}, Handle2 rect: {dragHandle2.rect}");
-            
             if (dragHandle2.rect.Contains(localPoint))
             {
-                Debug.Log("Click is within second drag handle!");
                 TogglePanelState(bottomPanel2);
                 return;
             }
         }
-        
-        Debug.Log("Click is NOT within any drag handle");
     }
     
     private void TogglePanelState(RectTransform panel)
@@ -292,7 +323,6 @@ public class AppCanvas : MonoBehaviour
         // Toggle between collapsed and original position
         if (currentCollapsedState)
         {
-            Debug.Log("Expanding to original position");
             // Expand to original position with animation
             if (panel == bottomPanel2)
             {
@@ -306,7 +336,6 @@ public class AppCanvas : MonoBehaviour
         }
         else
         {
-            Debug.Log("Collapsing panel");
             // Collapse with animation
             if (panel == bottomPanel2)
             {
@@ -336,25 +365,17 @@ public class AppCanvas : MonoBehaviour
         
         float dragDelta = inputPos.y - dragStartPosition.y;
         
-        Debug.Log($"Drag ended. Delta: {dragDelta}, Threshold: 10f");
-        
         // Check if it's a click (no movement) or a drag
         if (Mathf.Abs(dragDelta) < 10f) // Small threshold for click detection
         {
-            Debug.Log("Treating as click");
             // It's a click - toggle the panel
             HandleClick(inputPos);
         }
         else
         {
-            Debug.Log("Treating as drag");
             // It's a drag - use drag logic
-            Debug.Log($"Current state - isCollapsed: {isCollapsed}");
-            
             if (dragDelta < 0) // Dragged down (negative delta)
             {
-                Debug.Log("Dragging down - collapsing");
-                
                 if (useCollider)
                 {
                     // Check if panel is already at collider limit
@@ -363,7 +384,6 @@ public class AppCanvas : MonoBehaviour
                     
                     if (currentY <= colliderLimit)
                     {
-                        Debug.Log("Hit collider limit - can't collapse further");
                         // Don't collapse, stay at current position
                         return;
                     }
@@ -384,7 +404,6 @@ public class AppCanvas : MonoBehaviour
             }
             else if (dragDelta > 0) // Dragged up (positive delta)
             {
-                Debug.Log("Dragging up - expanding");
                 // Always expand when dragging up
                 RectTransform activePanel = GetCurrentActivePanel();
                 if (activePanel == bottomPanel2) // Advanced panel
@@ -491,6 +510,18 @@ public class AppCanvas : MonoBehaviour
 	{
 		if (optionsPanel == null || optionsContainer == null || optionItemPrefab == null) return;
 		optionsPanel.SetActive(true);
+		// Seed the panel search input with the current main search text (if any)
+		string seedFilter = GetMainSearchFilter();
+		if (panelSearchTMPInput != null)
+		{
+			panelSearchTMPInput.text = seedFilter;
+			panelSearchTMPInput.ActivateInputField();
+		}
+		else if (panelSearchInput != null)
+		{
+			panelSearchInput.text = seedFilter;
+			panelSearchInput.ActivateInputField();
+		}
 		if (ensureOptionsPanelOnTop)
 		{
 			// Bring to front within its parent hierarchy
@@ -536,6 +567,15 @@ public class AppCanvas : MonoBehaviour
 	private void BuildOptionsList(string filter)
 	{
 		ClearSpawnedOptions();
+		
+		// If we have a locations container, filter its children instead of dropdown options
+		if (locationsContainer != null)
+		{
+			FilterLocationsContainer(filter);
+			return;
+		}
+		
+		// Fallback to dropdown options filtering
 		List<string> optionTexts = GetAllOptionTexts();
 		if (optionTexts == null || optionTexts.Count == 0) return;
 
@@ -556,6 +596,119 @@ public class AppCanvas : MonoBehaviour
 				btn.onClick.AddListener(() => OnOptionItemClicked(optionIndex));
 			}
 			spawnedOptionItems.Add(item);
+		}
+	}
+	
+	private void FilterLocationsContainer(string filter)
+	{
+		if (locationsContainer == null) return;
+		
+		// Get all items to filter
+		List<GameObject> itemsToFilter = new List<GameObject>();
+		CollectFilterableItems(locationsContainer, itemsToFilter);
+		
+		// Apply filter to each item
+		foreach (GameObject item in itemsToFilter)
+		{
+			bool shouldShow = ShouldShowItem(item, filter);
+			item.SetActive(shouldShow);
+		}
+	}
+	
+	private void CollectFilterableItems(Transform parent, List<GameObject> items)
+	{
+		if (searchRecursively)
+		{
+			// Collect all children recursively
+			CollectAllChildren(parent, items);
+		}
+		else
+		{
+			// Collect only direct children
+			for (int i = 0; i < parent.childCount; i++)
+			{
+				items.Add(parent.GetChild(i).gameObject);
+			}
+		}
+	}
+	
+	private void CollectAllChildren(Transform parent, List<GameObject> items)
+	{
+		for (int i = 0; i < parent.childCount; i++)
+		{
+			Transform child = parent.GetChild(i);
+			items.Add(child.gameObject);
+			CollectAllChildren(child, items); // Recursive call
+		}
+	}
+	
+	private bool ShouldShowItem(GameObject item, string filter)
+	{
+		if (string.IsNullOrEmpty(filter))
+		{
+			return true; // Show all when no filter
+		}
+		
+		string searchableText = GetSearchableText(item);
+		if (string.IsNullOrEmpty(searchableText))
+		{
+			return false; // Hide items with no searchable text
+		}
+		
+		// Apply case sensitivity
+		string textToSearch = caseSensitive ? searchableText : searchableText.ToLowerInvariant();
+		string filterToUse = caseSensitive ? filter : filter.ToLowerInvariant();
+		
+		// Apply search mode
+		switch (searchMode)
+		{
+			case SearchMode.Contains:
+				return textToSearch.Contains(filterToUse);
+			case SearchMode.StartsWith:
+				return textToSearch.StartsWith(filterToUse);
+			case SearchMode.Exact:
+				return textToSearch == filterToUse;
+			default:
+				return textToSearch.Contains(filterToUse);
+		}
+	}
+	
+	private string GetSearchableText(GameObject obj)
+	{
+		switch (searchMethod)
+		{
+			case SearchMethod.Name:
+				return obj.name;
+				
+			case SearchMethod.Text:
+				Text uiText = obj.GetComponentInChildren<Text>();
+				return uiText != null ? uiText.text : "";
+				
+			case SearchMethod.TMP_Text:
+				TMP_Text tmpText = obj.GetComponentInChildren<TMP_Text>();
+				return tmpText != null ? tmpText.text : "";
+				
+			case SearchMethod.All:
+			default:
+				// Try all methods and combine results
+				List<string> texts = new List<string>();
+				
+				// Add object name
+				if (!string.IsNullOrEmpty(obj.name))
+					texts.Add(obj.name);
+				
+				// Add Text component
+				Text textComp = obj.GetComponentInChildren<Text>();
+				if (textComp != null && !string.IsNullOrEmpty(textComp.text))
+					texts.Add(textComp.text);
+				
+				// Add TMP_Text component
+				TMP_Text tmpComp = obj.GetComponentInChildren<TMP_Text>();
+				if (tmpComp != null && !string.IsNullOrEmpty(tmpComp.text))
+					texts.Add(tmpComp.text);
+				
+				// Combine all texts with space separator
+				return string.Join(" ", texts);
 		}
 	}
 
@@ -636,6 +789,19 @@ public class AppCanvas : MonoBehaviour
 
 	private string GetCurrentSearchFilter()
 	{
+		// Prefer panel-local inputs when the panel is open
+		if (optionsPanel != null && optionsPanel.activeSelf)
+		{
+			if (panelSearchTMPInput != null) return panelSearchTMPInput.text;
+			if (panelSearchInput != null) return panelSearchInput.text;
+		}
+		if (searchTMPInput != null) return searchTMPInput.text;
+		if (searchInput != null) return searchInput.text;
+		return null;
+	}
+
+	private string GetMainSearchFilter()
+	{
 		if (searchTMPInput != null) return searchTMPInput.text;
 		if (searchInput != null) return searchInput.text;
 		return null;
@@ -650,6 +816,22 @@ public class AppCanvas : MonoBehaviour
 	}
 
 	private void OnTMPSearchValueChanged(string _)
+	{
+		if (optionsPanel != null && optionsPanel.activeSelf)
+		{
+			BuildOptionsList(GetCurrentSearchFilter());
+		}
+	}
+
+	private void OnPanelSearchValueChanged(string _)
+	{
+		if (optionsPanel != null && optionsPanel.activeSelf)
+		{
+			BuildOptionsList(GetCurrentSearchFilter());
+		}
+	}
+
+	private void OnPanelTMPSearchValueChanged(string _)
 	{
 		if (optionsPanel != null && optionsPanel.activeSelf)
 		{
@@ -683,6 +865,14 @@ public class AppCanvas : MonoBehaviour
 		{
 			searchTMPInput.onValueChanged.RemoveListener(OnTMPSearchValueChanged);
 		}
+		if (panelSearchInput != null)
+		{
+			panelSearchInput.onValueChanged.RemoveListener(OnPanelSearchValueChanged);
+		}
+		if (panelSearchTMPInput != null)
+		{
+			panelSearchTMPInput.onValueChanged.RemoveListener(OnPanelTMPSearchValueChanged);
+		}
     }
     
     // Public method to be called by the Advance Options button
@@ -714,7 +904,6 @@ public class AppCanvas : MonoBehaviour
             advancedContainer.gameObject.SetActive(true);
         }
         
-        Debug.Log("Switched to Advanced Options");
     }
     
     private void ShowSimpleOptions()
@@ -734,7 +923,6 @@ public class AppCanvas : MonoBehaviour
             simpleContainer.gameObject.SetActive(true);
         }
         
-        Debug.Log("Switched to Simple Options");
     }
     
     private RectTransform GetCurrentActivePanel()
