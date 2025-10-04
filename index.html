@@ -4,22 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navigate My Campus - Home</title>
-    <link rel="icon" type="image/png" sizes="16x16" href="./icons/AR_ICON_W_Border.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="./icons/AR_ICON_W_Border.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="./icons/AR_ICON_W_Border.png">
-    <link rel="icon" type="image/png" sizes="64x64" href="./icons/AR_ICON_W_Border.png">
-    <link rel="shortcut icon" type="image/png" href="./icons/AR_ICON_W_Border.png">
-    <link rel="apple-touch-icon" href="./icons/AR_ICON_W_Border.png">
-    <link rel="stylesheet" href="./css/index.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="icons/AR_ICON_W_Border.png">
+    <link rel="apple-touch-icon" href="icons/AR_ICON_W_Border.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
     
     
 </head>
 <body>
     <div class="landing-container">
         <div class="main-panel">
-            <!-- Left Content Area -->
-            <div class="content-left">
+            <div class="header">
+                <div class="header-container">
+                    <div class="brand-section">
+                        <div class="logo">
+                            <img src="icons/AR_ICON_BLACK.png" alt="Navigate My Campus Logo" class="logo-image">
+                        </div>
+                        <div class="brand-name">NAVIGATE MY CAMPUS</div>
+                    </div>
+                    
+                    <nav class="navigation">
+                        <a href="index.html" class="nav-link active">Home</a>
+                        <a href="about.html" class="nav-link">About us</a>
+                        <a href="#" class="nav-link">Reviews</a>
+                        <a href="#" class="nav-link">Our blog</a>
+                    </nav>
+                    
+                    <div class="download-section">
+                        <button class="download-btn">Download App</button>
+                        <button class="burger-menu" id="burgerMenu">
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu Dropdown -->
+                <div class="mobile-menu" id="mobileMenu">
+                    <div class="mobile-menu-content">
+                        <div class="mobile-nav">
+                            <a href="about.html" class="mobile-nav-link">About us</a>
+                            <a href="#" class="mobile-nav-link">Reviews</a>
+                            <a href="#" class="mobile-nav-link">Our blog</a>
+                        </div>
+                        <div class="mobile-download">
+                            <button class="mobile-download-btn">Download App</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+                <!-- Left Content Area -->
+                <div class="content-left">
                 <div class="content-header">
                     <h1 class="main-heading">
                         <span class="heading-primary">Navigate My Campus                        </span>
@@ -36,7 +82,7 @@
                     </div>
                     
                     <div class="download-buttons">
-                        <!-- App Store Button -->
+                        <!-- App Store Button
                         <a href="#" class="playstore-button">
                             <span class="icon">
                                 <svg
@@ -63,7 +109,7 @@
                                 <span class="text-2">App store</span>
                             </span>
                         </a>
-                        
+                         -->
                         <!-- Google Play Store Button -->
                         <a class="playstore-button" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="icon" viewBox="0 0 512 512">
@@ -82,8 +128,9 @@
             <div class="content-right">
                 <div class="phone-screen">
                     <!-- Replace this img tag with your own phone image -->
-                    <img src="./images/iphoneMOCKUP.png" alt="Phone Mockup" class="phone-image">
+                    <img src="images/iphoneMOCKUP.png" alt="Phone Mockup" class="phone-image">
                 </div>
+            </div>
             </div>
         </div>
         
@@ -102,8 +149,31 @@
             alert('Download functionality would be implemented here');
         }
 
-        // Add smooth scrolling behavior
+        // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
+            const burgerMenu = document.getElementById('burgerMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileDownloadBtn = document.querySelector('.mobile-download-btn');
+
+            // Toggle mobile menu
+            burgerMenu.addEventListener('click', function() {
+                burgerMenu.classList.toggle('active');
+                mobileMenu.classList.toggle('open');
+            });
+
+            // Download button functionality for mobile
+            if (mobileDownloadBtn) {
+                mobileDownloadBtn.addEventListener('click', downloadApp);
+            }
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!burgerMenu.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    burgerMenu.classList.remove('active');
+                    mobileMenu.classList.remove('open');
+                }
+            });
+
             // Add intersection observer for animations
             const observerOptions = {
                 threshold: 0.1,
@@ -119,8 +189,8 @@
                 });
             }, observerOptions);
 
-            // Observe elements for animation
-            document.querySelectorAll('.content-left, .content-right').forEach(el => {
+            // Observe elements for animation (only content-left now)
+            document.querySelectorAll('.content-left').forEach(el => {
                 observer.observe(el);
             });
         });

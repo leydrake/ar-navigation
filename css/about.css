@@ -61,14 +61,12 @@ body {
     cursor: pointer;
 }
 
-.nav-link:hover {
-    color: #666;
-}
 .nav-link:hover,
 .nav-link.active {
     color: #666;
     font-weight: 600;
 }
+
 .download-section {
     display: flex;
     align-items: center;
@@ -190,7 +188,7 @@ body {
     font-weight: 500;
     color: #000;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all .3s ease;
     width: 100%;
     max-width: 200px;
 }
@@ -201,7 +199,7 @@ body {
 }
 
 /* Main Container */
-.landing-container {
+.about-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -216,9 +214,9 @@ body {
     background: #fafafa;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-    max-width: 1200px;
+    max-width: 1400px;
     width: 100%;
-    min-height: 600px;
+    min-height: 700px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -226,18 +224,6 @@ body {
     z-index: 2;
 }
 
-/* Grey background element */
-.main-panel::before {
-    content: '';
-    position: absolute;
-    top: 40%;
-    left: 5%;
-    width: 90%;
-    height: 55%;
-    background: #D9D9D9;
-    border-radius: 15px;
-    z-index: 0;
-}
 
 /* Content Wrapper */
 .content-wrapper {
@@ -245,6 +231,7 @@ body {
     flex: 1;
     position: relative;
     z-index: 3;
+    padding-bottom: 200px;
 }
 
 /* Left Content Area */
@@ -253,19 +240,14 @@ body {
     padding: 60px 50px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
     z-index: 3;
-    opacity: 0;
-    transform: translateX(-50px);
-    animation: slideInLeft 0.8s ease-out forwards;
 }
 
 .content-header {
     margin-bottom: 40px;
 }
-
-
 
 .main-heading {
     display: flex;
@@ -284,124 +266,216 @@ body {
     font-size: 28px;
     font-weight: 400;
     font-style: italic;
-    color: #000;
     line-height: 1.2;
+    color: #555;
+
 }
 
-.content-body {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
 
-.description-box {
-    margin-left: 20px;
-
-    background: transparent;
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.description-text {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
-    font-weight: 400;
-}
-
-.download-buttons {
-    align-self: flex-start;
-    margin-left: 50px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-}
-
-.playstore-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #000;
-    border-radius: 12px;
-    background-color: rgba(0, 0, 0, 1);
-    padding: 0.625rem 1.5rem;
-    text-align: center;
-    color: rgba(255, 255, 255, 1);
-    outline: 0;
-    transition: all .2s ease;
-    text-decoration: none;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.6s ease-out 0.4s forwards;
-}
-
-.playstore-button:hover {
-    background-color: transparent;
-    color: rgba(0, 0, 0, 1);
-}
-
-.icon {
-    height: 1.5rem;
-    width: 1.5rem;
-}
-
-.texts {
-    margin-left: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1;
-}
-
-.text-1 {
-    margin-bottom: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-}
-
-.text-2 {
-    font-weight: 600;
-}
-
-/* Right Content Area - Phone Mockup */
+/* Right Content Area - Promotional Section */
 .content-right {
     flex: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     background: transparent;
     position: relative;
-    padding: 0;
-    margin: 0;
+    padding: 60px 50px;
     z-index: 3;
-    opacity: 1;
-    transform: translateX(0);
 }
 
-.phone-screen {
+.promotional-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: left;
+}
+
+.promotional-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.1;
+    font-style: italic;
+}
+
+.promotional-subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 15px;
+}
+
+.mission-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.1;
+    font-style: italic;
+    margin-bottom: 10px;
+    margin-top: 15px;
+}
+
+.mission-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mission-list li {
+    font-size: 12px;
+    font-weight: 400;
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    padding-left: 15px;
+    position: relative;
+}
+
+.mission-list li::before {
+    content: "•";
+    color: #333;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+/* Team Cards Section */
+.team-cards-section {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    z-index: 4;
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.member-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 30px 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    position: relative;
+}
+
+.member-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* Card Background Colors */
+.purple-card {
+    background: linear-gradient(135deg, #e8d5ff 0%, #f3e8ff 100%);
+}
+.purple-card::after  {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0,30 Q25,60 50,30 T100,30 L100,0 L0,0 Z" fill="%23e1ddd2" opacity="0.3"/></svg>') no-repeat;
+    background-size: contain;
+}
+
+.white-card {
+    background: #e7bcc4
+}
+
+.white-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0,30 Q25,60 50,30 T100,30 L100,0 L0,0 Z" fill="%23e1ddd2" opacity="0.3"/></svg>') no-repeat;
+    background-size: contain;
+}
+
+.green-card {
+    background: linear-gradient(135deg, #d5f4e6 0%, #e8f8f0 100%);
+}
+
+.green-card::after  {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0,30 Q25,60 50,30 T100,30 L100,0 L0,0 Z" fill="%23e1ddd2" opacity="0.3"/></svg>') no-repeat;
+    background-size: contain;
+}
+
+.blue-card {
+    background: linear-gradient(135deg, #e5f2ff 0%, #f0f8ff 100%);
+}
+.blue-card::after  {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0,30 Q25,60 50,30 T100,30 L100,0 L0,0 Z" fill="%23e1ddd2" opacity="0.3"/></svg>') no-repeat;
+    background-size: contain;
+}
+
+.card-icon {
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: auto;
-    padding: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.card-icon svg {
+    width: 30px;
+    height: 30px;
+    stroke: #333;
+    stroke-width: 1.5;
+}
+
+.member-card:hover .card-icon {
+    transform: scale(1.1);
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.2;
+    text-align: center;
     margin: 0;
 }
 
-.phone-image {
-    max-width: 350px;
-    width: auto;
-    height: auto;
-    max-height: 70vh;
-    object-fit: contain;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0;
+.card-description {
+    font-size: 14px;
+    font-weight: 400;
+    color: #666;
+    line-height: 1.4;
+    text-align: center;
     margin: 0;
-    animation: phoneFloat 3s ease-in-out infinite;
 }
 
 /* Background Decorations */
@@ -449,124 +523,69 @@ body {
 }
 
 /* Animations */
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
 }
 
-@keyframes slideInLeft {
-    0% {
-        opacity: 0;
-        transform: translateX(-50px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInRight {
-    0% {
-        opacity: 0;
-        transform: translateX(50px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes phoneFloat {
-    0%, 100% { 
-
-
-        transform: translateY(0px) rotateZ(0deg);
-    }
-    25% { 
-        transform: translateY(-2.5px) rotateZ(1deg);
-    }
-    50% { 
-        transform: translateY(-1.3px) rotateZ(0deg);
-    }
-    75% { 
-        transform: translateY(-2.5px) rotateZ(-1deg);
-    }
-}
-
-@keyframes fadeInUp {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeInScale {
-    0% {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
 /* Responsive Design */
 
-/* Specific width range to prevent header overlap */
-@media screen and (min-width: 1025px)  {
-    .main-heading {
-        margin-top: -60px;
-    }
-}
-
-/* Large screens (1300px and above) */
-@media screen and (min-width: 1300px) {
-    /* No additional styling needed */
-}
-
 /* Large tablets and small desktops */
-@media screen and (max-width: 1024px) {
-    .content-left {
-        padding: 40px 30px;
+@media screen and (max-width: 1200px) {
+    .main-panel {
+        max-width: 1000px;
     }
     
     .heading-primary {
-        font-size: 40px;
+        font-size: 42px;
     }
     
     .heading-secondary {
         font-size: 24px;
     }
     
-    .phone-image {
-        max-width: 350px;
-        max-height: 65vh;
+    .promotional-title {
+        font-size: 22px;
     }
     
-    .header {
-        top: 15px;
-        left: 15px;
-        right: 15px;
-        
+    .mission-title {
+        font-size: 18px;
+    }
+    
+    
+    .team-cards-section {
+        bottom: 20px;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .content-left {
+        padding: 40px 30px;
+    }
+    
+    .content-right {
+        padding: 40px 30px;
+    }
+    
+    .heading-primary {
+        font-size: 36px;
+    }
+    
+    .heading-secondary {
+        font-size: 22px;
+    }
+    
+    .promotional-title {
+        font-size: 20px;
+    }
+    
+    .mission-title {
+        font-size: 16px;
     }
     
     .header-container {
         padding: 12px 20px;
     }
-   .download-section{
-    margin-right: 20px;
-   }
-  
     
     .navigation {
         gap: 20px;
@@ -575,11 +594,20 @@ body {
     .nav-link {
         font-size: 15px;
     }
+    
+    .card-title {
+        font-size: 15px;
+    }
+    
+    .team-cards-section {
+        bottom: 20px;
+        width: 95%;
+    }
 }
 
 /* Tablets */
 @media screen and (max-width: 768px) {
-    .landing-container {
+    .about-container {
         padding: 20px;
     }
     
@@ -587,10 +615,12 @@ body {
         flex-direction: column;
         border-radius: 16px;
         min-height: auto;
+        max-width: 100%;
     }
     
     .content-wrapper {
         flex-direction: column;
+        padding-bottom: 400px;
     }
     
     .content-left {
@@ -598,32 +628,37 @@ body {
         text-align: center;
     }
     
-    
     .content-right {
-        padding: 0;
-        background: transparent;
+        padding: 20px 30px;
+        align-items: center;
     }
     
     .heading-primary {
-        font-size: 36px;
+        font-size: 32px;
     }
     
     .heading-secondary {
         font-size: 20px;
     }
-            
-    .phone-image {
-        max-width: 280px;
-        max-height: 60vh;
+    
+    .promotional-title {
+        font-size: 18px;
+        text-align: center;
     }
     
-    .download-buttons {
-        align-self: center;
-        margin-left: 0;
-        margin-bottom: 0;
-        flex-direction: column;
+    .promotional-subtitle {
+        text-align: center;
+        font-size: 13px;
     }
     
+    .mission-title {
+        font-size: 16px;
+        text-align: center;
+    }
+    
+    .mission-list li {
+        text-align: center;
+    }
     
     .header-container {
         padding: 10px 15px;
@@ -656,11 +691,36 @@ body {
         display: flex;
         margin-right: 20px;
     }
+    
+    .team-cards-section {
+        position: static;
+        transform: none;
+        width: 100%;
+        margin-top: 30px;
+        padding: 0 30px;
+    }
+    
+    .cards-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .member-card {
+        padding: 25px 20px;
+    }
+    
+    .card-title {
+        font-size: 14px;
+    }
+    
+    .card-description {
+        font-size: 13px;
+    }
 }
 
 /* Mobile devices */
 @media screen and (max-width: 480px) {
-    .landing-container {
+    .about-container {
         padding: 15px;
     }
     
@@ -669,15 +729,19 @@ body {
     }
     
     .content-right {
-        padding: 0;
+        padding: 20px;
     }
     
     .heading-primary {
-        font-size: 28px;
+        font-size: 26px;
     }
     
     .heading-secondary {
         font-size: 18px;
+    }
+    
+    .promotional-title {
+        font-size: 20px;
     }
     
     .description-box {
@@ -687,25 +751,6 @@ body {
     .description-text {
         font-size: 15px;
     }
-    
-    .download-buttons {
-        margin-left: 0;
-        margin-bottom: 0;
-    }
-    
-    .playstore-button {
-        padding: 0.5rem 1.25rem;
-    }
-    
-    .text-1 {
-        font-size: 0.7rem;
-    }
-    
-    .phone-image {
-        max-width: 220px;
-        max-height: 50vh;
-    }
-    
     
     .header-container {
         padding: 8px 12px;
@@ -748,6 +793,37 @@ body {
         padding: 6px 14px;
         font-size: 12px;
     }
+    
+    .team-cards-section {
+        padding: 0 20px;
+    }
+    
+    .cards-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .member-card {
+        padding: 20px 15px;
+    }
+    
+    .card-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .card-icon svg {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .card-title {
+        font-size: 13px;
+    }
+    
+    .card-description {
+        font-size: 12px;
+    }
 }
 
 /* Small mobile devices */
@@ -757,25 +833,19 @@ body {
     }
     
     .content-right {
-        padding: 0;
+        padding: 15px;
     }
     
     .heading-primary {
-        font-size: 24px;
+        font-size: 22px;
     }
     
     .heading-secondary {
         font-size: 16px;
     }
     
-    .download-buttons {
-        margin-left: 0;
-        margin-bottom: 0;
-    }
-    
-    .phone-image {
-        max-width: 180px;
-        max-height: 45vh;
+    .promotional-title {
+        font-size: 18px;
     }
     
     .header-container {
@@ -801,6 +871,22 @@ body {
     
     .download-btn {
         padding: 5px 12px;
+        font-size: 11px;
+    }
+    
+    .team-cards-section {
+        padding: 0 15px;
+    }
+    
+    .member-card {
+        padding: 18px 12px;
+    }
+    
+    .card-title {
+        font-size: 12px;
+    }
+    
+    .card-description {
         font-size: 11px;
     }
 }
