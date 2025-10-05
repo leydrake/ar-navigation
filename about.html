@@ -21,17 +21,18 @@
             <div class="header">
                 <div class="header-container">
                     <div class="brand-section">
-                        <div class="logo">
-                            <img src="icons/AR_ICON_BLACK.png" alt="Navigate My Campus Logo" class="logo-image">
-                        </div>
-                        <div class="brand-name">NAVIGATE MY CAMPUS</div>
+                        <a href="index.html" class="brand-link">
+                            <div class="logo">
+                                <img src="icons/AR_ICON_TRANSPARENT.png" alt="Navigate My Campus Logo" class="logo-image">
+                            </div>
+                            <div class="brand-name">NAVIGATE MY CAMPUS</div>
+                        </a>
                     </div>
                     
-                    <nav class="navigation">
+                    <nav class="navigation"> 
                         <a href="index.html" class="nav-link">Home</a>
                         <a href="about.html" class="nav-link active">About us</a>
-                        <a href="#" class="nav-link">Reviews</a>
-                        <a href="#" class="nav-link">Our blog</a>
+                        <a href="features.html" class="nav-link">Features</a>
                     </nav>
                     
                     <div class="download-section">
@@ -49,9 +50,9 @@
                     <div class="mobile-menu-content">
                         <div class="mobile-nav">
                             <a href="index.html" class="mobile-nav-link">Home</a>
-                            <a href="about.html" class="mobile-nav-link">About us</a>
-                            <a href="#" class="mobile-nav-link">Reviews</a>
-                            <a href="#" class="mobile-nav-link">Our blog</a>
+                            <a href="about.html" class="mobile-nav-link active">About us</a>
+                            <a href="features.html" class="mobile-nav-link">Features</a>
+
                         </div>
                         <div class="mobile-download">
                             <button class="mobile-download-btn">Download App</button>
@@ -155,10 +156,66 @@
         </div>
     </div>
 
+    <!-- Overlay and Side Panel -->
+    <div id="overlay" class="overlay"></div>
+    <div id="sidePanel" class="side-panel" aria-hidden="true">
+        <div class="panel-header">
+            <h2>Menu</h2>
+            <button id="closePanelBtn" class="close-btn" aria-label="Close">&times;</button>
+        </div>
+        <div class="panel-content">
+            <div class="menu-item" onclick="goToTOS()">
+                <span>Terms of Service</span>
+                <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
+            </div>
+            <div class="menu-item" onclick="goToAdmin()">
+                <span>Login</span>
+                <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
+            </div>
+        </div>
+    </div>
+
     <script>
         function downloadApp() {
             console.log('Download app clicked');
             alert('Download functionality would be implemented here');
+        }
+
+        // Touch/swipe variables for sliding panel
+        let startX = 0;
+        let startY = 0;
+        let endX = 0;
+        let endY = 0;
+        let isSwiping = false;
+
+        // Panel functions
+        function openPanel() {
+            console.log('Opening panel...');
+            const panel = document.getElementById('sidePanel');
+            const overlay = document.getElementById('overlay');
+            if (panel && overlay) {
+                panel.classList.add('open');
+                overlay.classList.add('active');
+            }
+        }
+
+        function closePanel() {
+            console.log('Closing panel...');
+            const panel = document.getElementById('sidePanel');
+            const overlay = document.getElementById('overlay');
+            if (panel && overlay) {
+                panel.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+        }
+
+        // Navigation function for ToS
+        function goToTOS() {
+            window.location.href = 'tos.html';
+        }
+
+        function goToAdmin() {
+            window.location.href = 'admin/index.html';
         }
 
         // Mobile menu functionality
@@ -205,6 +262,94 @@
             document.querySelectorAll('.member-card').forEach(el => {
                 observer.observe(el);
             });
+
+            // Ensure panel starts closed
+            closePanel();
+        });
+
+        // Touch event handlers for sliding panel
+        document.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isSwiping = false;
+            console.log('Touch start:', startX, startY);
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!isSwiping) {
+                endX = e.touches[0].clientX;
+                endY = e.touches[0].clientY;
+                
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                
+                // Check if it's a horizontal swipe (more horizontal than vertical)
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                    isSwiping = true;
+                    console.log('Swipe detected:', deltaX, deltaY);
+                    
+                    // Swipe right to left to open panel
+                    if (deltaX < 0) {
+                        console.log('Opening panel via swipe');
+                        openPanel();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('touchend', function(e) {
+            isSwiping = false;
+        });
+
+        // Mouse event handlers for desktop testing
+        document.addEventListener('mousedown', function(e) {
+            startX = e.clientX;
+            startY = e.clientY;
+            isSwiping = false;
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isSwiping) {
+                endX = e.clientX;
+                endY = e.clientY;
+                
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+                    isSwiping = true;
+                    
+                    // Swipe right to left to open panel (desktop)
+                    if (deltaX < 0) {
+                        openPanel();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', function(e) {
+            isSwiping = false;
+        });
+
+        // Close interactions for sliding panel
+        document.getElementById('closePanelBtn').addEventListener('click', function() {
+            console.log('Close button clicked');
+            closePanel();
+        });
+        document.getElementById('overlay').addEventListener('click', function() {
+            console.log('Overlay clicked');
+            closePanel();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                console.log('Escape key pressed');
+                closePanel();
+            }
+        });
+
+        // Additional safety - ensure panel is closed when page loads
+        window.addEventListener('load', function() {
+            closePanel();
         });
     </script>
 </body>

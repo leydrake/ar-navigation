@@ -34,17 +34,56 @@ body {
     gap: 12px;
 }
 
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.brand-link:hover {
+    opacity: 0.8;
+}
+
+.brand-link:hover::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #000;
+    animation: underlineExpand 0.3s ease forwards;
+}
+
+@keyframes underlineExpand {
+    from {
+        width: 0;
+        left: 50%;
+    }
+    to {
+        width: 100%;
+        left: 0;
+    }
+}
+
 .logo-image {
-    width: 32px;
-    height: 32px;
+    width: 42px;
+    height: 42px;
     object-fit: contain;
 }
 
 .brand-name {
     font-size: 18px;
     font-weight: 600;
-    color: #000;
-    letter-spacing: 0.5px;
+   font-family: 'Inter', Arial, sans-serif;
+   font-weight: 700;
+   color: #000;
+
+   
 }
 
 .navigation {
@@ -889,4 +928,105 @@ body {
     .card-description {
         font-size: 11px;
     }
+}
+
+/* Sliding Panel Styles */
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 300px;
+    height: 100vh;
+    background: #faf7f3;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    border-left: 2px solid #3e774f;
+}
+
+.side-panel.open {
+    right: 0;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #1b5f30;
+    color: white;
+}
+
+.panel-header h2 {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.panel-content {
+    padding: 20px 0;
+}
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.menu-item:hover {
+    background: #f0f0f0;
+}
+
+.menu-item span {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.menu-arrow {
+    width: 20px;
+    height: 20px;
+    transform: rotate(180deg);
+    opacity: 0.6;
+}
+
+/* Overlay for side panel */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 900;
+}
+
+.overlay.active {
+    opacity: 1;
+    pointer-events: auto;
 }

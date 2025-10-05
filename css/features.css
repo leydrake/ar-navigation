@@ -9,6 +9,8 @@ body {
     background-color: #e8e8e8;
     font-family: 'Inter', Arial, sans-serif;
     overflow-x: hidden;
+    
+
 }
 
 /* Header Styles */
@@ -103,11 +105,13 @@ body {
 .nav-link:hover {
     color: #666;
 }
+
 .nav-link:hover,
 .nav-link.active {
     color: #666;
     font-weight: 600;
 }
+
 .download-section {
     display: flex;
     align-items: center;
@@ -240,7 +244,7 @@ body {
 }
 
 /* Main Container */
-.landing-container {
+.features-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -248,6 +252,7 @@ body {
     padding: 40px 20px;
     position: relative;
     background-color: #DDE7ED;
+   
 }
 
 /* Main Panel */
@@ -263,19 +268,55 @@ body {
     overflow: hidden;
     position: relative;
     z-index: 2;
+    
 }
 
-/* Grey background element */
-.main-panel::before {
-    content: '';
-    position: absolute;
-    top: 40%;
-    left: 5%;
-    width: 90%;
-    height: 55%;
-    background: #D9D9D9;
-    border-radius: 15px;
-    z-index: 0;
+/* Statistics Section */
+.stats-section {
+    padding: 40px 50px 20px;
+    position: relative;
+    z-index: 3;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    text-align: center;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.stat-number {
+    font-size: 48px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    letter-spacing: 1px;
 }
 
 /* Content Wrapper */
@@ -284,12 +325,13 @@ body {
     flex: 1;
     position: relative;
     z-index: 3;
+    padding: 0 50px 50px;
 }
 
 /* Left Content Area */
 .content-left {
     flex: 1;
-    padding: 60px 50px;
+    padding: 40px 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -304,12 +346,10 @@ body {
     margin-bottom: 40px;
 }
 
-
-
 .main-heading {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
 
 .heading-primary {
@@ -320,11 +360,11 @@ body {
 }
 
 .heading-secondary {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 400;
     font-style: italic;
     color: #000;
-    line-height: 1.2;
+    line-height: 1.3;
 }
 
 .content-body {
@@ -334,8 +374,6 @@ body {
 }
 
 .description-box {
-    margin-left: 20px;
-
     background: transparent;
     border-radius: 15px;
     padding: 30px;
@@ -350,77 +388,40 @@ body {
     font-weight: 400;
 }
 
-.download-buttons {
+.action-buttons {
     align-self: flex-start;
-    margin-left: 50px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
+    margin-left: 30px;
 }
 
-.playstore-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #000;
-    border-radius: 12px;
-    background-color: rgba(0, 0, 0, 1);
-    padding: 0.625rem 1.5rem;
-    text-align: center;
-    color: rgba(255, 255, 255, 1);
-    outline: 0;
-    transition: all .2s ease;
-    text-decoration: none;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.6s ease-out 0.4s forwards;
+.view-reviews-btn {
+    background: #fff;
+    border: 1px solid #333;
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.playstore-button:hover {
-    background-color: transparent;
-    color: rgba(0, 0, 0, 1);
+.view-reviews-btn:hover {
+    background: #f5f5f5;
+    transform: translateY(-1px);
 }
 
-.icon {
-    height: 1.5rem;
-    width: 1.5rem;
-}
-
-.texts {
-    margin-left: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1;
-}
-
-.text-1 {
-    margin-bottom: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-}
-
-.text-2 {
-    font-weight: 600;
-}
-
-/* Right Content Area - Phone Mockup */
+/* Right Content Area - Phone Image */
 .content-right {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
     position: relative;
-    padding: 0;
-    margin: 0;
+    padding: 40px 0;
     z-index: 3;
-    opacity: 1;
-    transform: translateX(0);
 }
 
-.phone-screen {
+.phone-image-container {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -428,10 +429,13 @@ body {
     height: auto;
     padding: 0;
     margin: 0;
+    max-width: 400px !important;
+    overflow: visible;
+    max-height: 400px !important;
 }
 
 .phone-image {
-    max-width: 350px;
+    max-width: 650px;
     width: auto;
     height: auto;
     max-height: 70vh;
@@ -440,9 +444,40 @@ body {
     box-shadow: none;
     padding: 0;
     margin: 0;
-    opacity: 0;
-    transform: translateX(100px);
-    animation: slideInRight 1s ease-out 0.5s forwards, phoneFloat 3s ease-in-out 1.5s infinite;
+    animation: phoneFloat 3s ease-in-out infinite;
+    
+}
+
+/* Features List Container */
+.features-list-container{
+    background-color: #DDE7ED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 100px;
+}
+
+/* Features List Panel */
+.features-list-panel{
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    max-width: 1600px;
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    margin: 0 auto;
+    background-color: #fafafa;
+    
+}
+.features-list-panel img{
+    width: 30px;
+    height: 30px;
+    background-color: #fafafa;
+   
 }
 
 /* Background Decorations */
@@ -490,14 +525,15 @@ body {
 }
 
 /* Animations */
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideInLeft {
@@ -511,74 +547,37 @@ body {
     }
 }
 
-@keyframes slideInRight {
-    0% {
-        opacity: 0;
-        transform: translateX(100px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
-@keyframes phoneFloat {
-    0%, 100% { 
-
-
-        transform: translateY(0px) rotateZ(0deg);
-    }
-    25% { 
-        transform: translateY(-.5px) rotateZ(1deg);
-    }
-    50% { 
-        transform: translateY(-.2px) rotateZ(0deg);
-    }
-    75% { 
-        transform: translateY(-.5px) rotateZ(-1deg);
-    }
-}
-
-@keyframes fadeInUp {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeInScale {
-    0% {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
 
 /* Responsive Design */
 
-/* Specific width range to prevent header overlap */
-@media screen and (min-width: 1025px)  {
-    .main-heading {
-        margin-top: -60px;
-    }
-}
-
 /* Large screens (1300px and above) */
 @media screen and (min-width: 1300px) {
-    /* No additional styling needed */
+    .main-panel {
+        max-width: 1600px;
+    }
+    
+    .stats-container {
+        gap: 80px;
+    }
+    
+    .stat-number {
+        font-size: 56px;
+    }
+    
+    .heading-primary {
+        font-size: 56px;
+    }
 }
 
 /* Large tablets and small desktops */
 @media screen and (max-width: 1024px) {
     .content-left {
-        padding: 40px 30px;
+        padding: 30px 0;
     }
     
     .heading-primary {
@@ -586,7 +585,15 @@ body {
     }
     
     .heading-secondary {
-        font-size: 24px;
+        font-size: 20px;
+    }
+    
+    .stats-container {
+        gap: 40px;
+    }
+    
+    .stat-number {
+        font-size: 40px;
     }
     
     .phone-image {
@@ -594,20 +601,9 @@ body {
         max-height: 65vh;
     }
     
-    .header {
-        top: 15px;
-        left: 15px;
-        right: 15px;
-        
-    }
-    
     .header-container {
         padding: 12px 20px;
     }
-   .download-section{
-    margin-right: 20px;
-   }
-  
     
     .navigation {
         gap: 20px;
@@ -620,7 +616,7 @@ body {
 
 /* Tablets */
 @media screen and (max-width: 768px) {
-    .landing-container {
+    .features-container {
         padding: 20px;
     }
     
@@ -632,17 +628,16 @@ body {
     
     .content-wrapper {
         flex-direction: column;
+        padding: 0 30px 30px;
     }
     
     .content-left {
-        padding: 40px 30px;
+        padding: 30px 0;
         text-align: center;
     }
     
-    
     .content-right {
-        padding: 0;
-        background: transparent;
+        padding: 20px 0;
     }
     
     .heading-primary {
@@ -650,21 +645,38 @@ body {
     }
     
     .heading-secondary {
-        font-size: 20px;
+        font-size: 18px;
     }
-            
+    
+    .stats-container {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .stat-number {
+        font-size: 36px;
+    }
+    
+    .stat-label {
+        font-size: 16px;
+    }
+    
     .phone-image {
         max-width: 280px;
         max-height: 60vh;
     }
     
-    .download-buttons {
+    .action-buttons {
         align-self: center;
         margin-left: 0;
-        margin-bottom: 0;
-        flex-direction: column;
     }
-    
     
     .header-container {
         padding: 10px 15px;
@@ -701,16 +713,16 @@ body {
 
 /* Mobile devices */
 @media screen and (max-width: 480px) {
-    .landing-container {
+    .features-container {
         padding: 15px;
     }
     
     .content-left {
-        padding: 30px 20px;
+        padding: 20px 0;
     }
     
     .content-right {
-        padding: 0;
+        padding: 10px 0;
     }
     
     .heading-primary {
@@ -718,7 +730,7 @@ body {
     }
     
     .heading-secondary {
-        font-size: 18px;
+        font-size: 16px;
     }
     
     .description-box {
@@ -729,17 +741,21 @@ body {
         font-size: 15px;
     }
     
-    .download-buttons {
-        margin-left: 0;
-        margin-bottom: 0;
+    .stats-section {
+        padding: 30px 20px 10px;
     }
     
-    .playstore-button {
-        padding: 0.5rem 1.25rem;
+    .stat-card {
+        flex-direction: column;
+        gap: 8px;
     }
     
-    .text-1 {
-        font-size: 0.7rem;
+    .stat-number {
+        font-size: 32px;
+    }
+    
+    .stat-label {
+        font-size: 14px;
     }
     
     .phone-image {
@@ -747,58 +763,24 @@ body {
         max-height: 50vh;
     }
     
-    
     .header-container {
         padding: 8px 12px;
-        flex-direction: row;
-        gap: 8px;
-    }
-    
-    .brand-section {
-        width: 100%;
-        justify-content: center;
-        gap: 8px;
-    }
-    
-    .logo-image {
-        width: 28px;
-        height: 28px;
     }
     
     .brand-name {
         font-size: 14px;
     }
     
-    .navigation {
-        order: 2;
-        width: 100%;
-        justify-content: center;
-        gap: 12px;
-        padding-top: 0;
-    }
-    
-    .nav-link {
-        font-size: 13px;
-    }
-    
-    .download-section {
-        order: 3;
-    }
-    
-    .download-btn {
-        padding: 6px 14px;
-        font-size: 12px;
+    .logo-image {
+        width: 28px;
+        height: 28px;
     }
 }
 
 /* Small mobile devices */
 @media screen and (max-width: 320px) {
     .content-left {
-        padding: 20px 15px;
-    }
-    
-    .content-right {
-        padding: 0;
+        padding: 15px 0;
     }
     
     .heading-primary {
@@ -806,12 +788,15 @@ body {
     }
     
     .heading-secondary {
-        font-size: 16px;
+        font-size: 14px;
     }
     
-    .download-buttons {
-        margin-left: 0;
-        margin-bottom: 0;
+    .stat-number {
+        font-size: 28px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
     }
     
     .phone-image {
@@ -830,19 +815,6 @@ body {
     .logo-image {
         width: 24px;
         height: 24px;
-    }
-    
-    .nav-link {
-        font-size: 12px;
-    }
-    
-    .navigation {
-        gap: 10px;
-    }
-    
-    .download-btn {
-        padding: 5px 12px;
-        font-size: 11px;
     }
 }
 
@@ -946,3 +918,4 @@ body {
     opacity: 1;
     pointer-events: auto;
 }
+
