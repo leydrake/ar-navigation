@@ -159,10 +159,10 @@
             <button id="closePanelBtn" class="close-btn" aria-label="Close">&times;</button>
         </div>
         <div class="panel-content">
-            <div class="menu-item" onclick="goToTOS()">
+            <!-- <div class="menu-item" onclick="goToTOS()">
                 <span>Terms of Service</span>
                 <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
-            </div>
+            </div> -->
             <div class="menu-item" onclick="goToAdmin()">
                 <span>Login</span>
                 <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
@@ -182,9 +182,11 @@
         let endX = 0;
         let endY = 0;
         let isSwiping = false;
+        let justClosed = false; // Flag to prevent immediate reopening
 
         // Panel functions
         function openPanel() {
+            if (justClosed) return; // Prevent opening if just closed
             document.getElementById('sidePanel').classList.add('open');
             document.getElementById('overlay').classList.add('active');
         }
@@ -192,6 +194,8 @@
         function closePanel() {
             document.getElementById('sidePanel').classList.remove('open');
             document.getElementById('overlay').classList.remove('active');
+            justClosed = true;
+            setTimeout(() => { justClosed = false; }, 300); // Reset flag after animation
         }
 
         // Navigation function for ToS
@@ -325,10 +329,21 @@
         });
 
         // Close interactions for sliding panel
-        document.getElementById('closePanelBtn').addEventListener('click', closePanel);
-        document.getElementById('overlay').addEventListener('click', closePanel);
+        document.getElementById('closePanelBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Close button clicked');
+            closePanel();
+        });
+        document.getElementById('overlay').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Overlay clicked');
+            closePanel();
+        });
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                console.log('Escape key pressed');
                 closePanel();
             }
         });

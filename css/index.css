@@ -848,101 +848,197 @@ body {
 
 /* Sliding Panel Styles */
 .side-panel {
-    position: fixed;
-    top: 0;
-    right: -300px;
-    width: 300px;
-    height: 100vh;
-    background: #faf7f3;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-    z-index: 1000;
-    transition: right 0.3s ease;
-    border-left: 2px solid #3e774f;
+    position: fixed !important;
+    top: 0 !important;
+    right: -300px !important;
+    width: 300px !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height for mobile/tablet */
+    background: #faf7f3 !important;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1) !important;
+    z-index: 1000 !important;
+    transition: right 0.3s ease !important;
+    border-left: 2px solid #3e774f !important;
+    /* Tablet-specific fixes */
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .side-panel.open {
-    right: 0;
+    right: 0 !important;
 }
 
 .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: #1b5f30;
-    color: white;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 20px !important;
+    background: #1b5f30 !important;
+    color: white !important;
+    /* Tablet-specific fixes */
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1002 !important;
+    margin: 0 !important;
 }
 
 .panel-header h2 {
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-family: 'Inter', Arial, sans-serif !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background 0.2s;
+    background: none !important;
+    border: none !important;
+    color: white !important;
+    font-size: 2rem !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    width: 30px !important;
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    transition: background 0.2s !important;
+    /* Tablet-specific fixes */
+    min-width: 44px !important;
+    min-height: 44px !important;
+    touch-action: manipulation !important;
+    margin: 0 !important;
 }
 
 .close-btn:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.2) !important;
 }
 
 .panel-content {
-    padding: 20px 0;
+    padding: 20px 0 !important;
+    /* Tablet-specific fixes */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 0 !important;
 }
 
 .menu-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    cursor: pointer;
-    transition: background 0.2s;
-    border-bottom: 1px solid #e0e0e0;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 15px 20px !important;
+    cursor: pointer !important;
+    transition: background 0.2s !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    /* Tablet-specific fixes */
+    min-height: 44px !important;
+    touch-action: manipulation !important;
+    margin: 0 !important;
 }
 
 .menu-item:hover {
-    background: #f0f0f0;
+    background: #f0f0f0 !important;
 }
 
 .menu-item span {
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 1.1rem;
-    color: #333;
-    font-weight: 500;
+    font-family: 'Inter', Arial, sans-serif !important;
+    font-size: 1.1rem !important;
+    color: #333 !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
 }
 
 .menu-arrow {
-    width: 20px;
-    height: 20px;
-    transform: rotate(180deg);
-    opacity: 0.6;
+    width: 20px !important;
+    height: 20px !important;
+    transform: rotate(180deg) !important;
+    opacity: 0.6 !important;
 }
 
 /* Overlay for side panel */
 .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 900;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.3) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+    z-index: 900 !important;
+    /* Tablet-specific fixes */
+    height: 100vh !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Tablet-specific media queries */
+@media screen and (max-width: 1024px) and (min-width: 768px) {
+    .side-panel {
+        width: 280px;
+        right: -280px;
+    }
+    
+    .side-panel.open {
+        right: 0;
+    }
+    
+    .panel-header {
+        padding: 18px;
+    }
+    
+    .panel-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .close-btn {
+        font-size: 1.8rem;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .menu-item {
+        padding: 18px 20px;
+        font-size: 1rem;
+    }
+}
+
+/* Mobile-specific media queries */
+@media screen and (max-width: 767px) {
+    .side-panel {
+        width: 260px;
+        right: -260px;
+    }
+    
+    .side-panel.open {
+        right: 0;
+    }
+    
+    .panel-header {
+        padding: 16px;
+    }
+    
+    .panel-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .close-btn {
+        font-size: 1.6rem;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .menu-item {
+        padding: 16px 18px;
+        font-size: 0.95rem;
+    }
 }
