@@ -251,8 +251,30 @@ body {
     justify-content: center;
     padding: 40px 20px;
     position: relative;
-    background-color: #DDE7ED;
+    
 }
+.landing-container {
+    background: linear-gradient(-45deg,
+    #0e1f14,  /* dark base for depth */
+    #1b5f30,  /* your main deep green */
+    #2e7a49,  /* lively accent green */
+    #6fbf82,  /* fresh, friendly tone */
+    #e8f5e9   /* soft white-green glow */
+  );  background-size: 180% 180%;
+      animation: gradient-animation 12s ease infinite;
+    }
+   
+    @keyframes gradient-animation {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
 
 /* Main Panel */
 .main-panel {

@@ -67,15 +67,27 @@ const confirmPassword = document.getElementById('confirmPassword');
 async function verifyCurrentPassword(email, password) {
     try {
         const hashedPassword = btoa(password); // Same encoding as login
-        const docRef = doc(db, "admin_credentials", "admin");
-        const docSnap = await getDoc(docRef);
         
-        if (docSnap.exists()) {
+        console.log('Verifying password for email:', email);
+        console.log('Hashed password:', hashedPassword);
+        
+        // Use the same query approach as the login system
+        const querySnapshot = await getDocs(
+            collection(db, "admin_credentials")
+        );
+        
+        console.log('Found', querySnapshot.docs.length, 'admin documents');
+        
+        // Find the admin with matching email and password
+        for (const docSnap of querySnapshot.docs) {
             const data = docSnap.data();
+            console.log('Checking document:', docSnap.id, 'Email:', data.email, 'Password match:', data.password === hashedPassword);
             if (data.email === email && data.password === hashedPassword) {
+                console.log('Password verification successful!');
                 return true;
             }
         }
+        console.log('Password verification failed - no matching admin found');
         return false;
     } catch (error) {
         console.error('Error verifying current password:', error);
@@ -87,7 +99,33 @@ async function verifyCurrentPassword(email, password) {
 async function updatePasswordInFirebase(newPassword) {
     try {
         const hashedNewPassword = btoa(newPassword); // Hash the new password
-        await updateDoc(doc(db, "admin_credentials", "admin"), {
+        const currentAdminEmail = sessionStorage.getItem('adminEmail');
+        
+        if (!currentAdminEmail) {
+            console.error('No admin email found in session');
+            return false;
+        }
+        
+        // Find the current admin's document
+        const querySnapshot = await getDocs(
+            collection(db, "admin_credentials")
+        );
+        
+        let adminDocId = null;
+        for (const docSnap of querySnapshot.docs) {
+            const data = docSnap.data();
+            if (data.email === currentAdminEmail) {
+                adminDocId = docSnap.id;
+                break;
+            }
+        }
+        
+        if (!adminDocId) {
+            console.error('Admin document not found');
+            return false;
+        }
+        
+        await updateDoc(doc(db, "admin_credentials", adminDocId), {
             password: hashedNewPassword,
             lastUpdated: new Date()
         });
@@ -101,11 +139,12 @@ async function updatePasswordInFirebase(newPassword) {
 // Load current admin email
 async function loadAdminEmail() {
     try {
-        const docRef = doc(db, "admin_credentials", "admin");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            adminEmail.value = data.email;
+        // Get current admin email from sessionStorage
+        const currentAdminEmail = sessionStorage.getItem('adminEmail');
+        if (currentAdminEmail) {
+            adminEmail.value = currentAdminEmail;
+        } else {
+            console.error('No admin email found in session');
         }
     } catch (error) {
         console.error('Error loading admin email:', error);
@@ -477,15 +516,50 @@ const saveSecurityBtn = document.getElementById('saveSecurity');
 
 // Load admin list
 function loadAdminList() {
+    // Get current admin information from sessionStorage
+    const currentAdminEmail = sessionStorage.getItem('adminEmail');
+    const currentAdminName = sessionStorage.getItem('adminName');
+    const currentAdminRole = sessionStorage.getItem('adminRole');
+    
+    // Check if admin is logged in
+    if (!currentAdminEmail) {
+        adminList.innerHTML = `
+            <div style="color: #e74c3c; font-style: italic;">
+                <div>No admin logged in</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Display current admin information
+    const roleDisplay = currentAdminRole ? ` (${currentAdminRole.replace('_', ' ').toUpperCase()})` : '';
+    const nameDisplay = currentAdminName ? `${currentAdminName} - ` : '';
+    
     adminList.innerHTML = `
         <div style="color: #666; font-style: italic;">
-            <div>admin@navigatecampus.com (Primary Admin)</div>
-            <div>support@navigatecampus.com (Support Admin)</div>
+            <div>${nameDisplay}${currentAdminEmail}${roleDisplay}</div>
         </div>
     `;
 }
 
-loadAdminList();
+// Check authentication and load admin list
+async function initializeAdminSettings() {
+    // Check if admin is logged in
+    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+    const adminEmail = sessionStorage.getItem('adminEmail');
+    
+    if (!isLoggedIn || !adminEmail) {
+        // Redirect to login if not authenticated
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Load admin list with current admin info
+    loadAdminList();
+}
+
+// Initialize when page loads
+initializeAdminSettings();
 
 // Add admin (placeholder)
 addAdminBtn.addEventListener('click', () => {
