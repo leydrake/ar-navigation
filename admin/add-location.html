@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/add-location.css">
+    <link rel="stylesheet" href="css/validation.css">
 </head>
 <body>
     <div class="add-location-container">
@@ -77,6 +78,8 @@
         }
 
     </script>
+    <script src="js/validation-utils.js"></script>
+    <script type="module" src="js/add-location.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";

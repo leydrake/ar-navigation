@@ -187,56 +187,22 @@ function updatePasswordStrength(password) {
     }
 }
 
-// Function to validate form fields
+// Function to validate form fields using centralized validation
 function validateForm() {
-    const email = adminEmail.value.trim();
-    const currentPass = currentPassword.value;
-    const newPass = newPassword.value;
-    const confirmPass = confirmPassword.value;
+    const form = document.getElementById('accountForm');
+    const validationRules = {
+        email: { required: true, email: true },
+        currentPassword: { required: true },
+        newPassword: { required: true, password: true, minLength: 6 },
+        confirmPassword: { required: true, passwordMatch: 'newPassword' }
+    };
     
-    let isValid = true;
-    
-    // Clear previous error states
-    document.querySelectorAll('.form-group').forEach(group => {
-        group.classList.remove('error', 'success');
-        const errorMsg = group.querySelector('.error-message');
-        if (errorMsg) errorMsg.remove();
-    });
-    
-    // Validate email
-    if (!email) {
-        showFieldError(adminEmail, 'Email is required');
-        isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showFieldError(adminEmail, 'Please enter a valid email');
-        isValid = false;
+    const validation = window.validationUtils.validateForm(form, validationRules);
+    if (!validation.isValid) {
+        window.validationUtils.showFormErrors(form, validation.errors);
     }
     
-    // Validate current password
-    if (!currentPass) {
-        showFieldError(currentPassword, 'Current password is required');
-        isValid = false;
-    }
-    
-    // Validate new password
-    if (!newPass) {
-        showFieldError(newPassword, 'New password is required');
-        isValid = false;
-    } else if (newPass.length < 6) {
-        showFieldError(newPassword, 'Password must be at least 6 characters');
-        isValid = false;
-    }
-    
-    // Validate confirm password
-    if (!confirmPass) {
-        showFieldError(confirmPassword, 'Please confirm your password');
-        isValid = false;
-    } else if (newPass !== confirmPass) {
-        showFieldError(confirmPassword, 'Passwords do not match');
-        isValid = false;
-    }
-    
-    return isValid;
+    return validation.isValid;
 }
 
 // Function to show field error

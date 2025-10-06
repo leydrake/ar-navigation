@@ -489,14 +489,29 @@ eventForm.onsubmit = async function(e) {
         image = editingEventImage;
     }
     
-    if (!name || !description || !location || !startTime || !endTime) {
-        alert('Please fill in all required fields');
-        return;
-    }
+    // Validate form using centralized validation
+    const form = document.getElementById('eventForm');
+    const validationRules = {
+        eventName: { required: true, minLength: 2, maxLength: 100 },
+        eventDescription: { required: true, minLength: 10, maxLength: 500 },
+        eventLocation: { required: true, minLength: 2, maxLength: 200 },
+        eventStartTime: { required: true, time: true },
+        eventEndTime: { 
+            required: true, 
+            time: true,
+            custom: (value, form) => {
+                const startTime = form.querySelector('[name="eventStartTime"]').value;
+                if (startTime && new Date(value) <= new Date(startTime)) {
+                    return 'End time must be after start time';
+                }
+                return true;
+            }
+        }
+    };
     
-    // Validate that end time is after start time
-    if (new Date(endTime) <= new Date(startTime)) {
-        alert('End time must be after start time');
+    const validation = window.validationUtils.validateForm(form, validationRules);
+    if (!validation.isValid) {
+        window.validationUtils.showFormErrors(form, validation.errors);
         return;
     }
     

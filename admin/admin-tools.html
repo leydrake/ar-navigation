@@ -325,23 +325,7 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-card" onclick="goToEditLocation()">
-                        <div class="card-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <h3 class="card-title">Edit Location</h3>
-                            <p class="card-description">Modify existing location information</p>
-                        </div>
-                        <div class="card-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </div>
+                   
                 `;
             }
 
@@ -392,50 +376,6 @@
                 `;
             }
 
-            // Bug Reporting Management - show if super_admin or has bug permission
-            if (role === 'super_admin' || permissions.includes('bugs')) {
-                content += `
-                    <div class="dashboard-card" onclick="goToBugReporting()">
-                        <div class="card-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <h3 class="card-title">Bug Reporting</h3>
-                            <p class="card-description">Track and manage bug reports and technical issues</p>
-                        </div>
-                        <div class="card-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Survey Management - show if super_admin or has survey permission
-            if (role === 'super_admin' || permissions.includes('surveys')) {
-                content += `
-                    <div class="dashboard-card" onclick="goToSurveys()">
-                        <div class="card-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <h3 class="card-title">User Surveys</h3>
-                            <p class="card-description">Manage user satisfaction surveys and responses</p>
-                        </div>
-                        <div class="card-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </div>
-                `;
-            }
 
 
             // Settings button - show to all admins
@@ -501,9 +441,7 @@
             window.location.href = "./admin-settings.html";
         }
         
-        function goToEditLocation() {
-            window.location.href = "./edit-location.html";
-        }
+      
         
         function goToUserManagement() {
             window.location.href = "./user-management.html";

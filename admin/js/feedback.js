@@ -204,9 +204,19 @@ class FeedbackCollector {
                 }));
             }
 
-            // Validate required fields
-            if (!feedbackData.type || !feedbackData.title || !feedbackData.description) {
-                alert('Please fill in all required fields.');
+            // Validate required fields using centralized validation
+            const form = document.getElementById('feedbackForm');
+            const validationRules = {
+                feedbackType: { required: true },
+                feedbackTitle: { required: true, minLength: 5, maxLength: 200 },
+                feedbackDescription: { required: true, minLength: 10, maxLength: 1000 },
+                feedbackEmail: { email: true },
+                feedbackPriority: { required: true }
+            };
+            
+            const validation = window.validationUtils.validateForm(form, validationRules);
+            if (!validation.isValid) {
+                window.validationUtils.showFormErrors(form, validation.errors);
                 return;
             }
 

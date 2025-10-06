@@ -1,0 +1,233 @@
+/* Validation Styles */
+.form-group {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.form-group.error .form-control,
+.form-group.error input,
+.form-group.error select,
+.form-group.error textarea {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-group.success .form-control,
+.form-group.success input,
+.form-group.success select,
+.form-group.success textarea {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.success-message {
+    color: #28a745;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+/* Input validation states */
+input.error,
+select.error,
+textarea.error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+input.success,
+select.success,
+textarea.success {
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+}
+
+/* Field validation states */
+.field.error input,
+.field.error select,
+.field.error textarea {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.field.success input,
+.field.success select,
+.field.success textarea {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Error and success alerts */
+.alert-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+    display: none;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+    display: none;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Button loading states */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Form validation feedback */
+.form-control:invalid {
+    border-color: #dc3545;
+}
+
+.form-control:valid {
+    border-color: #28a745;
+}
+
+/* Custom validation styles for specific forms */
+.building-form .form-group,
+.location-form .form-group,
+.event-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.building-form .error-message,
+.location-form .error-message,
+.event-form .error-message {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Password strength indicator */
+.password-strength {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.password-strength.weak {
+    color: #dc3545;
+}
+
+.password-strength.medium {
+    color: #ffc107;
+}
+
+.password-strength.strong {
+    color: #28a745;
+}
+
+/* File upload validation */
+.file-upload-error {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+.file-upload-success {
+    border-color: #28a745;
+    background-color: #d4edda;
+}
+
+/* Modal validation */
+.modal .form-group.error {
+    margin-bottom: 1.5rem;
+}
+
+.modal .error-message {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Responsive validation styles */
+@media (max-width: 768px) {
+    .error-message,
+    .success-message {
+        font-size: 0.8rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animation for validation states */
+.form-group.error,
+.form-group.success {
+    animation: validationPulse 0.3s ease-in-out;
+}
+
+@keyframes validationPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Focus states for validation */
+.form-group.error input:focus,
+.form-group.error select:focus,
+.form-group.error textarea:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-group.success input:focus,
+.form-group.success select:focus,
+.form-group.success textarea:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
