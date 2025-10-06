@@ -8,7 +8,27 @@
 body {
     background-color: #e8e8e8;
     font-family: 'Inter', Arial, sans-serif;
-    overflow-x: hidden;
+    
+    background: linear-gradient(-45deg,
+    #0e1f14,  /* dark base for depth */
+    #1b5f30,  /* your main deep green */
+    #2e7a49,  /* lively accent green */
+    #6fbf82,  /* fresh, friendly tone */
+    #e8f5e9   /* soft white-green glow */
+  );  background-size: 180% 180%;
+      animation: gradient-animation 12s ease infinite;
+    }
+   
+    @keyframes gradient-animation {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     
 
 }
@@ -100,6 +120,80 @@ body {
     font-weight: 400;
     transition: color 0.3s ease;
     cursor: pointer;
+}
+
+/* Dropdown Styles */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.nav-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+}
+
+.more-icon {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.nav-dropdown:hover .more-icon {
+    transform: rotate(90deg);
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    min-width: 180px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 8px 0;
+    z-index: 1000;
+}
+
+.nav-dropdown:hover .dropdown-content {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.dropdown-link {
+    color: #000;
+    text-decoration: none;
+    padding: 10px 20px;
+    display: block;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.dropdown-link:hover {
+    background: #f5f5f5;
+    color: #666;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Navigation Section */
+.mobile-nav-section {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.section-title {
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 15px;
+    margin-bottom: 5px;
 }
 
 .nav-link:hover {
@@ -218,6 +312,54 @@ body {
     transition: color 0.3s ease;
 }
 
+.mobile-nav-link:hover,
+.mobile-nav-link.active {
+    color: #666;
+}
+
+.mobile-nav-section {
+    padding: 10px 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 5px;
+}
+
+.mobile-nav-section .section-title {
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 0;
+    margin-bottom: 5px;
+}
+
+.mobile-nav-section .mobile-nav-link {
+    padding: 8px 0;
+    font-size: 15px;
+    border-bottom: none;
+}
+
+.mobile-download {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mobile-nav-link {
+    color: #000;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 400;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: color 0.3s ease;
+}
+
 .mobile-nav-link:hover {
     color: #666;
 }
@@ -259,28 +401,7 @@ body {
 }
 
 
-.features-container {
-    background: linear-gradient(-45deg,
-    #0e1f14,  /* dark base for depth */
-    #1b5f30,  /* your main deep green */
-    #2e7a49,  /* lively accent green */
-    #6fbf82,  /* fresh, friendly tone */
-    #e8f5e9   /* soft white-green glow */
-  );  background-size: 180% 180%;
-      animation: gradient-animation 12s ease infinite;
-    }
-   
-    @keyframes gradient-animation {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
-    }
+
 
 /* Main Panel */
 .main-panel {
@@ -430,7 +551,7 @@ body {
 
 /* Features List Container */
 .features-list-container{
-    background-color: #DDE7ED;
+    background-color: transparent;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - Navigate My Campus</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/AR_ICON_W_Border.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="icons/AR_ICON_W_Border.png">
+    <link rel="apple-touch-icon" href="icons/AR_ICON_W_Border.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/tutorial.css">
+</head>
+<body>
+    <div class="tutorial-container">
+        <div class="main-panel">
+            <div class="header">
+                <div class="header-container">
+                    <div class="brand-section">
+                        <a href="index.html" class="brand-link">
+                            <div class="logo">
+                                <img src="icons/AR_ICON_TRANSPARENT.png" alt="Navigate My Campus Logo" class="logo-image">
+                            </div>
+                            <div class="brand-name">NAVIGATE MY CAMPUS</div>
+                        </a>
+                    </div>
+                    
+                    <nav class="navigation">
+                        <a href="index.html" class="nav-link">Home</a>
+                        <a href="about.html" class="nav-link">About us</a>
+                        <a href="features.html" class="nav-link">Features</a>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-link nav-dropdown-toggle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="more-icon">
+                                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                                    <circle cx="19" cy="12" r="2" fill="currentColor"/>
+                                    <circle cx="5" cy="12" r="2" fill="currentColor"/>
+                                </svg>
+                            </a>
+                            <div class="dropdown-content">
+                                <a href="tutorial.html" class="dropdown-link active">Tutorial</a>
+                                <a href="tos.html" class="dropdown-link">Terms of Service</a>
+                                <a href="admin/index.html" class="dropdown-link">Admin</a>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <div class="download-section">
+                        <a class="download-btn" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans" target="_blank" rel="noopener noreferrer" aria-label="Download on Google Play">Download App</a>
+                        <button class="burger-menu" id="burgerMenu">
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Dropdown -->
+                <div class="mobile-menu" id="mobileMenu">
+                    <div class="mobile-menu-content">
+                        <div class="mobile-nav">
+                            <a href="index.html" class="mobile-nav-link">Home</a>
+                            <a href="about.html" class="mobile-nav-link">About us</a>
+                            <a href="features.html" class="mobile-nav-link">Features</a>
+                            <div class="mobile-nav-section">
+                                <div class="section-title">More</div>
+                                <a href="tutorial.html" class="mobile-nav-link active">Tutorial</a>
+                                <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
+                                <a href="admin/index.html" class="mobile-nav-link">Admin</a>
+                            </div>
+                        </div>
+                        <div class="mobile-download">
+                            <button class="mobile-download-btn">Download App</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tutorial-step active" data-step="1">
+                <h3><span class="step-number">1</span>Getting Started</h3>
+                <img src="images/iphoneMOCKUP.png" alt="Landing Page">
+                <p>Welcome to AR Navigation! To begin your navigation experience, locate and click the "Start Navigation" button on the landing page. This will initiate your journey through our AR-enabled navigation system.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="2">
+                <h3><span class="step-number">2</span>Terms of Service - Part 1</h3>
+                <img src="images/TOS (1).png" alt="Terms of Service Top">
+                <p>First, you'll see the main Terms of Service page. Take a moment to review the initial terms and conditions before proceeding to the next section.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="3">
+                <h3><span class="step-number">3</span>Terms of Service - Part 2</h3>
+                <img src="images/TOS.png" alt="Terms of Service Bottom">
+                <p>Review the final section of our Terms of Service. Scroll through the document carefully and accept the terms by clicking the button at the bottom. This ensures you understand how to use the application responsibly.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="4">
+                <h3><span class="step-number">4</span>Grant Permissions</h3>
+                <img src="images/Grant Perms.png" alt="Permission Request">
+                <p>The app requires access to your camera for AR functionality. When prompted, please grant the necessary permissions to enable all features of the application.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="5">
+                <h3><span class="step-number">5</span>Main Navigation Interface</h3>
+                <img src="images/new layout.png" alt="Main Layout">
+                <p>This is the main interface of the AR Navigation app. Here you'll find two primary options:</p>
+                <ul>
+                    <li><strong>Select Destination:</strong> Click this button to choose where you want to go</li>
+                    <li><strong>Advanced Options:</strong> Access additional features and settings</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-step" data-step="6">
+                <h3><span class="step-number">6</span>Selecting Your Destination</h3>
+                <img src="images/Change Destination.png" alt="Destination Selection">
+                <p>When you click "Select Destination," you'll be presented with this screen. Here you can choose your desired location from the available options. After selecting, you can return to the main screen to begin navigation.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="7">
+                <h3><span class="step-number">7</span>Advanced Options</h3>
+                <img src="images/advOpt.png" alt="Advanced Options">
+                <p>The Advanced Options menu provides several useful features:</p>
+                <ul>
+                    <li><strong>Choose floor (Optional):</strong> Adjust the floor you want to go.</li>
+                    <li><strong>Adjust line height</strong> Adjust line height for accuracy and preferences.</li>
+                    <li><strong>Route indicator:</strong> Switch between lines or arrow for preferences.</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-step" data-step="8">
+                <h3><span class="step-number">8</span>Side Menu</h3>
+                <img src="images/sideBar.png" alt="Side Menu">
+                <p>Swipe right from the main screen or tap the menu button to access the side menu. Here you'll find additional options and features to enhance your navigation experience.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="9">
+                <h3><span class="step-number">9</span>Events</h3>
+                <img src="images/Events.png" alt="Events Page">
+                <p>In the Events section, you can view upcoming campus activities and important dates. Stay updated with the latest happenings and plan your schedule accordingly.</p>
+            </div>
+
+            <div class="tutorial-step" data-step="10">
+                <h3><span class="step-number">10</span>Ready to Navigate!</h3>
+                <img src="icons/AR_ICON_TRANSPARENT.png" alt="AR Navigation Logo" class="completion-icon">
+                <p>Congratulations! You've completed the tutorial and are now ready to start navigating the campus. Remember to select your destination, follow the AR indicators, and enjoy finding your way around campus with ease.</p>
+                <div class="completion-message">
+                    <p><strong>Key Tips:</strong></p>
+                    <ul>
+                        <li>Keep your camera steady for best AR performance</li>
+                        <li>Use Advanced Options to customize your experience</li>
+                        <li>Check Events regularly for campus updates</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button id="prevBtn" onclick="previousStep()" disabled>Previous</button>
+                <button id="nextBtn" onclick="nextStep()">Next</button>
+            </div>
+
+            <div class="dots-container" id="dotsContainer"></div>
+        </div>
+
+        <!-- Background decorative elements -->
+        <div class="bg-decorations">
+            <div class="bg-curve-1"></div>
+            <div class="bg-curve-2"></div>
+            <div class="bg-curve-3"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const burgerMenu = document.getElementById('burgerMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            // Toggle mobile menu
+            burgerMenu.addEventListener('click', function() {
+                burgerMenu.classList.toggle('active');
+                mobileMenu.classList.toggle('open');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!burgerMenu.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    burgerMenu.classList.remove('active');
+                    mobileMenu.classList.remove('open');
+                }
+            });
+        });
+
+        // Tutorial Navigation Logic
+        let currentStep = 1;
+        const totalSteps = 10;
+
+        // Create dots on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const dotsContainer = document.getElementById('dotsContainer');
+            
+            // Create dots
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.createElement('span');
+                dot.className = `dot ${i === 1 ? 'active' : ''}`;
+                dot.setAttribute('data-step', i);
+                dot.onclick = () => goToStep(i);
+                dotsContainer.appendChild(dot);
+            }
+
+            // Initialize buttons
+            updateButtons();
+        });
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentStep === 1;
+            document.getElementById('nextBtn').textContent = currentStep === totalSteps ? 'Finish' : 'Next';
+        }
+
+        function updateDots() {
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.classList.toggle('active', parseInt(dot.getAttribute('data-step')) === currentStep);
+            });
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.tutorial-step').forEach(el => {
+                el.classList.toggle('active', parseInt(el.getAttribute('data-step')) === step);
+            });
+        }
+
+        function goToStep(step) {
+            currentStep = step;
+            showStep(currentStep);
+            updateButtons();
+            updateDots();
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                goToStep(currentStep + 1);
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                goToStep(currentStep - 1);
+            }
+        }
+    </script>
+
+    
+</body>
+</html>
