@@ -209,11 +209,11 @@ function handleARLocationChange() {
     const selectedLocation = arLocations.find(l => l.id === selectedLocationId);
     
     if (selectedLocation) {
-        // Enable coordinate inputs
-        locationX.disabled = false;
-        locationY.disabled = false;
-        locationZ.disabled = false;
-        
+        // Keep coordinate inputs disabled per new requirement
+        locationX.disabled = true;
+        locationY.disabled = true;
+        locationZ.disabled = true;
+
         // Set coordinate values from positions only
         locationX.value = Number.isFinite(selectedLocation.x) ? String(selectedLocation.x) : '';
         locationY.value = Number.isFinite(selectedLocation.y) ? String(selectedLocation.y) : '';
@@ -281,15 +281,24 @@ async function handleSaveLocation() {
         const form = document.querySelector('.location-form');
         const formData = new FormData(form);
         
+        // Read XYZ directly from inputs since disabled fields are not included in FormData
+        const xVal = Number(locationX.value);
+        const yVal = Number(locationY.value);
+        const zVal = Number(locationZ.value);
+        if (!Number.isFinite(xVal) || !Number.isFinite(yVal) || !Number.isFinite(zVal)) {
+            alert('Missing or invalid coordinates (X, Y, Z). Please select a valid AR Location.');
+            return;
+        }
+
         const locationData = {
             name: formData.get('location-name').trim(),
             arLocationId: formData.get('arlocation-select'),
-            buildingId: formData.get('building-select'),
-            floor: parseInt(formData.get('floor-select')),
+            buildingId: formData.get('building-select') || null,
+            floorId: formData.get('floor-select') || null,
             coordinates: {
-                x: parseFloat(formData.get('location-x')),
-                y: parseFloat(formData.get('location-y')),
-                z: parseFloat(formData.get('location-z'))
+                x: xVal,
+                y: yVal,
+                z: zVal
             },
             image: '',
             createdAt: new Date().toISOString(),
@@ -330,8 +339,17 @@ async function saveLocationToFirebase(locationData) {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
         
-        // Add to Firebase
-        await addDoc(collection(db, 'locations'), locationData);
+        // Add to Firebase: store in 'coordinates' collection
+        const coordsDoc = {
+            name: locationData.name,
+            x: locationData.coordinates.x,
+            y: locationData.coordinates.y,
+            z: locationData.coordinates.z,
+            buildingId: locationData.buildingId,
+            floorId: locationData.floorId,
+            createdAt: new Date().toISOString()
+        };
+        await addDoc(collection(db, 'coordinates'), coordsDoc);
         
         // If the location came from ARLocations, archive the source doc
         const selectedId = arLocationSelect.value || '';
@@ -355,7 +373,7 @@ async function saveLocationToFirebase(locationData) {
         // Show success message
         window.errorHandler.showSuccess('Location added successfully!');
         
-        // Reset form
+        // Reset form and ensure XYZ remain disabled
         handleClearFields();
         // Reload AR coordinates to remove archived item from dropdown
         await loadARLocations();

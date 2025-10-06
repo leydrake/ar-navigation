@@ -327,21 +327,13 @@ body, html {
 .mini-btn {
     padding: 6px 10px;
     border-radius: 8px;
-    border: 1px solid transparent;
+    border: 1px solid #216a39;
     background: #ffffff;
     color: #216a39;
     font-size: 12px;
     cursor: pointer;
 }
 
-.mini-btn:hover { opacity: 0.92; }
-
-/* Semantic variants */
-.mini-btn.primary { background: #0d6efd; border-color: #0d6efd; color: #fff; }
-.mini-btn.primary:hover { background: #0b5ed7; border-color: #0a58ca; }
-
-.mini-btn.warning { background: #fd7e14; border-color: #fd7e14; color: #fff; }
-.mini-btn.warning:hover { background: #e96f0b; border-color: #d9680b; }
-
-.mini-btn.danger { background: #dc3545; border-color: #dc3545; color: #fff; }
-.mini-btn.danger:hover { background: #c82333; border-color: #bd2130; }
+.mini-btn:hover { background: #e8f5ea; }
+.mini-btn.danger { border-color: #c82333; color: #c82333; }
+.mini-btn.danger:hover { background: #fde7ea; }
