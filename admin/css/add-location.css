@@ -241,3 +241,107 @@ body, html {
 .clear-fields-btn:hover {
     background: #e7efe9;
 }
+
+/* Archive button placement */
+#archiveBtn {
+    margin-left: auto;
+}
+
+/* Modal base styles (shared) */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 24px 16px 24px;
+    min-width: 340px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.modal-header {
+    background: #206233;
+    color: #fff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.icon-btn:hover { background: rgba(255,255,255,0.12); }
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.modal-actions button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #216a39;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-actions button:hover {
+    background: #174c28;
+}
+
+/* Small action buttons inside archive modal */
+.mini-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: #ffffff;
+    color: #216a39;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.mini-btn:hover { opacity: 0.92; }
+
+/* Semantic variants */
+.mini-btn.primary { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.mini-btn.primary:hover { background: #0b5ed7; border-color: #0a58ca; }
+
+.mini-btn.warning { background: #fd7e14; border-color: #fd7e14; color: #fff; }
+.mini-btn.warning:hover { background: #e96f0b; border-color: #d9680b; }
+
+.mini-btn.danger { background: #dc3545; border-color: #dc3545; color: #fff; }
+.mini-btn.danger:hover { background: #c82333; border-color: #bd2130; }

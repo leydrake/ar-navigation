@@ -1,6 +1,6 @@
 // Add Location System
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -29,6 +29,13 @@ const locationY = document.getElementById('location-y');
 const locationZ = document.getElementById('location-z');
 const imageInput = document.getElementById('location-image');
 const imageLabel = document.querySelector('label[for="location-image"]');
+const archiveBtn = document.getElementById('archiveBtn');
+const archiveModal = document.getElementById('archiveModal');
+const archiveList = document.getElementById('archiveList');
+const closeArchiveBtn = document.getElementById('closeArchiveBtn');
+const selectAllArchiveBtn = document.getElementById('selectAllArchiveBtn');
+const deleteSelectedArchiveBtn = document.getElementById('deleteSelectedArchiveBtn');
+const clearAllArchiveBtn = document.getElementById('clearAllArchiveBtn');
 
 // State
 let buildings = [];
@@ -47,11 +54,12 @@ const locationValidationRules = {
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
+    // Attach UI event listeners first so UI remains interactive even if data loads fail
+    setupEventListeners();
     try {
         await checkAuth();
         await loadBuildings();
         await loadARLocations();
-        setupEventListeners();
         setupFormValidation();
     } catch (error) {
         window.errorHandler.handleError(error, 'Add Location Initialization');
@@ -85,6 +93,13 @@ function setupEventListeners() {
     
     // Image upload
     imageInput.addEventListener('change', handleImageUpload);
+    
+    // Archive modal
+    if (archiveBtn) archiveBtn.addEventListener('click', openArchiveModal);
+    if (closeArchiveBtn) closeArchiveBtn.addEventListener('click', () => archiveModal.style.display = 'none');
+    if (selectAllArchiveBtn) selectAllArchiveBtn.addEventListener('click', selectAllArchiveItems);
+    if (deleteSelectedArchiveBtn) deleteSelectedArchiveBtn.addEventListener('click', deleteSelectedArchiveItems);
+    if (clearAllArchiveBtn) clearAllArchiveBtn.addEventListener('click', clearAllArchiveItems);
 }
 
 // Setup form validation
@@ -120,17 +135,19 @@ async function loadBuildings() {
     }
 }
 
-// Load AR locations from Firebase
+// Load AR locations from Firebase (ARLocations collection, only positions)
 async function loadARLocations() {
     try {
-        const arLocationsSnapshot = await getDocs(collection(db, 'ar_locations'));
+        const arLocationsSnapshot = await getDocs(collection(db, 'ARLocations'));
         arLocations = [];
         
-        arLocationsSnapshot.forEach(doc => {
-            arLocations.push({
-                id: doc.id,
-                ...doc.data()
-            });
+        arLocationsSnapshot.forEach(docSnap => {
+            const data = docSnap.data() || {};
+            const name = String(data.Name ?? data.name ?? docSnap.id);
+            const x = Number(data.PositionX ?? data.x ?? 0);
+            const y = Number(data.PositionY ?? data.y ?? 0);
+            const z = Number(data.PositionZ ?? data.z ?? 0);
+            arLocations.push({ id: docSnap.id, name, x, y, z });
         });
         
         // Sort by name
@@ -146,25 +163,43 @@ async function loadARLocations() {
 }
 
 // Handle building change
-function handleBuildingChange() {
+async function handleBuildingChange() {
     const selectedBuildingId = buildingSelect.value;
-    const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
     
-    // Clear floor selection
+    // Reset floors UI
     floorSelect.innerHTML = '<option value="">Select floor...</option>';
     floorSelect.disabled = true;
     
-    if (selectedBuilding && selectedBuilding.floors) {
-        // Enable floor selection
-        floorSelect.disabled = false;
-        
-        // Add floor options
-        for (let i = 1; i <= selectedBuilding.floors; i++) {
+    if (!selectedBuildingId) return;
+    
+    try {
+        // Fetch floors linked to the selected building
+        const floorsSnap = await getDocs(query(collection(db, 'floors'), where('buildingId', '==', selectedBuildingId)));
+        const floors = [];
+        floorsSnap.forEach(docSnap => {
+            const data = docSnap.data() || {};
+            floors.push({ id: docSnap.id, name: String(data.name || `Floor`), number: Number.isFinite(data.number) ? data.number : null });
+        });
+        // Sort by number then name
+        floors.sort((a, b) => {
+            const an = a.number ?? Number.POSITIVE_INFINITY;
+            const bn = b.number ?? Number.POSITIVE_INFINITY;
+            if (an !== bn) return an - bn;
+            return a.name.localeCompare(b.name);
+        });
+        // Populate options
+        for (const f of floors) {
             const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `Floor ${i}`;
+            option.value = f.id;
+            option.textContent = f.number != null ? `Floor ${f.number} — ${f.name}` : f.name;
             floorSelect.appendChild(option);
         }
+        // Enable if we have at least one floor
+        if (floors.length > 0) {
+            floorSelect.disabled = false;
+        }
+    } catch (error) {
+        window.errorHandler.handleError(error, 'Loading Floors for Building');
     }
 }
 
@@ -173,16 +208,22 @@ function handleARLocationChange() {
     const selectedLocationId = arLocationSelect.value;
     const selectedLocation = arLocations.find(l => l.id === selectedLocationId);
     
-    if (selectedLocation && selectedLocation.coordinates) {
+    if (selectedLocation) {
         // Enable coordinate inputs
         locationX.disabled = false;
         locationY.disabled = false;
         locationZ.disabled = false;
         
-        // Set coordinate values
-        locationX.value = selectedLocation.coordinates.x || '';
-        locationY.value = selectedLocation.coordinates.y || '';
-        locationZ.value = selectedLocation.coordinates.z || '';
+        // Set coordinate values from positions only
+        locationX.value = Number.isFinite(selectedLocation.x) ? String(selectedLocation.x) : '';
+        locationY.value = Number.isFinite(selectedLocation.y) ? String(selectedLocation.y) : '';
+        locationZ.value = Number.isFinite(selectedLocation.z) ? String(selectedLocation.z) : '';
+        
+        // Mirror chosen name into the name field if empty
+        if (!locationName.value) {
+            const opt = arLocationSelect.options[arLocationSelect.selectedIndex];
+            locationName.value = opt ? (opt.textContent || '') : '';
+        }
     } else {
         // Disable coordinate inputs
         locationX.disabled = true;
@@ -292,11 +333,32 @@ async function saveLocationToFirebase(locationData) {
         // Add to Firebase
         await addDoc(collection(db, 'locations'), locationData);
         
+        // If the location came from ARLocations, archive the source doc
+        const selectedId = arLocationSelect.value || '';
+        if (selectedId) {
+            try {
+                const srcRef = doc(db, 'ARLocations', selectedId);
+                const srcSnap = await getDoc(srcRef);
+                if (srcSnap.exists()) {
+                    const data = srcSnap.data() || {};
+                    // Write to archive collection with timestamp
+                    const archiveRef = doc(collection(db, 'ARLocations_archive'));
+                    await setDoc(archiveRef, { ...data, archivedAt: new Date().toISOString(), sourceId: selectedId });
+                    // Remove from source
+                    await deleteDoc(srcRef);
+                }
+            } catch (archiveErr) {
+                console.warn('Archiving ARLocation failed:', archiveErr);
+            }
+        }
+        
         // Show success message
         window.errorHandler.showSuccess('Location added successfully!');
         
         // Reset form
         handleClearFields();
+        // Reload AR coordinates to remove archived item from dropdown
+        await loadARLocations();
         
     } catch (error) {
         window.errorHandler.handleError(error, 'Saving Location to Firebase');
@@ -332,6 +394,74 @@ function handleClearFields() {
     // Disable floor selection
     floorSelect.disabled = true;
     floorSelect.innerHTML = '<option value="">Select floor...</option>';
+}
+
+// Archive modal logic
+async function openArchiveModal() {
+    try {
+        archiveList.innerHTML = 'Loading...';
+        archiveModal.style.display = 'flex';
+        const snap = await getDocs(query(collection(db, 'ARLocations_archive'), orderBy('archivedAt', 'desc')));
+        const items = [];
+        snap.forEach(docSnap => {
+            const d = docSnap.data() || {};
+            const name = String(d.Name ?? d.name ?? docSnap.id);
+            const x = d.PositionX ?? d.x ?? '-';
+            const y = d.PositionY ?? d.y ?? '-';
+            const z = d.PositionZ ?? d.z ?? '-';
+            const time = d.archivedAt ? new Date(d.archivedAt).toLocaleString() : '';
+            items.push(`<label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid #eee;">`+
+                `<input type="checkbox" class="archive-checkbox" data-id="${docSnap.id}">`+
+                `<div style="flex:1;">`+
+                    `<div style="font-weight:600;">${name}</div>`+
+                    `<div style="font-size:12px;color:#555;">X:${x} Y:${y} Z:${z}</div>`+
+                    `<div style="font-size:12px;color:#888;">Archived: ${time}</div>`+
+                `</div>`+
+            `</label>`);
+        });
+        archiveList.innerHTML = items.length ? items.join('') : '<div style="padding:10px;">No archived items.</div>';
+    } catch (err) {
+        window.errorHandler.handleError(err, 'Open Archive Modal');
+    }
+}
+
+function selectAllArchiveItems() {
+    const boxes = archiveList.querySelectorAll('.archive-checkbox');
+    const allChecked = Array.from(boxes).every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
+}
+
+async function deleteSelectedArchiveItems() {
+    try {
+        const boxes = Array.from(archiveList.querySelectorAll('.archive-checkbox')).filter(b => b.checked);
+        if (boxes.length === 0) {
+            alert('No items selected.');
+            return;
+        }
+        if (!confirm(`Delete ${boxes.length} selected item(s)? This cannot be undone.`)) return;
+        for (const box of boxes) {
+            const id = box.getAttribute('data-id');
+            await deleteDoc(doc(db, 'ARLocations_archive', id));
+        }
+        await openArchiveModal();
+    } catch (err) {
+        window.errorHandler.handleError(err, 'Delete Selected Archive Items');
+    }
+}
+
+async function clearAllArchiveItems() {
+    try {
+        if (!confirm('Delete ALL archived items? This cannot be undone.')) return;
+        const snap = await getDocs(collection(db, 'ARLocations_archive'));
+        const ids = [];
+        snap.forEach(d => ids.push(d.id));
+        for (const id of ids) {
+            await deleteDoc(doc(db, 'ARLocations_archive', id));
+        }
+        await openArchiveModal();
+    } catch (err) {
+        window.errorHandler.handleError(err, 'Clear All Archive Items');
+    }
 }
 
 // Go back to admin tools

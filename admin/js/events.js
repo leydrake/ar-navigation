@@ -109,6 +109,38 @@ let editingEventId = null;
 let editingEventImage = '';
 let viewingEventId = null;
 
+// Check for overlapping events at the same location
+async function hasTimeConflict(targetLocation, proposedStartIso, proposedEndIso, excludeEventId = null) {
+    try {
+        // Fetch all events for the same location
+        const { query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
+        const q = query(eventsRef, where('location', '==', targetLocation));
+        const snapshot = await getDocs(q);
+        const proposedStart = new Date(proposedStartIso).getTime();
+        const proposedEnd = new Date(proposedEndIso).getTime();
+        let conflict = null;
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (excludeEventId && docSnap.id === excludeEventId) return;
+            const existingStart = data.startTime ? new Date(data.startTime).getTime() : null;
+            const existingEnd = data.endTime ? new Date(data.endTime).getTime() : null;
+            if (existingStart == null || existingEnd == null) return;
+            // Overlap condition: start < existingEnd AND end > existingStart
+            if (proposedStart < existingEnd && proposedEnd > existingStart) {
+                conflict = {
+                    name: data.name || data.title || 'Untitled Event',
+                    start: existingStart,
+                    end: existingEnd
+                };
+            }
+        });
+        return conflict;
+    } catch (err) {
+        console.error('Error checking time conflict:', err);
+        return null;
+    }
+}
+
 // Fetch locations from coordinates collection
 async function fetchLocations() {
     try {
@@ -515,6 +547,15 @@ eventForm.onsubmit = async function(e) {
         return;
     }
     
+    // Check time conflict before confirmation
+    const conflict = await hasTimeConflict(location, new Date(startTime).toISOString(), new Date(endTime).toISOString(), editingEventId);
+    if (conflict) {
+        const conflictStart = new Date(conflict.start).toLocaleString();
+        const conflictEnd = new Date(conflict.end).toLocaleString();
+        alert(`This location is already booked between ${conflictStart} and ${conflictEnd} for "${conflict.name}". Please choose a different time or location.`);
+        return;
+    }
+
     // Ask for confirmation before adding/updating
     let confirmMessage = '';
     if (editingEventId) {
@@ -555,13 +596,14 @@ eventForm.onsubmit = async function(e) {
             
             // Close modal and reset form
             addEventModal.style.display = 'none';
+            const wasEditing = !!editingEventId;
             editingEventId = null;
             editingEventImage = '';
             eventForm.reset();
             imagePreview.style.display = 'none';
             
             // Show success message
-            alert(editingEventId ? 'Event updated successfully!' : 'Event added successfully!');
+            alert(wasEditing ? 'Event updated successfully!' : 'Event added successfully!');
             
         } catch (error) {
             console.error('Error saving event:', error);
