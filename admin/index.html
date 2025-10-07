@@ -90,55 +90,72 @@
                                 </button>
                             </div>
                             <button type="submit" class="login-btn">Log In</button>
-                            <div style="margin-top:12px;">
-                                <button type="button" id="forgotLink" style="background:none;border:none;color:#0d6efd;cursor:pointer;padding:0;">Forgot Password?</button>
+                            <div style="margin-top:12px; justify-content: center; align-items: center; display: flex;">
+                                <button type="button" id="forgotLink" style="background:none;border:none;color:#666;cursor:pointer;padding:0; ">Forgot Password?</button>
                             </div>
                         </form>
                         <div id="errorMessage" class="error-message"></div>
 
-                        <!-- Forgot Password Section -->
-                        <div id="forgotSection" style="display:none;margin-top:24px;">
-                            <h3 style="margin:0 0 10px 0;">Reset your password</h3>
-                            <!-- Step 1: Email -->
-                            <div id="fpStepEmail">
-                                <label for="fpEmail">Email</label>
-                                <input type="email" id="fpEmail" placeholder="you@example.com">
-                                <div id="fpEmailHelp" class="error-message" style="display:block;"></div>
-                                <button type="button" class="login-btn" id="fpEmailBtn">Send code</button>
-                            </div>
-                            <!-- Step 2: OTP -->
-                            <div id="fpStepOtp" style="display:none;">
-                                <label>Enter 6-digit code</label>
-                                <div style="display:flex;gap:8px;margin:8px 0;">
-                                    <input maxlength="1" id="otp1" style="width:40px;text-align:center;">
-                                    <input maxlength="1" id="otp2" style="width:40px;text-align:center;">
-                                    <input maxlength="1" id="otp3" style="width:40px;text-align:center;">
-                                    <input maxlength="1" id="otp4" style="width:40px;text-align:center;">
-                                    <input maxlength="1" id="otp5" style="width:40px;text-align:center;">
-                                    <input maxlength="1" id="otp6" style="width:40px;text-align:center;">
+                        <!-- Forgot Password Modal -->
+                        <div id="forgotPasswordModal" class="modal">
+                            <div class="modal-backdrop" id="modalBackdrop"></div>
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3 class="modal-title">Reset your password</h3>
+                                    <button type="button" class="modal-close" id="modalCloseBtn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                <div id="fpOtpHelp" class="error-message" style="display:block;"></div>
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <button type="button" class="login-btn" id="fpOtpBtn">Verify</button>
-                                    <button type="button" id="fpResendBtn" style="background:none;border:none;color:#0d6efd;cursor:pointer;padding:0;">Resend code</button>
+                                <div class="modal-body">
+                                    <!-- Step 1: Email -->
+                                    <div id="fpStepEmail">
+                                        <label for="fpEmail">Email</label>
+                                        <input type="email" id="fpEmail" placeholder="you@example.com">
+                                        <div id="fpEmailHelp" class="error-message"></div>
+                                        <button type="button" class="login-btn" id="fpEmailBtn">Send code</button>
+                                    </div>
+                                    <!-- Step 2: OTP -->
+                                    <div id="fpStepOtp" style="display:none;">
+                                        <label>Enter 6-digit code</label>
+                                        <div class="otp-inputs">
+                                            <input maxlength="1" id="otp1" class="otp-input">
+                                            <input maxlength="1" id="otp2" class="otp-input">
+                                            <input maxlength="1" id="otp3" class="otp-input">
+                                            <input maxlength="1" id="otp4" class="otp-input">
+                                            <input maxlength="1" id="otp5" class="otp-input">
+                                            <input maxlength="1" id="otp6" class="otp-input">
+                                        </div>
+                                        <div id="fpOtpHelp" class="error-message"></div>
+                                        <div class="otp-actions">
+                                            <button type="button" class="login-btn" id="fpOtpBtn">Verify</button>
+                                            <button type="button" id="fpResendBtn" class="resend-btn">Resend code</button>
+                                        </div>
+                                    </div>
+                                    <!-- Step 3: New Password -->
+                                    <div id="fpStepNew" style="display:none;">
+                                        <label for="fpNewPass">New password</label>
+                                        <input type="password" id="fpNewPass" minlength="8">
+                                        <label for="fpConfirmPass">Confirm password</label>
+                                        <input type="password" id="fpConfirmPass" minlength="8">
+                                        <div id="fpNewHelp" class="error-message"></div>
+                                        <button type="button" class="login-btn" id="fpSaveBtn">Save password</button>
+                                    </div>
+                                    <!-- Step 4: Success -->
+                                    <div id="fpStepDone" style="display:none;">
+                                        <div class="success-message">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="success-icon">
+                                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            <p>Password updated successfully. You can now log in.</p>
+                                        </div>
+                                        <button type="button" class="login-btn" id="fpGoLoginBtn">Go to Login</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <!-- Step 3: New Password -->
-                            <div id="fpStepNew" style="display:none;">
-                                <label for="fpNewPass">New password</label>
-                                <input type="password" id="fpNewPass" minlength="8">
-                                <label for="fpConfirmPass">Confirm password</label>
-                                <input type="password" id="fpConfirmPass" minlength="8">
-                                <div id="fpNewHelp" class="error-message" style="display:block;"></div>
-                                <button type="button" class="login-btn" id="fpSaveBtn">Save password</button>
-                            </div>
-                            <!-- Step 4: Success -->
-                            <div id="fpStepDone" style="display:none;">
-                                <p>Password updated successfully. You can now log in.</p>
-                                <button type="button" class="login-btn" id="fpGoLoginBtn">Go to Login</button>
-                            </div>
-                            <div style="margin-top:10px;">
-                                <button type="button" id="fpCancelBtn" style="background:none;border:none;color:#6c757d;cursor:pointer;padding:0;">Cancel</button>
+                                <div class="modal-footer">
+                                    <button type="button" id="fpCancelBtn" class="cancel-btn">Cancel</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -280,9 +297,11 @@
             }
         });
 
-        // Forgot Password Flow (inline)
+        // Forgot Password Modal Flow
         const forgotLink = document.getElementById('forgotLink');
-        const forgotSection = document.getElementById('forgotSection');
+        const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
         const fpStepEmail = document.getElementById('fpStepEmail');
         const fpStepOtp = document.getElementById('fpStepOtp');
         const fpStepNew = document.getElementById('fpStepNew');
@@ -308,8 +327,14 @@
         const fpGoLoginBtn = document.getElementById('fpGoLoginBtn');
         const fpCancelBtn = document.getElementById('fpCancelBtn');
 
-        function showForgot() {
-            forgotSection.style.display = 'block';
+        function showForgotModal() {
+            forgotPasswordModal.style.display = 'flex';
+            // Trigger animation after display is set
+            setTimeout(() => {
+                forgotPasswordModal.classList.add('show');
+            }, 10);
+            
+            // Reset form state
             fpStepEmail.style.display = '';
             fpStepOtp.style.display = 'none';
             fpStepNew.style.display = 'none';
@@ -317,9 +342,27 @@
             fpEmailHelp.textContent = '';
             fpOtpHelp.textContent = '';
             fpNewHelp.textContent = '';
+            fpEmailHelp.style.display = 'none';
+            fpOtpHelp.style.display = 'none';
+            fpNewHelp.style.display = 'none';
+            
+            // Clear form fields
+            fpEmail.value = '';
+            fpNewPass.value = '';
+            fpConfirmPass.value = '';
+            fpOtpInputs.forEach(input => input.value = '');
+            
+            // Focus on email input
+            setTimeout(() => {
+                fpEmail.focus();
+            }, 300);
         }
-        function hideForgot() {
-            forgotSection.style.display = 'none';
+
+        function hideForgotModal() {
+            forgotPasswordModal.classList.remove('show');
+            setTimeout(() => {
+                forgotPasswordModal.style.display = 'none';
+            }, 300);
         }
         function joinOtp() {
             return fpOtpInputs.map(i => i.value).join('');
@@ -331,9 +374,19 @@
             return new Date(Date.now() + 5 * 60 * 1000);
         }
 
-        forgotLink.addEventListener('click', showForgot);
-        fpCancelBtn.addEventListener('click', hideForgot);
-        fpGoLoginBtn.addEventListener('click', hideForgot);
+        // Modal event listeners
+        forgotLink.addEventListener('click', showForgotModal);
+        modalCloseBtn.addEventListener('click', hideForgotModal);
+        modalBackdrop.addEventListener('click', hideForgotModal);
+        fpCancelBtn.addEventListener('click', hideForgotModal);
+        fpGoLoginBtn.addEventListener('click', hideForgotModal);
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && forgotPasswordModal.classList.contains('show')) {
+                hideForgotModal();
+            }
+        });
 
         // auto-advance OTP inputs
         fpOtpInputs.forEach((el, idx) => {
@@ -345,9 +398,11 @@
         // Step 1: send code
         fpEmailBtn.addEventListener('click', async () => {
             fpEmailHelp.textContent = '';
+            fpEmailHelp.style.display = 'none';
             const emailVal = (fpEmail.value || '').trim().toLowerCase();
             if (!emailVal) {
                 fpEmailHelp.textContent = 'Please enter your email.';
+                fpEmailHelp.style.display = 'block';
                 return;
             }
             fpEmailBtn.disabled = true;
@@ -356,6 +411,7 @@
                 const snap = await db.collection('admin_credentials').where('email', '==', emailVal).limit(1).get();
                 if (snap.empty) {
                     fpEmailHelp.textContent = 'Email not found.';
+                    fpEmailHelp.style.display = 'block';
                     return;
                 }
                 const adminDoc = snap.docs[0].data();
@@ -372,6 +428,7 @@
                 fpStepEmail.style.display = 'none';
                 fpStepOtp.style.display = '';
                 fpOtpHelp.textContent = '';
+                fpOtpHelp.style.display = 'none';
                 // Send OTP via EmailJS
                 if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
                     try {
@@ -387,16 +444,19 @@
                         const msg = (mailErr && (mailErr.text || mailErr.message)) || 'Unknown error';
                         const code = mailErr && (mailErr.status || mailErr.code);
                         fpOtpHelp.textContent = `We could not send the email (${code || 'no-code'}): ${msg}`;
+                        fpOtpHelp.style.display = 'block';
                     }
                 } else {
                     // Fallback info if EmailJS not configured
                     fpOtpHelp.textContent = 'A code was generated. Configure EmailJS to send emails.';
+                    fpOtpHelp.style.display = 'block';
                 }
                 // Persist email in memory
                 forgotLink.dataset.fpEmail = emailVal;
             } catch (e) {
                 console.error(e);
                 fpEmailHelp.textContent = 'Something went wrong. Try again.';
+                fpEmailHelp.style.display = 'block';
             } finally {
                 fpEmailBtn.disabled = false;
                 fpEmailBtn.textContent = 'Send code';
@@ -405,6 +465,7 @@
 
         // Resend code
         fpResendBtn.addEventListener('click', async () => {
+            fpOtpHelp.style.display = 'none';
             const emailVal = forgotLink.dataset.fpEmail;
             if (!emailVal) return;
             fpResendBtn.disabled = true;
@@ -427,18 +488,22 @@
                         });
                         console.log('[EmailJS] resend response:', resp);
                         fpOtpHelp.textContent = 'A new code was sent to your email.';
+                        fpOtpHelp.style.display = 'block';
                     } catch (mailErr) {
                         console.error('[EmailJS] resend failed:', mailErr);
                         const msg = (mailErr && (mailErr.text || mailErr.message)) || 'Unknown error';
                         const code = mailErr && (mailErr.status || mailErr.code);
                         fpOtpHelp.textContent = `Failed to resend email (${code || 'no-code'}): ${msg}`;
+                        fpOtpHelp.style.display = 'block';
                     }
                 } else {
                     fpOtpHelp.textContent = 'A new code was generated. Configure EmailJS to send emails.';
+                    fpOtpHelp.style.display = 'block';
                 }
             } catch (e) {
                 console.error(e);
                 fpOtpHelp.textContent = 'Failed to resend code.';
+                fpOtpHelp.style.display = 'block';
             } finally {
                 fpResendBtn.disabled = false;
             }
@@ -447,10 +512,12 @@
         // Step 2: verify OTP
         fpOtpBtn.addEventListener('click', async () => {
             fpOtpHelp.textContent = '';
+            fpOtpHelp.style.display = 'none';
             const emailVal = forgotLink.dataset.fpEmail;
             const code = joinOtp();
             if (!emailVal || code.length !== 6) {
                 fpOtpHelp.textContent = 'Enter the 6-digit code.';
+                fpOtpHelp.style.display = 'block';
                 return;
             }
             fpOtpBtn.disabled = true;
@@ -460,21 +527,25 @@
                 const docSnap = await ref.get();
                 if (!docSnap.exists) {
                     fpOtpHelp.textContent = 'Request not found. Start again.';
+                    fpOtpHelp.style.display = 'block';
                     return;
                 }
                 const data = docSnap.data();
                 if (data.consumed) {
                     fpOtpHelp.textContent = 'Code already used. Start again.';
+                    fpOtpHelp.style.display = 'block';
                     return;
                 }
                 const now = Date.now();
                 const exp = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate().getTime() : (data.expiresAt ? new Date(data.expiresAt).getTime() : 0);
                 if (now > exp) {
                     fpOtpHelp.textContent = 'Code expired. Resend code.';
+                    fpOtpHelp.style.display = 'block';
                     return;
                 }
                 if (code !== data.otp) {
                     fpOtpHelp.textContent = 'Incorrect code.';
+                    fpOtpHelp.style.display = 'block';
                     return;
                 }
                 await ref.set({ verified: true, verifiedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
@@ -484,6 +555,7 @@
             } catch (e) {
                 console.error(e);
                 fpOtpHelp.textContent = 'Verification failed. Try again.';
+                fpOtpHelp.style.display = 'block';
             } finally {
                 fpOtpBtn.disabled = false;
                 fpOtpBtn.textContent = 'Verify';
@@ -493,15 +565,18 @@
         // Step 3: save new password
         fpSaveBtn.addEventListener('click', async () => {
             fpNewHelp.textContent = '';
+            fpNewHelp.style.display = 'none';
             const emailVal = forgotLink.dataset.fpEmail;
             const p1 = fpNewPass.value || '';
             const p2 = fpConfirmPass.value || '';
             if (p1.length < 8) {
                 fpNewHelp.textContent = 'Password must be at least 8 characters.';
+                fpNewHelp.style.display = 'block';
                 return;
             }
             if (p1 !== p2) {
                 fpNewHelp.textContent = 'Passwords do not match.';
+                fpNewHelp.style.display = 'block';
                 return;
             }
             fpSaveBtn.disabled = true;
@@ -511,6 +586,7 @@
                 const q = await db.collection('admin_credentials').where('email', '==', emailVal).limit(1).get();
                 if (q.empty) {
                     fpNewHelp.textContent = 'User not found.';
+                    fpNewHelp.style.display = 'block';
                     return;
                 }
                 const userRef = q.docs[0].ref;
@@ -524,6 +600,7 @@
             } catch (e) {
                 console.error(e);
                 fpNewHelp.textContent = 'Failed to update password.';
+                fpNewHelp.style.display = 'block';
             } finally {
                 fpSaveBtn.disabled = false;
                 fpSaveBtn.textContent = 'Save password';
