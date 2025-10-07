@@ -49,6 +49,7 @@
                                 <a href="tutorial.html" class="dropdown-link">Tutorial</a>
                                 <a href="tos.html" class="dropdown-link">Terms of Service</a>
                                 <a href="admin/index.html" class="dropdown-link">Login</a>
+                                <a href="forgot-password.html" class="dropdown-link">Forgot Password</a>
                             </div>
                         </div>
                     </nav>
@@ -74,18 +75,21 @@
                                 <div class="section-title">More</div>
                                 <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
                                 <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
+                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
                                 <a href="admin/index.html" class="mobile-nav-link">Admin</a>
                             </div>
                             <div class="mobile-nav-section">
                                 <div class="section-title">More</div>
                                 <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
                                 <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
+                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
                                 <a href="admin/index.html" class="mobile-nav-link">Admin</a>
                             </div>
                             <div class="mobile-nav-section">
                                 <div class="section-title">More</div>
                                 <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
                                 <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
+                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
                             </div>
                         </div>
                         <div class="mobile-download">
@@ -191,6 +195,10 @@
                 <span>Login</span>
                 <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
             </div>
+            <div class="menu-item" onclick="goToForgotPassword()">
+                <span>Forgot Password</span>
+                <img class="menu-arrow" src="icons/arrow-left.png" alt="Go" />
+            </div>
         </div>
     </div>
 
@@ -230,6 +238,9 @@
 
         function goToAdmin() {
             window.location.href = 'admin/index.html';
+        }
+        function goToForgotPassword() {
+            window.location.href = 'forgot-password.html';
         }
 
         // Mobile menu functionality

@@ -90,8 +90,57 @@
                                 </button>
                             </div>
                             <button type="submit" class="login-btn">Log In</button>
+                            <div style="margin-top:12px;">
+                                <button type="button" id="forgotLink" style="background:none;border:none;color:#0d6efd;cursor:pointer;padding:0;">Forgot Password?</button>
+                            </div>
                         </form>
                         <div id="errorMessage" class="error-message"></div>
+
+                        <!-- Forgot Password Section -->
+                        <div id="forgotSection" style="display:none;margin-top:24px;">
+                            <h3 style="margin:0 0 10px 0;">Reset your password</h3>
+                            <!-- Step 1: Email -->
+                            <div id="fpStepEmail">
+                                <label for="fpEmail">Email</label>
+                                <input type="email" id="fpEmail" placeholder="you@example.com">
+                                <div id="fpEmailHelp" class="error-message" style="display:block;"></div>
+                                <button type="button" class="login-btn" id="fpEmailBtn">Send code</button>
+                            </div>
+                            <!-- Step 2: OTP -->
+                            <div id="fpStepOtp" style="display:none;">
+                                <label>Enter 6-digit code</label>
+                                <div style="display:flex;gap:8px;margin:8px 0;">
+                                    <input maxlength="1" id="otp1" style="width:40px;text-align:center;">
+                                    <input maxlength="1" id="otp2" style="width:40px;text-align:center;">
+                                    <input maxlength="1" id="otp3" style="width:40px;text-align:center;">
+                                    <input maxlength="1" id="otp4" style="width:40px;text-align:center;">
+                                    <input maxlength="1" id="otp5" style="width:40px;text-align:center;">
+                                    <input maxlength="1" id="otp6" style="width:40px;text-align:center;">
+                                </div>
+                                <div id="fpOtpHelp" class="error-message" style="display:block;"></div>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <button type="button" class="login-btn" id="fpOtpBtn">Verify</button>
+                                    <button type="button" id="fpResendBtn" style="background:none;border:none;color:#0d6efd;cursor:pointer;padding:0;">Resend code</button>
+                                </div>
+                            </div>
+                            <!-- Step 3: New Password -->
+                            <div id="fpStepNew" style="display:none;">
+                                <label for="fpNewPass">New password</label>
+                                <input type="password" id="fpNewPass" minlength="8">
+                                <label for="fpConfirmPass">Confirm password</label>
+                                <input type="password" id="fpConfirmPass" minlength="8">
+                                <div id="fpNewHelp" class="error-message" style="display:block;"></div>
+                                <button type="button" class="login-btn" id="fpSaveBtn">Save password</button>
+                            </div>
+                            <!-- Step 4: Success -->
+                            <div id="fpStepDone" style="display:none;">
+                                <p>Password updated successfully. You can now log in.</p>
+                                <button type="button" class="login-btn" id="fpGoLoginBtn">Go to Login</button>
+                            </div>
+                            <div style="margin-top:10px;">
+                                <button type="button" id="fpCancelBtn" style="background:none;border:none;color:#6c757d;cursor:pointer;padding:0;">Cancel</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="content-right"></div>
@@ -108,6 +157,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
     <script>
         // Firebase configuration
@@ -126,38 +176,15 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // Admin credentials (you can change these)
-        const adminCredentials = {
-            email: "admin@navigatecampus.com",
-            password: "admin123456"
-        };
-
-        // Function to create admin credentials in Firestore (only if they don't exist)
-        async function createAdminCredentials() {
-            try {
-                // Check if admin credentials already exist
-                const doc = await db.collection('admin_credentials').doc('admin').get();
-                
-                if (!doc.exists) {
-                    // Hash the password (in production, use proper hashing)
-                    const hashedPassword = btoa(adminCredentials.password); // Simple base64 encoding for demo
-                    
-                    await db.collection('admin_credentials').doc('admin').set({
-                        email: adminCredentials.email,
-                        password: hashedPassword,
-                        role: 'super_admin',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastLogin: null
-                    });
-                    
-                    console.log('Admin credentials created successfully in Firestore');
-                } else {
-                    console.log('Admin credentials already exist, skipping creation');
-                }
-            } catch (error) {
-                console.error('Error creating admin credentials:', error);
-            }
+        // EmailJS configuration (replace with your values)
+        const EMAILJS_SERVICE_ID = 'service_06tmmse';
+        const EMAILJS_TEMPLATE_ID = 'template_i1n2rq7';
+        const EMAILJS_PUBLIC_KEY = 'q3S6dPMatDOndQ1YF';
+        if (window.emailjs) {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
         }
+
+        // Removed static admin bootstrap. Admins must exist in Firestore `admin_credentials`.
 
         // Function to verify admin credentials (supports multiple admins in the same collection)
         async function verifyAdminCredentials(email, password) {
@@ -253,6 +280,256 @@
             }
         });
 
+        // Forgot Password Flow (inline)
+        const forgotLink = document.getElementById('forgotLink');
+        const forgotSection = document.getElementById('forgotSection');
+        const fpStepEmail = document.getElementById('fpStepEmail');
+        const fpStepOtp = document.getElementById('fpStepOtp');
+        const fpStepNew = document.getElementById('fpStepNew');
+        const fpStepDone = document.getElementById('fpStepDone');
+        const fpEmail = document.getElementById('fpEmail');
+        const fpEmailHelp = document.getElementById('fpEmailHelp');
+        const fpEmailBtn = document.getElementById('fpEmailBtn');
+        const fpOtpBtn = document.getElementById('fpOtpBtn');
+        const fpResendBtn = document.getElementById('fpResendBtn');
+        const fpOtpInputs = [
+            document.getElementById('otp1'),
+            document.getElementById('otp2'),
+            document.getElementById('otp3'),
+            document.getElementById('otp4'),
+            document.getElementById('otp5'),
+            document.getElementById('otp6')
+        ];
+        const fpOtpHelp = document.getElementById('fpOtpHelp');
+        const fpNewPass = document.getElementById('fpNewPass');
+        const fpConfirmPass = document.getElementById('fpConfirmPass');
+        const fpNewHelp = document.getElementById('fpNewHelp');
+        const fpSaveBtn = document.getElementById('fpSaveBtn');
+        const fpGoLoginBtn = document.getElementById('fpGoLoginBtn');
+        const fpCancelBtn = document.getElementById('fpCancelBtn');
+
+        function showForgot() {
+            forgotSection.style.display = 'block';
+            fpStepEmail.style.display = '';
+            fpStepOtp.style.display = 'none';
+            fpStepNew.style.display = 'none';
+            fpStepDone.style.display = 'none';
+            fpEmailHelp.textContent = '';
+            fpOtpHelp.textContent = '';
+            fpNewHelp.textContent = '';
+        }
+        function hideForgot() {
+            forgotSection.style.display = 'none';
+        }
+        function joinOtp() {
+            return fpOtpInputs.map(i => i.value).join('');
+        }
+        function genOtp() {
+            return ('' + Math.floor(100000 + Math.random() * 900000));
+        }
+        function inFiveMinDate() {
+            return new Date(Date.now() + 5 * 60 * 1000);
+        }
+
+        forgotLink.addEventListener('click', showForgot);
+        fpCancelBtn.addEventListener('click', hideForgot);
+        fpGoLoginBtn.addEventListener('click', hideForgot);
+
+        // auto-advance OTP inputs
+        fpOtpInputs.forEach((el, idx) => {
+            el.addEventListener('input', () => {
+                if (el.value.length === 1 && idx < fpOtpInputs.length - 1) fpOtpInputs[idx + 1].focus();
+            });
+        });
+
+        // Step 1: send code
+        fpEmailBtn.addEventListener('click', async () => {
+            fpEmailHelp.textContent = '';
+            const emailVal = (fpEmail.value || '').trim().toLowerCase();
+            if (!emailVal) {
+                fpEmailHelp.textContent = 'Please enter your email.';
+                return;
+            }
+            fpEmailBtn.disabled = true;
+            fpEmailBtn.textContent = 'Sending...';
+            try {
+                const snap = await db.collection('admin_credentials').where('email', '==', emailVal).limit(1).get();
+                if (snap.empty) {
+                    fpEmailHelp.textContent = 'Email not found.';
+                    return;
+                }
+                const adminDoc = snap.docs[0].data();
+                const otp = genOtp();
+                await db.collection('passwordResets').doc(emailVal).set({
+                    email: emailVal,
+                    otp: otp,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    expiresAt: inFiveMinDate(),
+                    consumed: false,
+                    verified: false
+                }, { merge: true });
+                // Move to OTP step
+                fpStepEmail.style.display = 'none';
+                fpStepOtp.style.display = '';
+                fpOtpHelp.textContent = '';
+                // Send OTP via EmailJS
+                if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+                    try {
+                        console.log('[EmailJS] sending OTP to', emailVal);
+                        const resp = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                            to_email: emailVal,
+                            to_name: adminDoc.name || 'Admin',
+                            otp: otp
+                        });
+                        console.log('[EmailJS] send response:', resp);
+                    } catch (mailErr) {
+                        console.error('[EmailJS] send failed:', mailErr);
+                        const msg = (mailErr && (mailErr.text || mailErr.message)) || 'Unknown error';
+                        const code = mailErr && (mailErr.status || mailErr.code);
+                        fpOtpHelp.textContent = `We could not send the email (${code || 'no-code'}): ${msg}`;
+                    }
+                } else {
+                    // Fallback info if EmailJS not configured
+                    fpOtpHelp.textContent = 'A code was generated. Configure EmailJS to send emails.';
+                }
+                // Persist email in memory
+                forgotLink.dataset.fpEmail = emailVal;
+            } catch (e) {
+                console.error(e);
+                fpEmailHelp.textContent = 'Something went wrong. Try again.';
+            } finally {
+                fpEmailBtn.disabled = false;
+                fpEmailBtn.textContent = 'Send code';
+            }
+        });
+
+        // Resend code
+        fpResendBtn.addEventListener('click', async () => {
+            const emailVal = forgotLink.dataset.fpEmail;
+            if (!emailVal) return;
+            fpResendBtn.disabled = true;
+            try {
+                const otp = genOtp();
+                await db.collection('passwordResets').doc(emailVal).set({
+                    otp: otp,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    expiresAt: inFiveMinDate(),
+                    consumed: false,
+                    verified: false
+                }, { merge: true });
+                if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+                    try {
+                        console.log('[EmailJS] resending OTP to', emailVal);
+                        const resp = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                            to_email: emailVal,
+                            to_name: 'Admin',
+                            otp: otp
+                        });
+                        console.log('[EmailJS] resend response:', resp);
+                        fpOtpHelp.textContent = 'A new code was sent to your email.';
+                    } catch (mailErr) {
+                        console.error('[EmailJS] resend failed:', mailErr);
+                        const msg = (mailErr && (mailErr.text || mailErr.message)) || 'Unknown error';
+                        const code = mailErr && (mailErr.status || mailErr.code);
+                        fpOtpHelp.textContent = `Failed to resend email (${code || 'no-code'}): ${msg}`;
+                    }
+                } else {
+                    fpOtpHelp.textContent = 'A new code was generated. Configure EmailJS to send emails.';
+                }
+            } catch (e) {
+                console.error(e);
+                fpOtpHelp.textContent = 'Failed to resend code.';
+            } finally {
+                fpResendBtn.disabled = false;
+            }
+        });
+
+        // Step 2: verify OTP
+        fpOtpBtn.addEventListener('click', async () => {
+            fpOtpHelp.textContent = '';
+            const emailVal = forgotLink.dataset.fpEmail;
+            const code = joinOtp();
+            if (!emailVal || code.length !== 6) {
+                fpOtpHelp.textContent = 'Enter the 6-digit code.';
+                return;
+            }
+            fpOtpBtn.disabled = true;
+            fpOtpBtn.textContent = 'Verifying...';
+            try {
+                const ref = db.collection('passwordResets').doc(emailVal);
+                const docSnap = await ref.get();
+                if (!docSnap.exists) {
+                    fpOtpHelp.textContent = 'Request not found. Start again.';
+                    return;
+                }
+                const data = docSnap.data();
+                if (data.consumed) {
+                    fpOtpHelp.textContent = 'Code already used. Start again.';
+                    return;
+                }
+                const now = Date.now();
+                const exp = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate().getTime() : (data.expiresAt ? new Date(data.expiresAt).getTime() : 0);
+                if (now > exp) {
+                    fpOtpHelp.textContent = 'Code expired. Resend code.';
+                    return;
+                }
+                if (code !== data.otp) {
+                    fpOtpHelp.textContent = 'Incorrect code.';
+                    return;
+                }
+                await ref.set({ verified: true, verifiedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                // Move to new password step
+                fpStepOtp.style.display = 'none';
+                fpStepNew.style.display = '';
+            } catch (e) {
+                console.error(e);
+                fpOtpHelp.textContent = 'Verification failed. Try again.';
+            } finally {
+                fpOtpBtn.disabled = false;
+                fpOtpBtn.textContent = 'Verify';
+            }
+        });
+
+        // Step 3: save new password
+        fpSaveBtn.addEventListener('click', async () => {
+            fpNewHelp.textContent = '';
+            const emailVal = forgotLink.dataset.fpEmail;
+            const p1 = fpNewPass.value || '';
+            const p2 = fpConfirmPass.value || '';
+            if (p1.length < 8) {
+                fpNewHelp.textContent = 'Password must be at least 8 characters.';
+                return;
+            }
+            if (p1 !== p2) {
+                fpNewHelp.textContent = 'Passwords do not match.';
+                return;
+            }
+            fpSaveBtn.disabled = true;
+            fpSaveBtn.textContent = 'Saving...';
+            try {
+                // Update admin credential password
+                const q = await db.collection('admin_credentials').where('email', '==', emailVal).limit(1).get();
+                if (q.empty) {
+                    fpNewHelp.textContent = 'User not found.';
+                    return;
+                }
+                const userRef = q.docs[0].ref;
+                const encoded = btoa(p1); // match login flow hashing
+                await userRef.update({ password: encoded, lastPasswordResetAt: firebase.firestore.FieldValue.serverTimestamp() });
+                // Consume reset
+                await db.collection('passwordResets').doc(emailVal).set({ consumed: true, consumedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                // Show done
+                fpStepNew.style.display = 'none';
+                fpStepDone.style.display = '';
+            } catch (e) {
+                console.error(e);
+                fpNewHelp.textContent = 'Failed to update password.';
+            } finally {
+                fpSaveBtn.disabled = false;
+                fpSaveBtn.textContent = 'Save password';
+            }
+        });
+
         // Mobile menu functionality (burger)
         document.addEventListener('DOMContentLoaded', function() {
             const burgerMenu = document.getElementById('burgerMenu');
@@ -289,10 +566,7 @@
             }
         }
 
-        // Create admin credentials when page loads (only runs once)
-        window.addEventListener('load', function() {
-            createAdminCredentials();
-        });
+        // No automatic admin creation on load.
     </script>
 </body>
 </html>
