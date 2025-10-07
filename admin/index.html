@@ -9,36 +9,98 @@
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
-    <div class="admin-login-container">
-        <div class="login-header">
-            <button class="back-btn" onclick="goBack()" aria-label="Back">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <span class="login-title">Admin Login</span>
-        </div>
-        <div class="login-form-container">
-            <form class="login-form" id="loginForm">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
-                <label for="password">Password</label>
-                <div class="password-input-container">
-                    <input type="password" id="password" name="password" required>
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-off-icon" style="display:none;">
-                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+    <div class="landing-container">
+        <div class="main-panel">
+            <div class="header">
+                <div class="header-container">
+                    <div class="brand-section">
+                        <a href="../index.html" class="brand-link">
+                            <div class="logo">
+                                <img src="../icons/AR_ICON_TRANSPARENT.png" alt="Navigate My Campus Logo" class="logo-image">
+                            </div>
+                            <div class="brand-name">NAVIGATE MY CAMPUS</div>
+                        </a>
+                    </div>
+                    <nav class="navigation">
+                        <a href="../index.html" class="nav-link">Home</a>
+                        <a href="../about.html" class="nav-link">About us</a>
+                        <a href="../features.html" class="nav-link">Features</a>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-link nav-dropdown-toggle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="more-icon">
+                                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                                    <circle cx="19" cy="12" r="2" fill="currentColor"/>
+                                    <circle cx="5" cy="12" r="2" fill="currentColor"/>
+                                </svg>
+                            </a>
+                            <div class="dropdown-content">
+                                <a href="../tutorial.html" class="dropdown-link">Tutorial</a>
+                                <a href="../tos.html" class="dropdown-link">Terms of Service</a>
+                                <a href="./index.html" class="dropdown-link">Login</a>
+                            </div>
+                        </div>
+                    </nav>
+                    <div class="download-section">
+                        <a class="download-btn" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans" target="_blank" rel="noopener noreferrer" aria-label="Download on Google Play">Download App</a>
+                        <button class="burger-menu" id="burgerMenu">
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                            <span class="burger-line"></span>
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="login-btn">Log In</button>
-            </form>
-            <div id="errorMessage" class="error-message"></div>
+                <div class="mobile-menu" id="mobileMenu">
+                    <div class="mobile-menu-content">
+                        <div class="mobile-nav">
+                            <a href="../index.html" class="mobile-nav-link">Home</a>
+                            <a href="../about.html" class="mobile-nav-link">About us</a>
+                            <a href="../features.html" class="mobile-nav-link">Features</a>
+                            <div class="mobile-nav-section">
+                                <div class="section-title">More</div>
+                                <a href="../tutorial.html" class="mobile-nav-link">Tutorial</a>
+                                <a href="../tos.html" class="mobile-nav-link">Terms of Service</a>
+                                <a href="./index.html" class="mobile-nav-link">Admin</a>
+                            </div>
+                        </div>
+                        <div class="mobile-download">
+                            <a class="mobile-download-btn" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans" target="_blank" rel="noopener noreferrer" aria-label="Download on Google Play">Download App</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="content-left">
+                    <div class="login-form-container">
+                        <form class="login-form" id="loginForm">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                            <label for="password">Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="password" name="password" required>
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password')">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-off-icon" style="display:none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button type="submit" class="login-btn">Log In</button>
+                        </form>
+                        <div id="errorMessage" class="error-message"></div>
+                    </div>
+                </div>
+                <div class="content-right"></div>
+            </div>
+        </div>
+        <div class="bg-decorations">
+            <div class="bg-curve-1"></div>
+            <div class="bg-curve-2"></div>
+            <div class="bg-curve-3"></div>
         </div>
     </div>
 
@@ -191,10 +253,23 @@
             }
         });
 
-        // Go back function
-        function goBack() {
-            window.location.href = '../index.html';
-        }
+        // Mobile menu functionality (burger)
+        document.addEventListener('DOMContentLoaded', function() {
+            const burgerMenu = document.getElementById('burgerMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (burgerMenu && mobileMenu) {
+                burgerMenu.addEventListener('click', function() {
+                    burgerMenu.classList.toggle('active');
+                    mobileMenu.classList.toggle('open');
+                });
+                document.addEventListener('click', function(event) {
+                    if (!burgerMenu.contains(event.target) && !mobileMenu.contains(event.target)) {
+                        burgerMenu.classList.remove('active');
+                        mobileMenu.classList.remove('open');
+                    }
+                });
+            }
+        });
         
         // Function to toggle password visibility
         function togglePasswordVisibility(inputId) {
