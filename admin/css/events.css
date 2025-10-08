@@ -410,12 +410,26 @@ body, html {
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .dropdown-list li {
-    padding: 10px 14px;
+    padding: 12px 14px;
     cursor: pointer;
     font-size: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.dropdown-list li:last-child {
+    border-bottom: none;
 }
 .dropdown-list li:hover {
     background: #e0e0e0;
+}
+.location-name {
+    font-weight: 600;
+    color: #206233;
+    margin-bottom: 2px;
+}
+.location-details {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
 }
 .modal-actions {
     display: flex;

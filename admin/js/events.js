@@ -141,7 +141,7 @@ async function hasTimeConflict(targetLocation, proposedStartIso, proposedEndIso,
     }
 }
 
-// Fetch locations from coordinates collection
+// Fetch locations from coordinates collection with building and floor info
 async function fetchLocations() {
     try {
         const querySnapshot = await getDocs(coordinatesRef);
@@ -149,23 +149,46 @@ async function fetchLocations() {
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if (data.name) {
-                locations.push(data.name);
+                const locationInfo = {
+                    id: doc.id,
+                    name: data.name,
+                    building: data.building || 'Unknown Building',
+                    floor: data.floor !== null && data.floor !== undefined ? `Floor ${data.floor}` : 'Ground Floor',
+                    coordinates: {
+                        x: data.x || 0,
+                        y: data.y || 0,
+                        z: data.z || 0
+                    }
+                };
+                locations.push(locationInfo);
             }
         });
-        console.log('Fetched locations:', locations);
+        
+        // Sort locations by building, then floor, then name
+        locations.sort((a, b) => {
+            if (a.building !== b.building) {
+                return a.building.localeCompare(b.building);
+            }
+            if (a.floor !== b.floor) {
+                return a.floor.localeCompare(b.floor);
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
+        console.log('Fetched locations with details:', locations);
     } catch (error) {
         console.error('Error fetching locations:', error);
         // Fallback to default locations if fetch fails
         locations = [
-            'Activity Center',
-            'AVR',
-            'Admin Building',
-            'MPG Building',
-            'BSBA Building',
-            'Pancho Hall',
-            'Library',
-            'Gymnasium',
-            'Canteen'
+            { id: 'fallback-1', name: 'Activity Center', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-2', name: 'AVR', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-3', name: 'Admin Building', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-4', name: 'MPG Building', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-5', name: 'BSBA Building', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-6', name: 'Pancho Hall', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-7', name: 'Library', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-8', name: 'Gymnasium', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } },
+            { id: 'fallback-9', name: 'Canteen', building: 'Main Campus', floor: 'Ground Floor', coordinates: { x: 0, y: 0, z: 0 } }
         ];
     }
 }
@@ -208,13 +231,17 @@ function renderEvents(events) {
         const card = document.createElement('div');
         card.className = 'event-card';
         card.setAttribute('data-id', event.id);
+        const locationDisplay = event.locationBuilding && event.locationFloor 
+            ? `${event.location} (${event.locationBuilding} • ${event.locationFloor})`
+            : event.location;
+            
         card.innerHTML = `
             <div class="event-img-placeholder">
                 ${event.image ? `<img src="${event.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;"/>` : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" fill="#f0f0f0"/><text x="12" y="16" text-anchor="middle" font-size="18" fill="#bbb">?</text></svg>`}
             </div>
             <div class="event-details">
                 <div class="event-title">${event.name || event.title || 'Untitled Event'}</div>
-                <div class="event-location">Location: ${event.location}</div>
+                <div class="event-location">📍 ${locationDisplay}</div>
                 <div class="event-time">${event.startTime ? new Date(event.startTime).toLocaleString() : 'No time set'}</div>
             </div>
         `;
@@ -243,6 +270,12 @@ addEventBtn.onclick = function() {
     editingEventImage = '';
     eventForm.reset();
     imagePreview.style.display = 'none';
+    
+    // Clear location metadata
+    delete eventLocation.dataset.locationId;
+    delete eventLocation.dataset.locationBuilding;
+    delete eventLocation.dataset.locationFloor;
+    selectedLocationId = null;
 };
 
 closeModalBtn.onclick = function() {
@@ -251,6 +284,12 @@ closeModalBtn.onclick = function() {
     editingEventImage = '';
     eventForm.reset();
     imagePreview.style.display = 'none';
+    
+    // Clear location metadata
+    delete eventLocation.dataset.locationId;
+    delete eventLocation.dataset.locationBuilding;
+    delete eventLocation.dataset.locationFloor;
+    selectedLocationId = null;
 };
 
 // View modal functions
@@ -264,7 +303,13 @@ async function openViewModal(eventId) {
             // Populate view modal with event data
             viewEventName.textContent = data.name || data.title || 'Untitled Event';
             viewEventDescription.textContent = data.description || 'No description provided';
-            viewEventLocation.textContent = data.location || 'No location specified';
+            
+            // Enhanced location display
+            const locationDisplay = data.locationBuilding && data.locationFloor 
+                ? `${data.location} (${data.locationBuilding} • ${data.locationFloor})`
+                : data.location || 'No location specified';
+            viewEventLocation.textContent = locationDisplay;
+            
             viewEventStartTime.textContent = data.startTime ? new Date(data.startTime).toLocaleString() : 'No start time set';
             viewEventEndTime.textContent = data.endTime ? new Date(data.endTime).toLocaleString() : 'No end time set';
             
@@ -302,6 +347,13 @@ editEventBtn.onclick = async function() {
             eventName.value = data.name || data.title || '';
             eventDescription.value = data.description || '';
             eventLocation.value = data.location || '';
+            
+            // Set location metadata for editing
+            if (data.locationId) {
+                eventLocation.dataset.locationId = data.locationId;
+                eventLocation.dataset.locationBuilding = data.locationBuilding || '';
+                eventLocation.dataset.locationFloor = data.locationFloor || '';
+            }
             
             // Format datetime for input fields
             if (data.startTime) {
@@ -468,13 +520,25 @@ if (imageUploadLabel) {
     }
 }
 
-// Searchable dropdown for location
+// Searchable dropdown for location with enhanced display
 let filteredLocations = [];
+let selectedLocationId = null;
+
 eventLocation.oninput = function() {
     const val = eventLocation.value.toLowerCase();
-    filteredLocations = locations.filter(loc => loc.toLowerCase().includes(val));
+    filteredLocations = locations.filter(loc => 
+        loc.name.toLowerCase().includes(val) || 
+        loc.building.toLowerCase().includes(val) ||
+        loc.floor.toLowerCase().includes(val)
+    );
+    
     if (filteredLocations.length > 0 && val) {
-        locationDropdown.innerHTML = filteredLocations.map(loc => `<li>${loc}</li>`).join('');
+        locationDropdown.innerHTML = filteredLocations.map(loc => 
+            `<li data-location-id="${loc.id}" data-location-name="${loc.name}" data-location-building="${loc.building}" data-location-floor="${loc.floor}">
+                <div class="location-name">${loc.name}</div>
+                <div class="location-details">${loc.building} • ${loc.floor}</div>
+            </li>`
+        ).join('');
         locationDropdown.style.display = 'block';
     } else {
         locationDropdown.style.display = 'none';
@@ -482,8 +546,21 @@ eventLocation.oninput = function() {
 };
 
 locationDropdown.onclick = function(e) {
-    if (e.target.tagName === 'LI') {
-        eventLocation.value = e.target.textContent;
+    if (e.target.tagName === 'LI' || e.target.closest('li')) {
+        const li = e.target.tagName === 'LI' ? e.target : e.target.closest('li');
+        const locationName = li.dataset.locationName;
+        const locationId = li.dataset.locationId;
+        const building = li.dataset.locationBuilding;
+        const floor = li.dataset.locationFloor;
+        
+        eventLocation.value = locationName;
+        selectedLocationId = locationId;
+        
+        // Store additional location info for form submission
+        eventLocation.dataset.locationId = locationId;
+        eventLocation.dataset.locationBuilding = building;
+        eventLocation.dataset.locationFloor = floor;
+        
         locationDropdown.style.display = 'none';
     }
 };
@@ -508,6 +585,15 @@ eventForm.onsubmit = async function(e) {
     const endTime = eventEndTime.value;
     let image = '';
     
+    // Get location details
+    const locationId = eventLocation.dataset.locationId;
+    const locationBuilding = eventLocation.dataset.locationBuilding;
+    const locationFloor = eventLocation.dataset.locationFloor;
+    
+    // Find the full location object for coordinates
+    const locationObj = locations.find(loc => loc.id === locationId);
+    const locationCoordinates = locationObj ? locationObj.coordinates : { x: 0, y: 0, z: 0 };
+    
     if (eventImage.files[0]) {
         // Use the compressed image from preview
         image = imagePreview.src;
@@ -526,7 +612,18 @@ eventForm.onsubmit = async function(e) {
     const validationRules = {
         eventName: { required: true, minLength: 2, maxLength: 100 },
         eventDescription: { required: true, minLength: 10, maxLength: 500 },
-        eventLocation: { required: true, minLength: 2, maxLength: 200 },
+        eventLocation: { 
+            required: true, 
+            minLength: 2, 
+            maxLength: 200,
+            custom: (value, form) => {
+                // Check if location was selected from dropdown
+                if (!locationId || !locationObj) {
+                    return 'Please select a valid location from the dropdown';
+                }
+                return true;
+            }
+        },
         eventStartTime: { required: true, time: true },
         eventEndTime: { 
             required: true, 
@@ -573,6 +670,10 @@ eventForm.onsubmit = async function(e) {
                 name,
                 description,
                 location,
+                locationId,
+                locationBuilding,
+                locationFloor,
+                locationCoordinates,
                 startTime: new Date(startTime).toISOString(),
                 endTime: new Date(endTime).toISOString(),
                 image
@@ -601,6 +702,12 @@ eventForm.onsubmit = async function(e) {
             editingEventImage = '';
             eventForm.reset();
             imagePreview.style.display = 'none';
+            
+            // Clear location metadata
+            delete eventLocation.dataset.locationId;
+            delete eventLocation.dataset.locationBuilding;
+            delete eventLocation.dataset.locationFloor;
+            selectedLocationId = null;
             
             // Show success message
             alert(wasEditing ? 'Event updated successfully!' : 'Event added successfully!');
