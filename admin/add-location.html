@@ -134,6 +134,8 @@
         const imageInput = document.getElementById('location-image');
         const buildingSelect = document.getElementById('building-select');
         const floorSelect = document.getElementById('floor-select');
+        // Holds a compressed DataURL for Firestore storage
+        let imageDataUrl = null;
 
         // Keep a local cache of ARLocations keyed by document id
         const arLocationsById = new Map();
@@ -173,6 +175,50 @@
             xInput.value = String(item.x);
             yInput.value = String(item.y);
             zInput.value = String(item.z);
+        }
+
+        // Read and lightly compress the selected image to stay within Firestore doc limits
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            imageDataUrl = null;
+            if (!file) return;
+            try {
+                const rawDataUrl = await fileToDataURL(file);
+                imageDataUrl = await compressImage(rawDataUrl, 1024, 0.7); // max 1024px, 70% quality
+            } catch (err) {
+                console.error('Failed to process image:', err);
+                alert('Could not read image. Please try a different file.');
+            }
+        });
+
+        function fileToDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function compressImage(dataUrl, maxDim, quality) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const { width, height } = img;
+                    const scale = Math.min(1, maxDim / Math.max(width, height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(width * scale);
+                    canvas.height = Math.round(height * scale);
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { reject(new Error('Canvas not supported')); return; }
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Default to JPEG to gain compression unless original is PNG and small
+                    const out = canvas.toDataURL('image/jpeg', quality);
+                    resolve(out);
+                };
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
         }
 
         arLocationSelect.addEventListener('change', (e) => {
@@ -280,6 +326,11 @@
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
             try {
+                // Resolve human-readable building and floor for convenience
+                const buildingName = buildingId ? (buildingsById.get(buildingId)?.name || '') : '';
+                const floorMeta = floorId ? floorsById.get(floorId) : null;
+                const floorValue = (floorMeta && Number.isFinite(floorMeta.number)) ? floorMeta.number : null;
+
                 await addDoc(collection(db, 'coordinates'), {
                     name,
                     x,
@@ -287,6 +338,9 @@
                     z,
                     buildingId,
                     floorId,
+                    building: buildingName,
+                    floor: floorValue,
+                    image: imageDataUrl || null,
                     createdAt: serverTimestamp()
                 });
                 // Remove the source ARLocation document if one is selected
@@ -325,6 +379,7 @@
             if (imageInput) {
                 imageInput.value = '';
             }
+            imageDataUrl = null;
             buildingSelect.value = '';
             floorSelect.innerHTML = '<option value="" selected>Select floor...</option>';
             floorSelect.disabled = true;

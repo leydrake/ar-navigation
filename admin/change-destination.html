@@ -49,6 +49,21 @@
             <input id="searchInput" type="text" placeholder="Search Destination" />
         </div>
 
+        <!-- Filters: Building and Floor -->
+        <div class="filter-bar">
+            <select id="filterBuilding" title="Filter by building" class="filter-select">
+                <option value="">All buildings</option>
+            </select>
+            <select id="filterFloor" title="Filter by floor" disabled class="filter-select">
+                <option value="">All floors</option>
+            </select>
+            <button id="clearFiltersBtn" type="button" class="clear-filters-btn" title="Clear filters" aria-label="Clear filters">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
         <div class="destination-list" id="destinationList">
             <!-- Populated by JS -->
         </div>

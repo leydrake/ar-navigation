@@ -340,6 +340,27 @@ async function saveLocationToFirebase(locationData) {
         saveBtn.textContent = 'Saving...';
         
         // Add to Firebase: store in 'coordinates' collection
+        // Resolve human-readable names from selects
+        const buildingName = (() => {
+            const opt = buildingSelect.options[buildingSelect.selectedIndex];
+            return opt ? (opt.textContent || '') : '';
+        })();
+        // Extract floor number (store as number only)
+        const floorDisplay = (() => {
+            const opt = floorSelect.options[floorSelect.selectedIndex];
+            if (!opt) return null;
+            // Expect option text like: "Floor 1 — Name" or "Floor 1 - Name"
+            const txt = (opt.textContent || '').trim();
+            const match = txt.match(/Floor\s*(\-?\d+)/i);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                return Number.isNaN(num) ? null : num;
+            }
+            // If text isn't in that pattern, try dataset number if present
+            const dsNum = parseInt(opt.dataset.number || '', 10);
+            return Number.isNaN(dsNum) ? null : dsNum;
+        })();
+
         const coordsDoc = {
             name: locationData.name,
             x: locationData.coordinates.x,
@@ -347,9 +368,13 @@ async function saveLocationToFirebase(locationData) {
             z: locationData.coordinates.z,
             buildingId: locationData.buildingId,
             floorId: locationData.floorId,
+            building: buildingName,
+            floor: floorDisplay,
+            image: locationData.image || '',
             createdAt: new Date().toISOString()
         };
-        await addDoc(collection(db, 'coordinates'), coordsDoc);
+        const writeRef = await addDoc(collection(db, 'coordinates'), coordsDoc);
+        console.log('[Add Location] Saved coordinates doc id:', writeRef.id);
         
         // If the location came from ARLocations, archive the source doc
         const selectedId = arLocationSelect.value || '';

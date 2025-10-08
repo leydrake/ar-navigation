@@ -24,6 +24,9 @@ const loadingState = document.getElementById('loadingState');
 const container = document.getElementById('destinationsContainer');
 const destinationList = document.getElementById('destinationList');
 const searchInput = document.getElementById('searchInput');
+const filterBuilding = document.getElementById('filterBuilding');
+const filterFloor = document.getElementById('filterFloor');
+const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 // View modal elements
 const viewDestinationModal = document.getElementById('viewDestinationModal');
@@ -110,6 +113,13 @@ async function preloadBuildingsAndFloors() {
   buildingsSnap.forEach(d => {
     const data = d.data() || {};
     buildingIdToName.set(d.id, String(data.name || ''));
+    // Populate building filter when available
+    if (filterBuilding && !filterBuilding.querySelector(`option[value="${d.id}"]`)) {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = String(data.name || '');
+      filterBuilding.appendChild(opt);
+    }
   });
   floorsSnap.forEach(d => {
     const data = d.data() || {};
@@ -342,17 +352,22 @@ if (destForm) {
 
 function applySearchFilter(term) {
   const q = term.trim().toLowerCase();
-  if (!q) {
-    filteredDestinations = allDestinations;
-  } else {
-    filteredDestinations = allDestinations.filter(d => {
-      return (
-        (d.name && d.name.toLowerCase().includes(q)) ||
-        (d.building && d.building.toLowerCase().includes(q)) ||
-        (String(d.floor).toLowerCase().includes(q))
-      );
-    });
-  }
+  const buildingId = filterBuilding ? (filterBuilding.value || '') : '';
+  const floorId = filterFloor ? (filterFloor.value || '') : '';
+
+  filteredDestinations = allDestinations.filter(d => {
+    // text filter
+    const textPass = !q || (
+      (d.name && d.name.toLowerCase().includes(q)) ||
+      (d.buildingName && d.buildingName.toLowerCase().includes(q)) ||
+      (String(d.floorDisplay || '').toLowerCase().includes(q))
+    );
+    // building filter
+    const buildingPass = !buildingId || d.buildingId === buildingId;
+    // floor filter
+    const floorPass = !floorId || d.floorId === floorId;
+    return textPass && buildingPass && floorPass;
+  });
   renderDestinations(filteredDestinations);
 }
 
@@ -380,6 +395,56 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (searchInput) {
     const onSearch = debounce(() => applySearchFilter(searchInput.value), 200);
     searchInput.addEventListener('input', onSearch);
+  }
+
+  // Filter dropdown events
+  if (filterBuilding) {
+    filterBuilding.addEventListener('change', () => {
+      // Populate floor filter based on selected building
+      if (!filterFloor) { applySearchFilter(searchInput ? searchInput.value : ''); return; }
+      const buildingId = filterBuilding.value || '';
+      filterFloor.innerHTML = '<option value="">All floors</option>';
+      filterFloor.disabled = true;
+      if (buildingId) {
+        // Collect floors for this building
+        const floors = [];
+        floorIdToMeta.forEach((meta, id) => {
+          if (meta.buildingId === buildingId) {
+            floors.push({ id, number: meta.number, name: meta.name });
+          }
+        });
+        floors.sort((a,b) => {
+          const an = (a.number !== undefined && a.number !== null) ? a.number : Number.POSITIVE_INFINITY;
+          const bn = (b.number !== undefined && b.number !== null) ? b.number : Number.POSITIVE_INFINITY;
+          if (an !== bn) return an - bn;
+          return (a.name||'').localeCompare(b.name||'');
+        });
+        floors.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.id;
+          opt.textContent = (f.number !== undefined && f.number !== null && !Number.isNaN(f.number)) ? `Floor ${f.number}${f.name ? ' - ' + f.name : ''}` : (f.name || 'Floor');
+          filterFloor.appendChild(opt);
+        });
+        filterFloor.disabled = floors.length === 0;
+      }
+      applySearchFilter(searchInput ? searchInput.value : '');
+    });
+  }
+  if (filterFloor) {
+    filterFloor.addEventListener('change', () => applySearchFilter(searchInput ? searchInput.value : ''));
+  }
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+      if (filterBuilding) filterBuilding.value = '';
+      if (filterFloor) {
+        filterFloor.innerHTML = '<option value="">All floors</option>';
+        filterFloor.disabled = true;
+        filterFloor.value = '';
+      }
+      applySearchFilter('');
+      if (searchInput) searchInput.value = '';
+    });
   }
 
   // Event delegation for item clicks
