@@ -8,6 +8,24 @@
     <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
     <link rel="stylesheet" href="css/feedback.css">
     <link rel="stylesheet" href="css/validation.css">
+    <style>
+        /* Center the modal overlay and content */
+        #feedbackModal.modal {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: none; /* toggled to flex in JS */
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+        #feedbackModal .modal-content {
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
     <!-- Skeleton Loading State -->
@@ -109,54 +127,35 @@
                 </div>
             </div>
 
-            <!-- Filters and Search -->
-            <div class="filters-section">
-                <div class="filters-left">
-                    <div class="filter-group">
-                        <label for="statusFilter">Status:</label>
-                        <select id="statusFilter" onchange="filterFeedback()">
-                            <option value="">All</option>
-                            <option value="new">New</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="closed">Closed</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="typeFilter">Type:</label>
-                        <select id="typeFilter" onchange="filterFeedback()">
-                            <option value="">All</option>
-                            <option value="bug">Bug Report</option>
-                            <option value="feature">Feature Request</option>
-                            <option value="general">General Feedback</option>
-                            <option value="support">Support Request</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="priorityFilter">Priority:</label>
-                        <select id="priorityFilter" onchange="filterFeedback()">
-                            <option value="">All</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                        </select>
-                    </div>
-                </div>
+          
+            <!-- Search (enabled) -->
+            <div class="filters-section" style="justify-content: flex-end;">
                 <div class="filters-right">
                     <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Search feedback..." onkeyup="searchFeedback()">
+                        <input type="text" id="searchInput" placeholder="Search reviews..." onkeyup="searchFeedback()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
                             <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
                 </div>
+                <div class="filters-left">
+                    <div class="filter-group">
+                        <select id="statusFilter" onchange="filterFeedback()">
+                            <option value="">All</option>
+                            <option value="new">New</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filters-right"></div>
             </div>
 
             <!-- Feedback List -->
             <div class="feedback-list-section">
                 <div class="feedback-list-header">
-                    <h3 class="list-title">Feedback Items</h3>
+                    <h3 class="list-title">Reviews</h3>
                     <div class="list-actions">
                         <button class="action-btn" onclick="exportFeedback()" title="Export Feedback">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -229,6 +228,7 @@
         let allFeedback = [];
         let filteredFeedback = [];
         let currentFeedbackId = null;
+        let currentOriginalStatus = null;
 
         // Initialize page
         async function initializePage() {
@@ -265,16 +265,21 @@
             }
         }
 
-        // Load summary data
+        // Load summary data (from reviews)
         async function loadSummaryData() {
             try {
-                const feedbackSnapshot = await db.collection('feedback').orderBy('timestamp', 'desc').get();
+                const feedbackSnapshot = await db.collection('reviews').orderBy('createdAt', 'desc').get();
                 allFeedback = [];
                 
                 feedbackSnapshot.forEach(doc => {
+                    const data = doc.data();
                     allFeedback.push({
                         id: doc.id,
-                        ...doc.data()
+                        comment: data.comment || '',
+                        createdAt: data.createdAt || null,
+                        rating: typeof data.rating === 'number' ? data.rating : null,
+                        studentNo: data.studentNo || '',
+                        status: data.status || 'new'
                     });
                 });
 
@@ -284,7 +289,7 @@
                 const resolvedFeedback = allFeedback.filter(f => f.status === 'resolved').length;
                 
                 // Calculate average rating
-                const ratedFeedback = allFeedback.filter(f => f.rating && f.rating > 0);
+                const ratedFeedback = allFeedback.filter(f => typeof f.rating === 'number' && f.rating > 0);
                 const avgRating = ratedFeedback.length > 0 
                     ? (ratedFeedback.reduce((sum, f) => sum + f.rating, 0) / ratedFeedback.length).toFixed(1)
                     : 'N/A';
@@ -309,7 +314,7 @@
             displayFeedbackList();
         }
 
-        // Display feedback list
+        // Display feedback list (reviews)
         function displayFeedbackList() {
             const feedbackList = document.getElementById('feedbackList');
             feedbackList.innerHTML = '';
@@ -324,34 +329,27 @@
                 feedbackItem.className = 'feedback-item';
                 feedbackItem.onclick = () => openFeedbackModal(feedback.id);
                 
-                const statusClass = feedback.status.replace('_', '-');
-                const priorityClass = feedback.priority || 'medium';
-                
+                const ratingText = typeof feedback.rating === 'number' ? `⭐ ${feedback.rating}/5` : '';
+                const studentText = feedback.studentNo ? `ID: ${feedback.studentNo}` : 'ID: Unknown';
+                const preview = (feedback.comment || '').length > 160 ? (feedback.comment || '').slice(0, 157) + '…' : (feedback.comment || 'No comment');
+                const statusText = (feedback.status || 'new').replace('_', ' ').toUpperCase();
+
                 feedbackItem.innerHTML = `
                     <div class="feedback-item-header">
                         <div class="feedback-meta">
-                            <span class="feedback-type ${feedback.type}">${feedback.type.toUpperCase()}</span>
-                            <span class="feedback-priority ${priorityClass}">${priorityClass.toUpperCase()}</span>
-                            <span class="feedback-status ${statusClass}">${feedback.status.replace('_', ' ').toUpperCase()}</span>
+                            <span class="feedback-type general">REVIEW</span>
+                            <span class="feedback-status ${feedback.status || 'new'}">${statusText}</span>
+                            ${ratingText ? `<span class="feedback-priority medium">${ratingText}</span>` : ''}
                         </div>
-                        <div class="feedback-date">${formatDate(feedback.timestamp)}</div>
+                        <div class="feedback-date">${formatDate(feedback.createdAt)}</div>
                     </div>
                     <div class="feedback-content">
-                        <h4 class="feedback-title">${feedback.title || 'No Title'}</h4>
-                        <p class="feedback-description">${feedback.description || 'No description provided'}</p>
+                        <h4 class="feedback-title">${studentText}</h4>
+                        <p class="feedback-description">${preview}</p>
                     </div>
                     <div class="feedback-footer">
                         <div class="feedback-user">
-                            <span class="user-info">${feedback.userEmail || 'Anonymous'}</span>
-                            ${feedback.rating ? `<span class="rating">⭐ ${feedback.rating}/5</span>` : ''}
-                        </div>
-                        <div class="feedback-actions">
-                            <button class="action-btn" onclick="event.stopPropagation(); openFeedbackModal('${feedback.id}')" title="View Details">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
+                            ${ratingText ? `<span class="rating">${ratingText}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -363,17 +361,7 @@
         // Filter feedback
         function filterFeedback() {
             const statusFilter = document.getElementById('statusFilter').value;
-            const typeFilter = document.getElementById('typeFilter').value;
-            const priorityFilter = document.getElementById('priorityFilter').value;
-
-            filteredFeedback = allFeedback.filter(feedback => {
-                const statusMatch = !statusFilter || feedback.status === statusFilter;
-                const typeMatch = !typeFilter || feedback.type === typeFilter;
-                const priorityMatch = !priorityFilter || feedback.priority === priorityFilter;
-                
-                return statusMatch && typeMatch && priorityMatch;
-            });
-
+            filteredFeedback = allFeedback.filter(f => !statusFilter || f.status === statusFilter);
             displayFeedbackList();
         }
 
@@ -386,14 +374,13 @@
                 return;
             }
 
+            const statusFilter = document.getElementById('statusFilter').value;
             filteredFeedback = allFeedback.filter(feedback => {
-                const title = (feedback.title || '').toLowerCase();
-                const description = (feedback.description || '').toLowerCase();
-                const userEmail = (feedback.userEmail || '').toLowerCase();
-                
-                return title.includes(searchTerm) || 
-                       description.includes(searchTerm) || 
-                       userEmail.includes(searchTerm);
+                const comment = (feedback.comment || '').toLowerCase();
+                const studentNo = (feedback.studentNo || '').toLowerCase();
+                const textMatch = comment.includes(searchTerm) || studentNo.includes(searchTerm);
+                const statusMatch = !statusFilter || feedback.status === statusFilter;
+                return textMatch && statusMatch;
             });
 
             displayFeedbackList();
@@ -410,70 +397,74 @@
             modalBody.innerHTML = `
                 <div class="feedback-detail">
                     <div class="detail-header">
-                        <h4>${feedback.title || 'No Title'}</h4>
+                        <h4>Review</h4>
                         <div class="detail-meta">
-                            <span class="type-badge ${feedback.type}">${feedback.type.toUpperCase()}</span>
-                            <span class="priority-badge ${feedback.priority || 'medium'}">${(feedback.priority || 'medium').toUpperCase()}</span>
-                            <span class="status-badge ${feedback.status.replace('_', '-')}">${feedback.status.replace('_', ' ').toUpperCase()}</span>
+                            <span class="status-badge ${feedback.status || 'new'}">${(feedback.status || 'new').replace('_', ' ').toUpperCase()}</span>
                         </div>
                     </div>
                     
                     <div class="detail-content">
                         <div class="detail-section">
-                            <h5>Description</h5>
-                            <p>${feedback.description || 'No description provided'}</p>
+                            <h5>Comment</h5>
+                            <p>${feedback.comment || 'No comment provided'}</p>
                         </div>
                         
                         <div class="detail-section">
-                            <h5>User Information</h5>
-                            <p><strong>Email:</strong> ${feedback.userEmail || 'Anonymous'}</p>
-                            <p><strong>Page:</strong> ${feedback.page || 'Unknown'}</p>
-                            <p><strong>User Agent:</strong> ${feedback.userAgent || 'Unknown'}</p>
+                            <h5>Reviewer</h5>
+                            <p><strong>Student No:</strong> ${feedback.studentNo || 'Unknown'}</p>
                         </div>
                         
                         <div class="detail-section">
                             <h5>Additional Details</h5>
-                            <p><strong>Submitted:</strong> ${formatDate(feedback.timestamp)}</p>
-                            ${feedback.rating ? `<p><strong>Rating:</strong> ⭐ ${feedback.rating}/5</p>` : ''}
-                            ${feedback.attachments ? `<p><strong>Attachments:</strong> ${feedback.attachments.length} file(s)</p>` : ''}
+                            <p><strong>Submitted:</strong> ${formatDate(feedback.createdAt)}</p>
+                            ${typeof feedback.rating === 'number' ? `<p><strong>Rating:</strong> ⭐ ${feedback.rating}/5</p>` : ''}
                         </div>
-                        
-                        ${feedback.adminNotes ? `
+
                         <div class="detail-section">
-                            <h5>Admin Notes</h5>
-                            <p>${feedback.adminNotes}</p>
+                            <h5>Update Status</h5>
+                            <select id="statusSelect">
+                                <option value="new" ${((feedback.status||'new')==='new')?'selected':''}>New</option>
+                                <option value="in_progress" ${((feedback.status||'new')==='in_progress')?'selected':''}>In Progress</option>
+                                <option value="resolved" ${((feedback.status||'new')==='resolved')?'selected':''}>Resolved</option>
+                            </select>
                         </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
             
-            document.getElementById('feedbackModal').style.display = 'block';
+            const modal = document.getElementById('feedbackModal');
+            modal.style.display = 'flex';
+            currentOriginalStatus = feedback.status || 'new';
+            const updateBtn = document.getElementById('updateStatusBtn');
+            const statusSelect = document.getElementById('statusSelect');
+            if (updateBtn && statusSelect) {
+                updateBtn.disabled = (statusSelect.value === currentOriginalStatus);
+                statusSelect.addEventListener('change', () => {
+                    updateBtn.disabled = (statusSelect.value === currentOriginalStatus);
+                });
+            }
         }
 
         // Close modal
         function closeModal() {
             document.getElementById('feedbackModal').style.display = 'none';
             currentFeedbackId = null;
+            currentOriginalStatus = null;
         }
 
-        // Update feedback status
+        // Update review status
         async function updateFeedbackStatus() {
             if (!currentFeedbackId) return;
-            
-            const newStatus = prompt('Enter new status (new, in_progress, resolved, closed):');
-            if (!newStatus) return;
-            
+            const select = document.getElementById('statusSelect');
+            if (!select) return;
+            const newStatus = select.value;
             try {
-                await db.collection('feedback').doc(currentFeedbackId).update({
+                await db.collection('reviews').doc(currentFeedbackId).update({
                     status: newStatus,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                
-                // Refresh data
                 await loadFeedbackData();
                 closeModal();
-                
                 alert('Status updated successfully!');
             } catch (error) {
                 console.error('Error updating status:', error);
@@ -500,31 +491,27 @@
             }
         }
 
-        // Export feedback
+        // Export reviews
         function exportFeedback() {
             const csvContent = generateCSV(filteredFeedback);
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `feedback-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `reviews-export-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }
 
         // Generate CSV
         function generateCSV(data) {
-            const headers = ['ID', 'Type', 'Priority', 'Status', 'Title', 'Description', 'User Email', 'Rating', 'Submitted Date'];
+            const headers = ['ID', 'Student No', 'Comment', 'Rating', 'Created At'];
             const rows = data.map(feedback => [
                 feedback.id,
-                feedback.type || '',
-                feedback.priority || '',
-                feedback.status || '',
-                (feedback.title || '').replace(/"/g, '""'),
-                (feedback.description || '').replace(/"/g, '""'),
-                feedback.userEmail || '',
-                feedback.rating || '',
-                formatDate(feedback.timestamp)
+                feedback.studentNo || '',
+                (feedback.comment || '').replace(/"/g, '""'),
+                typeof feedback.rating === 'number' ? feedback.rating : '',
+                formatDate(feedback.createdAt)
             ]);
             
             const csvContent = [headers, ...rows]

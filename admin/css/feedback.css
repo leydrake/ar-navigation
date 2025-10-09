@@ -115,7 +115,7 @@ body, html {
 .back-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; width: 40px; height: 40px; cursor: pointer; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
 .back-btn:hover { background: rgba(255,255,255,0.18); }
 .header-text { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
-.feedback-title { font-size: 1.75rem; font-weight: 600; color: white; margin: 0; }
+.feedback-title { font-size: 1.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); margin: 0; }
 .feedback-subtitle { font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); margin: 0; }
 .header-right { display: none; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -231,6 +231,32 @@ body, html {
     color: #2c3e50;
     font-size: 0.9rem;
     min-width: 120px;
+}
+
+/* Status select styling (modal and filters) */
+.detail-section select#statusSelect,
+#statusFilter {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cfd4da;
+    border-radius: 8px;
+    background: #fff;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    min-width: 180px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.detail-section select#statusSelect:focus,
+#statusFilter:focus {
+    outline: none;
+    border-color: #206233;
+    box-shadow: 0 0 0 3px rgba(32, 98, 51, 0.12);
+}
+
+/* Disabled primary button when no changes */
+.btn-primary[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .filter-group select:focus {
@@ -444,8 +470,8 @@ body, html {
 .feedback-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2c3e50;
     margin-bottom: 0.5rem;
+    color: #2c3e50;
 }
 
 .feedback-description {
