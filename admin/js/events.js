@@ -193,6 +193,38 @@ async function fetchLocations() {
     }
 }
 
+// Archive expired events automatically
+async function archiveExpiredEvents() {
+    try {
+        const querySnapshot = await getDocs(eventsRef);
+        const now = new Date();
+        const archivePromises = [];
+        
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const endTime = data.endTime ? new Date(data.endTime) : null;
+            
+            // If event has ended and is not already archived
+            if (endTime && endTime < now && !data.archived) {
+                console.log(`Archiving expired event: ${data.name || data.title}`);
+                archivePromises.push(
+                    updateDoc(doc(db, "events", docSnap.id), {
+                        archived: true,
+                        archivedAt: now.toISOString()
+                    })
+                );
+            }
+        });
+        
+        if (archivePromises.length > 0) {
+            await Promise.all(archivePromises);
+            console.log(`Archived ${archivePromises.length} expired events`);
+        }
+    } catch (error) {
+        console.error('Error archiving expired events:', error);
+    }
+}
+
 // Fetch and render events
 async function fetchAndRenderEvents() {
     try {
@@ -201,11 +233,29 @@ async function fetchAndRenderEvents() {
             loadingState.style.display = '';
             adminContainer.style.display = 'none';
         }
+        
+        // First archive expired events
+        await archiveExpiredEvents();
+        
         const querySnapshot = await getDocs(eventsRef);
         const events = [];
         querySnapshot.forEach((docSnap) => {
-            events.push({ id: docSnap.id, ...docSnap.data() });
+            const data = docSnap.data();
+            const event = { id: docSnap.id, ...data };
+            
+            // Only show active (non-archived) events in main list
+            if (!data.archived) {
+                events.push(event);
+            }
         });
+        
+        // Sort events by start time (soonest first)
+        events.sort((a, b) => {
+            const aTime = a.startTime ? new Date(a.startTime) : new Date(0);
+            const bTime = b.startTime ? new Date(b.startTime) : new Date(0);
+            return aTime - bTime;
+        });
+        
         renderEvents(events);
         if (loadingState && adminContainer) {
             loadingState.style.display = 'none';
@@ -231,6 +281,8 @@ function renderEvents(events) {
         const card = document.createElement('div');
         card.className = 'event-card';
         card.setAttribute('data-id', event.id);
+        card.setAttribute('data-event-id', event.id);
+        
         const locationDisplay = event.locationBuilding && event.locationFloor 
             ? `${event.location} (${event.locationBuilding} • ${event.locationFloor})`
             : event.location;
@@ -255,7 +307,7 @@ function renderEvents(events) {
             if (!checkEventsPermission()) return;
             
             const id = this.getAttribute('data-id');
-            await openViewModal(id);
+            await openViewModal(id, false);
         };
     });
 }
@@ -293,7 +345,7 @@ closeModalBtn.onclick = function() {
 };
 
 // View modal functions
-async function openViewModal(eventId) {
+async function openViewModal(eventId, isArchived = false) {
     try {
         const eventDoc = await getDoc(doc(db, "events", eventId));
         if (eventDoc.exists()) {
@@ -320,11 +372,68 @@ async function openViewModal(eventId) {
                 viewEventImage.style.display = 'none';
             }
             
+            // Update modal buttons based on archive status
+            if (isArchived) {
+                editEventBtn.style.display = 'none';
+                deleteEventBtn.textContent = 'Delete Permanently';
+                deleteEventBtn.className = 'delete-btn permanent-delete';
+                
+                // Add restore button if not already present
+                if (!document.getElementById('restoreEventBtn')) {
+                    const restoreBtn = document.createElement('button');
+                    restoreBtn.id = 'restoreEventBtn';
+                    restoreBtn.className = 'restore-btn';
+                    restoreBtn.textContent = 'Restore';
+                    restoreBtn.onclick = restoreEvent;
+                    
+                    // Insert restore button before delete button
+                    deleteEventBtn.parentNode.insertBefore(restoreBtn, deleteEventBtn);
+                }
+            } else {
+                editEventBtn.style.display = 'inline-block';
+                deleteEventBtn.textContent = 'Delete';
+                deleteEventBtn.className = 'delete-btn';
+                
+                // Remove restore button if present
+                const restoreBtn = document.getElementById('restoreEventBtn');
+                if (restoreBtn) {
+                    restoreBtn.remove();
+                }
+            }
+            
             viewEventModal.style.display = 'flex';
         }
     } catch (error) {
         console.error('Error loading event for view:', error);
         alert('Error loading event: ' + error.message);
+    }
+}
+
+// Restore archived event
+async function restoreEvent() {
+    if (!viewingEventId) return;
+    
+    // Check permissions before allowing restore
+    if (!checkEventsPermission()) return;
+    
+    const confirmed = confirm('Are you sure you want to restore this event?');
+    if (!confirmed) return;
+    
+    try {
+        await updateDoc(doc(db, "events", viewingEventId), {
+            archived: false,
+            restoredAt: new Date().toISOString()
+        });
+        
+        viewEventModal.style.display = 'none';
+        viewingEventId = null;
+        
+        // Refresh the events list (show active events)
+        await fetchAndRenderEvents(false);
+        alert('Event restored successfully!');
+    } catch (error) {
+        console.error('Error restoring event:', error);
+        alert('Error restoring event: ' + error.message);
     }
 }
 
@@ -721,6 +830,160 @@ eventForm.onsubmit = async function(e) {
     }
 };
 
+// Archive modal functionality
+let selectedArchivedEvents = new Set();
+
+async function openArchiveModal() {
+    const archiveModal = document.getElementById('archiveModal');
+    const archiveList = document.getElementById('archiveList');
+    
+    if (!archiveModal || !archiveList) return;
+    
+    try {
+        // Show loading state
+        archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Loading archived events...</div>';
+        archiveModal.style.display = 'flex';
+        
+        // Fetch archived events
+        const querySnapshot = await getDocs(eventsRef);
+        const archivedEvents = [];
+        
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.archived) {
+                archivedEvents.push({ id: docSnap.id, ...data });
+            }
+        });
+        
+        // Sort by archive time (most recent first)
+        archivedEvents.sort((a, b) => {
+            const aTime = a.archivedAt ? new Date(a.archivedAt) : new Date(0);
+            const bTime = b.archivedAt ? new Date(b.archivedAt) : new Date(0);
+            return bTime - aTime;
+        });
+        
+        // Render archived events
+        if (archivedEvents.length === 0) {
+            archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No archived events found.</div>';
+        } else {
+            archiveList.innerHTML = archivedEvents.map(event => {
+                const locationDisplay = event.locationBuilding && event.locationFloor 
+                    ? `${event.location} (${event.locationBuilding} • ${event.locationFloor})`
+                    : event.location;
+                
+                const archivedDate = event.archivedAt ? new Date(event.archivedAt).toLocaleString() : 'Unknown';
+                
+                return `
+                    <div class="archived-event-item" data-event-id="${event.id}">
+                        <div class="archived-event-checkbox">
+                            <input type="checkbox" class="archive-event-checkbox" data-event-id="${event.id}">
+                        </div>
+                        <div class="archived-event-content">
+                            <div class="archived-event-image">
+                                ${event.image ? `<img src="${event.image}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;"/>` : '<div class="no-image-placeholder">📅</div>'}
+                            </div>
+                            <div class="archived-event-details">
+                                <div class="archived-event-title">${event.name || event.title || 'Untitled Event'}</div>
+                                <div class="archived-event-location">📍 ${locationDisplay}</div>
+                                <div class="archived-event-time">📅 ${event.startTime ? new Date(event.startTime).toLocaleString() : 'No time set'}</div>
+                                <div class="archived-event-date">📁 Archived: ${archivedDate}</div>
+                            </div>
+                            <div class="archived-event-actions">
+                                <button class="mini-btn success" onclick="restoreSingleEvent('${event.id}')">Restore</button>
+                                <button class="mini-btn danger" onclick="deleteSingleArchivedEvent('${event.id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Clear selection
+        selectedArchivedEvents.clear();
+        updateArchiveModalButtons();
+        
+    } catch (error) {
+        console.error('Error loading archived events:', error);
+        archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">Error loading archived events. Please try again.</div>';
+    }
+}
+
+function closeArchiveModal() {
+    const archiveModal = document.getElementById('archiveModal');
+    if (archiveModal) {
+        archiveModal.style.display = 'none';
+        selectedArchivedEvents.clear();
+    }
+}
+
+function updateArchiveModalButtons() {
+    const selectAllBtn = document.getElementById('selectAllArchiveBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedArchiveBtn');
+    const restoreSelectedBtn = document.getElementById('restoreSelectedArchiveBtn');
+    
+    if (selectAllBtn) {
+        const allCheckboxes = document.querySelectorAll('.archive-event-checkbox');
+        const checkedCount = document.querySelectorAll('.archive-event-checkbox:checked').length;
+        
+        if (checkedCount === 0) {
+            selectAllBtn.textContent = 'Select All';
+        } else if (checkedCount === allCheckboxes.length) {
+            selectAllBtn.textContent = 'Deselect All';
+        } else {
+            selectAllBtn.textContent = `Select All (${checkedCount}/${allCheckboxes.length})`;
+        }
+    }
+    
+    const hasSelection = selectedArchivedEvents.size > 0;
+    if (deleteSelectedBtn) deleteSelectedBtn.disabled = !hasSelection;
+    if (restoreSelectedBtn) restoreSelectedBtn.disabled = !hasSelection;
+}
+
+async function restoreSingleEvent(eventId) {
+    if (!confirm('Are you sure you want to restore this event?')) return;
+    
+    try {
+        await updateDoc(doc(db, "events", eventId), {
+            archived: false,
+            restoredAt: new Date().toISOString()
+        });
+        
+        // Remove from modal
+        const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
+        if (eventItem) {
+            eventItem.remove();
+        }
+        
+        // Refresh main events list
+        await fetchAndRenderEvents();
+        alert('Event restored successfully!');
+        
+    } catch (error) {
+        console.error('Error restoring event:', error);
+        alert('Error restoring event: ' + error.message);
+    }
+}
+
+async function deleteSingleArchivedEvent(eventId) {
+    if (!confirm('Are you sure you want to permanently delete this archived event? This action cannot be undone.')) return;
+    
+    try {
+        await deleteDoc(doc(db, "events", eventId));
+        
+        // Remove from modal
+        const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
+        if (eventItem) {
+            eventItem.remove();
+        }
+        
+        alert('Event deleted permanently!');
+        
+    } catch (error) {
+        console.error('Error deleting archived event:', error);
+        alert('Error deleting event: ' + error.message);
+    }
+}
+
 // Initial fetch
 document.addEventListener('DOMContentLoaded', async function() {
     // Fetch locations first, then events
@@ -735,7 +998,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             refreshBtn.disabled = true;
             try {
                 await fetchLocations();
-                await fetchAndRenderEvents();
+                await fetchAndRenderEvents(false);
             } finally {
                 refreshBtn.disabled = false;
                 refreshBtn.removeAttribute('aria-busy');
@@ -743,4 +1006,123 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         };
     }
+    
+    // Add archive modal functionality
+    const archiveToggleBtn = document.getElementById('archiveToggleBtn');
+    if (archiveToggleBtn) {
+        archiveToggleBtn.onclick = openArchiveModal;
+    }
+    
+    // Archive modal event listeners
+    const closeArchiveBtn = document.getElementById('closeArchiveBtn');
+    if (closeArchiveBtn) {
+        closeArchiveBtn.onclick = closeArchiveModal;
+    }
+    
+    const selectAllArchiveBtn = document.getElementById('selectAllArchiveBtn');
+    if (selectAllArchiveBtn) {
+        selectAllArchiveBtn.onclick = function() {
+            const allCheckboxes = document.querySelectorAll('.archive-event-checkbox');
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            
+            allCheckboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                const eventId = cb.dataset.eventId;
+                if (cb.checked) {
+                    selectedArchivedEvents.add(eventId);
+                } else {
+                    selectedArchivedEvents.delete(eventId);
+                }
+            });
+            
+            updateArchiveModalButtons();
+        };
+    }
+    
+    const deleteSelectedArchiveBtn = document.getElementById('deleteSelectedArchiveBtn');
+    if (deleteSelectedArchiveBtn) {
+        deleteSelectedArchiveBtn.onclick = async function() {
+            if (selectedArchivedEvents.size === 0) return;
+            
+            const count = selectedArchivedEvents.size;
+            if (!confirm(`Are you sure you want to permanently delete ${count} archived event(s)? This action cannot be undone.`)) return;
+            
+            try {
+                const deletePromises = Array.from(selectedArchivedEvents).map(eventId => 
+                    deleteDoc(doc(db, "events", eventId))
+                );
+                
+                await Promise.all(deletePromises);
+                
+                // Remove from modal
+                selectedArchivedEvents.forEach(eventId => {
+                    const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
+                    if (eventItem) {
+                        eventItem.remove();
+                    }
+                });
+                
+                selectedArchivedEvents.clear();
+                updateArchiveModalButtons();
+                alert(`${count} event(s) deleted permanently!`);
+                
+            } catch (error) {
+                console.error('Error deleting selected events:', error);
+                alert('Error deleting events: ' + error.message);
+            }
+        };
+    }
+    
+    const restoreSelectedArchiveBtn = document.getElementById('restoreSelectedArchiveBtn');
+    if (restoreSelectedArchiveBtn) {
+        restoreSelectedArchiveBtn.onclick = async function() {
+            if (selectedArchivedEvents.size === 0) return;
+            
+            const count = selectedArchivedEvents.size;
+            if (!confirm(`Are you sure you want to restore ${count} archived event(s)?`)) return;
+            
+            try {
+                const restorePromises = Array.from(selectedArchivedEvents).map(eventId => 
+                    updateDoc(doc(db, "events", eventId), {
+                        archived: false,
+                        restoredAt: new Date().toISOString()
+                    })
+                );
+                
+                await Promise.all(restorePromises);
+                
+                // Remove from modal
+                selectedArchivedEvents.forEach(eventId => {
+                    const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
+                    if (eventItem) {
+                        eventItem.remove();
+                    }
+                });
+                
+                selectedArchivedEvents.clear();
+                updateArchiveModalButtons();
+                
+                // Refresh main events list
+                await fetchAndRenderEvents(false);
+                alert(`${count} event(s) restored successfully!`);
+                
+            } catch (error) {
+                console.error('Error restoring selected events:', error);
+                alert('Error restoring events: ' + error.message);
+            }
+        };
+    }
+    
+    // Handle checkbox changes in archive modal
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('archive-event-checkbox')) {
+            const eventId = e.target.dataset.eventId;
+            if (e.target.checked) {
+                selectedArchivedEvents.add(eventId);
+            } else {
+                selectedArchivedEvents.delete(eventId);
+            }
+            updateArchiveModalButtons();
+        }
+    });
 });
