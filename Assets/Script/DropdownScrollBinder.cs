@@ -6,9 +6,6 @@ using TMPro;
 
 public class DropdownScrollBinder : MonoBehaviour
 {
-	[Header("App Canvas (optional)")]
-	public AppCanvas appCanvas; // If assigned, will close options panel on row click
-
 	[Header("Source")]
 	public Dropdown dropdown; // uGUI Dropdown (optional)
 	public TMP_Dropdown tmpDropdown; // TMP Dropdown (optional)
@@ -143,11 +140,6 @@ public class DropdownScrollBinder : MonoBehaviour
 		}
 		SetSelectedIndex(index);
 		UpdateSelectedLabel();
-		// Close the options panel if an AppCanvas is assigned
-		if (appCanvas != null)
-		{
-			appCanvas.CloseOptionsPanel();
-		}
 	}
 
 	private void HighlightSelected()

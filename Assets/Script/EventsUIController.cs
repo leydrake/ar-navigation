@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UIElements;
 
 public class EventsUIController : MonoBehaviour
@@ -662,20 +661,12 @@ public class EventsUIController : MonoBehaviour
 		imgContainer.style.alignItems = Align.Center;
 		imgContainer.style.justifyContent = Justify.Center;
 
-		// Question mark icon
+		// Question mark icon (no image loading)
 		var questionMark = new Label("?");
 		questionMark.style.fontSize = 40;
 		questionMark.style.color = new Color(0.7f, 0.7f, 0.7f, 1f);
 		questionMark.style.unityFontStyleAndWeight = FontStyle.Bold;
 		imgContainer.Add(questionMark);
-
-		// Actual image (hidden by default, shown when loaded)
-		var img = new Image();
-		img.style.width = 100;
-		img.style.height = 100;
-		img.scaleMode = ScaleMode.ScaleToFit;
-		img.style.display = DisplayStyle.None; // Hidden initially
-		imgContainer.Add(img);
 
 		row.Add(imgContainer);
 
@@ -709,47 +700,11 @@ public class EventsUIController : MonoBehaviour
 		col.Add(time);
 		row.Add(col);
 
-		// Load image if available
-		if (!string.IsNullOrEmpty(data.image))
-		{
-			Debug.Log($"[EventsUI] Loading image for '{data.name}' from '{data.image}'");
-			StartCoroutine(LoadImageInto(img, imgContainer, questionMark, data.image));
-		}
+		// Image loading removed to prevent UriFormatException
 
 		return row;
 	}
 
-	private IEnumerator LoadImageInto(Image target, VisualElement container, VisualElement questionMark, string url)
-	{
-		if (target == null || string.IsNullOrEmpty(url))
-		{
-			yield break;
-		}
-
-		using (UnityWebRequest req = UnityWebRequestTexture.GetTexture(url))
-		{
-			yield return req.SendWebRequest();
-
-			bool failed = req.result == UnityWebRequest.Result.ConnectionError ||
-						req.result == UnityWebRequest.Result.ProtocolError ||
-						req.result == UnityWebRequest.Result.DataProcessingError;
-
-			if (failed)
-			{
-				Debug.LogWarning($"[EventsUI] Failed to load image from '{url}': {req.error}");
-				yield break;
-			}
-
-			Texture2D tex = DownloadHandlerTexture.GetContent(req);
-			if (tex != null)
-			{
-				target.image = tex;
-				target.style.display = DisplayStyle.Flex; // Show the image
-				questionMark.style.display = DisplayStyle.None; // Hide the question mark
-				Debug.Log($"[EventsUI] Image set successfully from '{url}'");
-			}
-		}
-	}
 
 	private void OnSearchFocusIn()
 	{
@@ -960,20 +915,13 @@ public class EventsUIController : MonoBehaviour
 		modalStartTime.text = $"Start Time: {FormatDateTime(eventData.startTime)}";
 		modalEndTime.text = $"End Time: {FormatDateTime(eventData.endTime)}";
 
-		// Load event image if available
-		if (!string.IsNullOrEmpty(eventData.image))
-		{
-			StartCoroutine(LoadModalImage(eventData.image));
-		}
-		else
-		{
-			// Clear any existing image
-			modalImage.Clear();
-			var imagePlaceholder = new Label("No image available");
-			imagePlaceholder.style.color = new Color(0.6f, 0.6f, 0.6f);
-			imagePlaceholder.style.fontSize = 14;
-			modalImage.Add(imagePlaceholder);
-		}
+		// Image loading removed to prevent UriFormatException
+		// Clear any existing image and show placeholder
+		modalImage.Clear();
+		var imagePlaceholder = new Label("No image available");
+		imagePlaceholder.style.color = new Color(0.6f, 0.6f, 0.6f);
+		imagePlaceholder.style.fontSize = 14;
+		modalImage.Add(imagePlaceholder);
 
 		// Show modal
 		modalOverlay.style.display = DisplayStyle.Flex;
@@ -987,40 +935,6 @@ public class EventsUIController : MonoBehaviour
 		}
 	}
 
-	private IEnumerator LoadModalImage(string url)
-	{
-		if (string.IsNullOrEmpty(url)) yield break;
-
-		using (UnityWebRequest req = UnityWebRequestTexture.GetTexture(url))
-		{
-			yield return req.SendWebRequest();
-
-			bool failed = req.result == UnityWebRequest.Result.ConnectionError ||
-						req.result == UnityWebRequest.Result.ProtocolError ||
-						req.result == UnityWebRequest.Result.DataProcessingError;
-
-			if (failed)
-			{
-				Debug.LogWarning($"[EventsUI] Failed to load modal image from '{url}': {req.error}");
-				yield break;
-			}
-
-			Texture2D tex = DownloadHandlerTexture.GetContent(req);
-			if (tex != null)
-			{
-				// Clear existing content
-				modalImage.Clear();
-				
-				// Create image element
-				var imageElement = new Image();
-				imageElement.image = tex;
-				imageElement.style.width = Length.Percent(100);
-				imageElement.style.height = Length.Percent(100);
-				imageElement.scaleMode = ScaleMode.ScaleToFit;
-				modalImage.Add(imageElement);
-			}
-		}
-	}
 	
 	/// <summary>
 	/// Force refresh the events UI - use this if normal refresh isn't working
