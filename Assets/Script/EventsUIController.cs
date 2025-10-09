@@ -39,6 +39,7 @@ public class EventsUIController : MonoBehaviour
 	private bool verboseLogging = false;
 
 	private List<EventData> current = new List<EventData>();
+	private EventData currentEventData; // Store current event for navigation
 
 	// Modal elements
 	private VisualElement modalOverlay;
@@ -50,6 +51,7 @@ public class EventsUIController : MonoBehaviour
 	private Label modalStartTime;
 	private Label modalEndTime;
 	private VisualElement closeButton;
+	private VisualElement navigationButton;
 
 
 	[SerializeField]
@@ -60,6 +62,10 @@ public class EventsUIController : MonoBehaviour
 
 	[SerializeField]
 	private string healthButtonName = "health-button";
+
+	[Header("Navigation Integration")]
+	[SerializeField]
+	private TargetHandler targetHandler;
 
 	private void Awake()
 	{
@@ -138,6 +144,16 @@ public class EventsUIController : MonoBehaviour
 			eventsFetcher = FindFirstObjectByType<EventsFetcher>(FindObjectsInactive.Include);
 #else
 			eventsFetcher = FindObjectOfType<EventsFetcher>(true);
+#endif
+		}
+
+		// Find TargetHandler if not assigned
+		if (targetHandler == null)
+		{
+#if UNITY_2022_2_OR_NEWER
+			targetHandler = FindFirstObjectByType<TargetHandler>(FindObjectsInactive.Include);
+#else
+			targetHandler = FindObjectOfType<TargetHandler>(true);
 #endif
 		}
 
@@ -456,6 +472,9 @@ public class EventsUIController : MonoBehaviour
 			Debug.Log("UIDocument found, setting display to Flex");
 			uiDocument.rootVisualElement.style.display = DisplayStyle.Flex;
 			
+			// Recreate modal every time UI is shown to ensure it works
+			CreateModal();
+			
 			// Rewire UI every time in case the visual tree was rebuilt
 			WireUi();
 			
@@ -647,7 +666,10 @@ public class EventsUIController : MonoBehaviour
 		row.style.borderRightColor = new Color(0.8f, 0.8f, 0.8f, 1f);
 
 		// Make the card clickable
-		row.RegisterCallback<ClickEvent>(evt => ShowEventModal(data));
+		row.RegisterCallback<ClickEvent>(evt => {
+			Debug.Log($"[EventsUI] Event card clicked for: {data.name}");
+			ShowEventModal(data);
+		});
 
 		// Image container with question mark icon
 		var imgContainer = new VisualElement();
@@ -759,9 +781,22 @@ public class EventsUIController : MonoBehaviour
 
 	private void CreateModal()
 {
+    Debug.Log("[EventsUI] CreateModal called");
     var root = uiDocument != null ? uiDocument.rootVisualElement : null;
-    if (root == null) return;
+    if (root == null) 
+    {
+        Debug.LogError("[EventsUI] CreateModal: UIDocument or rootVisualElement is null!");
+        return;
+    }
 
+    // Remove existing modal if it exists to prevent duplicates
+    if (modalOverlay != null && modalOverlay.parent != null)
+    {
+        Debug.Log("[EventsUI] Removing existing modal");
+        modalOverlay.RemoveFromHierarchy();
+    }
+
+    Debug.Log("[EventsUI] Creating modal overlay");
     // Create modal overlay
     modalOverlay = new VisualElement();
     modalOverlay.style.position = Position.Absolute;
@@ -865,6 +900,30 @@ public class EventsUIController : MonoBehaviour
     modalEndTime.style.marginBottom = 20;
     modalEndTime.style.whiteSpace = WhiteSpace.Normal;
 
+    // Navigation button
+    navigationButton = new VisualElement();
+    navigationButton.style.width = Length.Percent(100);
+    navigationButton.style.height = 60;
+    navigationButton.style.backgroundColor = new Color(0.2f, 0.6f, 0.2f, 1f); // Green color
+    navigationButton.style.borderTopLeftRadius = 12;
+    navigationButton.style.borderTopRightRadius = 12;
+    navigationButton.style.borderBottomLeftRadius = 12;
+    navigationButton.style.borderBottomRightRadius = 12;
+    navigationButton.style.marginTop = 20;
+    navigationButton.style.alignItems = Align.Center;
+    navigationButton.style.justifyContent = Justify.Center;
+    navigationButton.style.cursor = StyleKeyword.Auto;
+
+    var navigationLabel = new Label("Navigate to Event Location");
+    navigationLabel.style.fontSize = 24;
+    navigationLabel.style.color = Color.white;
+    navigationLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+    navigationLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+    navigationButton.Add(navigationLabel);
+
+    // Register click event for navigation button
+    navigationButton.RegisterCallback<ClickEvent>(evt => OnNavigationButtonClicked());
+
     // Add elements
     modalContent.Add(closeButton);
     modalContent.Add(modalTitle);
@@ -873,9 +932,11 @@ public class EventsUIController : MonoBehaviour
     modalContent.Add(modalLocation);
     modalContent.Add(modalStartTime);
     modalContent.Add(modalEndTime);
+    modalContent.Add(navigationButton);
 
     modalOverlay.Add(modalContent);
     root.Add(modalOverlay);
+    Debug.Log("[EventsUI] Modal created and added to root successfully");
 }
 
 	private string FormatDateTime(string dateTimeString)
@@ -906,7 +967,21 @@ public class EventsUIController : MonoBehaviour
 
 	private void ShowEventModal(EventData eventData)
 	{
-		if (modalOverlay == null) return;
+		Debug.Log($"[EventsUI] ShowEventModal called for: {eventData?.name}");
+		
+		// Ensure modal exists before trying to show it
+		EnsureModalExists();
+		
+		Debug.Log($"[EventsUI] Modal overlay is null: {modalOverlay == null}");
+		
+		if (modalOverlay == null) 
+		{
+			Debug.LogError("[EventsUI] Modal overlay is null! Modal was not created properly.");
+			return;
+		}
+
+		// Store current event data for navigation
+		currentEventData = eventData;
 
 		// Populate modal with event data
 		modalTitle.text = string.IsNullOrEmpty(eventData.name) ? "Event Details" : eventData.name;
@@ -924,7 +999,9 @@ public class EventsUIController : MonoBehaviour
 		modalImage.Add(imagePlaceholder);
 
 		// Show modal
+		Debug.Log("[EventsUI] Setting modal display to Flex");
 		modalOverlay.style.display = DisplayStyle.Flex;
+		Debug.Log("[EventsUI] Modal should now be visible");
 	}
 
 	private void HideEventModal()
@@ -933,6 +1010,122 @@ public class EventsUIController : MonoBehaviour
 		{
 			modalOverlay.style.display = DisplayStyle.None;
 		}
+	}
+
+	/// <summary>
+	/// Ensures modal is properly created and ready to use
+	/// </summary>
+	private void EnsureModalExists()
+	{
+		if (modalOverlay == null || modalOverlay.parent == null)
+		{
+			Debug.Log("[EventsUI] Modal missing, recreating...");
+			CreateModal();
+		}
+	}
+
+	private void OnNavigationButtonClicked()
+	{
+		if (currentEventData == null)
+		{
+			Debug.LogWarning("[EventsUI] No current event data available for navigation");
+			return;
+		}
+
+		if (targetHandler == null)
+		{
+			Debug.LogWarning("[EventsUI] TargetHandler not found. Cannot navigate to event location.");
+			return;
+		}
+
+		Debug.Log($"[EventsUI] Navigation button clicked for event: {currentEventData.name}");
+		Debug.Log($"[EventsUI] Event location data - Location: '{currentEventData.location}'");
+
+		// Try to find matching target in dropdown
+		bool found = FindAndSetDropdownValue(currentEventData);
+		
+		if (found)
+		{
+			Debug.Log("[EventsUI] Successfully set dropdown to event location");
+			// Use existing back button functionality to close events UI and show menu/burger
+			GoBackToMenu();
+		}
+		else
+		{
+			Debug.LogWarning("[EventsUI] Could not find matching location in dropdown for navigation");
+		}
+	}
+
+	private bool FindAndSetDropdownValue(EventData eventData)
+	{
+		if (targetHandler == null) return false;
+
+		// Get the dropdown from TargetHandler
+		var dropdown = targetHandler.GetComponent<TargetHandler>();
+		if (dropdown == null)
+		{
+			Debug.LogWarning("[EventsUI] Could not get TargetHandler component");
+			return false;
+		}
+
+		// Use reflection to access the private targetDataDropdown field
+		var dropdownField = typeof(TargetHandler).GetField("targetDataDropdown", 
+			System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+		
+		if (dropdownField == null)
+		{
+			Debug.LogWarning("[EventsUI] Could not access targetDataDropdown field");
+			return false;
+		}
+
+		var targetDropdown = dropdownField.GetValue(targetHandler) as TMPro.TMP_Dropdown;
+		if (targetDropdown == null)
+		{
+			Debug.LogWarning("[EventsUI] Target dropdown is null");
+			return false;
+		}
+
+		// Search for matching option based on event location data
+		string eventLocation = eventData.location ?? "";
+
+		Debug.Log($"[EventsUI] Searching for location: '{eventLocation}'");
+
+		// Try different matching strategies
+		for (int i = 0; i < targetDropdown.options.Count; i++)
+		{
+			var option = targetDropdown.options[i];
+			string optionText = option.text.ToLowerInvariant();
+			
+			Debug.Log($"[EventsUI] Checking option {i}: '{option.text}'");
+
+			// Strategy 1: Exact location match
+			if (!string.IsNullOrEmpty(eventLocation) && optionText.Contains(eventLocation.ToLowerInvariant()))
+			{
+				Debug.Log($"[EventsUI] Found exact location match at index {i}: '{option.text}'");
+				targetDropdown.value = i;
+				targetDropdown.RefreshShownValue();
+				return true;
+			}
+
+			// Strategy 2: Partial location match (split by common separators)
+			if (!string.IsNullOrEmpty(eventLocation))
+			{
+				string[] locationParts = eventLocation.Split(new char[] { ' ', '-', ',', '_' }, StringSplitOptions.RemoveEmptyEntries);
+				foreach (string part in locationParts)
+				{
+					if (!string.IsNullOrEmpty(part) && optionText.Contains(part.ToLowerInvariant()))
+					{
+						Debug.Log($"[EventsUI] Found partial location match at index {i}: '{option.text}' (matched part: '{part}')");
+						targetDropdown.value = i;
+						targetDropdown.RefreshShownValue();
+						return true;
+					}
+				}
+			}
+		}
+
+		Debug.LogWarning("[EventsUI] No matching location found in dropdown options");
+		return false;
 	}
 
 	

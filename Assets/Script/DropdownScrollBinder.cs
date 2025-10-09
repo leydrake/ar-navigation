@@ -29,6 +29,9 @@ public class DropdownScrollBinder : MonoBehaviour
 
 	private readonly List<GameObject> spawned = new List<GameObject>();
 
+
+[SerializeField]
+private AppCanvas appCanvas;
 	void Awake()
 	{
 		if ((dropdown == null && tmpDropdown == null) || scrollRect == null || content == null || rowPrefab == null)
@@ -140,6 +143,8 @@ public class DropdownScrollBinder : MonoBehaviour
 		}
 		SetSelectedIndex(index);
 		UpdateSelectedLabel();
+
+		appCanvas.CloseOptionsPanel();
 	}
 
 	private void HighlightSelected()
