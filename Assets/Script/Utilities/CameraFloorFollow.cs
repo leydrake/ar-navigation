@@ -2,41 +2,27 @@ using UnityEngine;
 
 public class CameraFloorFollow : MonoBehaviour
 {
-    public Transform agent;             // The virtual agent (the one walking on NavMesh)
-    public Camera topDownCamera;        // The minimap camera (orthographic, top-down)
+    public Transform agent;          // The virtual agent (the one walking on NavMesh)
+    public Camera topDownCamera;     // The top-down or minimap camera
+    public Vector3 offset = new Vector3(0, 10f, 0);  // Height offset from the agent
+    public float smoothSpeed = 5f;   // Smooth follow speed
 
-    public float floor1Y = 10f;         // Height for first floor camera
-    public float floor2Y = 15f;         // Height for second floor camera
-    public float threshold = 2.5f;      // Y-position that separates floors
-
-    private bool isOnSecondFloor = false;
-
-    void Update()
+    void LateUpdate()
     {
         if (agent == null || topDownCamera == null)
             return;
 
-        float agentY = agent.position.y;
+        // Desired position — follows agent in X, Y, and Z (with offset)
+        Vector3 desiredPosition = agent.position + offset;
 
-        // Floor switch logic
-        if (agentY > threshold && !isOnSecondFloor)
-        {
-            // Agent moved to second floor
-            MoveCameraToY(floor2Y);
-            isOnSecondFloor = true;
-        }
-        else if (agentY <= threshold && isOnSecondFloor)
-        {
-            // Agent moved to first floor
-            MoveCameraToY(floor1Y);
-            isOnSecondFloor = false;
-        }
-    }
+        // Smoothly interpolate camera position for fluid motion
+        topDownCamera.transform.position = Vector3.Lerp(
+            topDownCamera.transform.position,
+            desiredPosition,
+            smoothSpeed * Time.deltaTime
+        );
 
-    private void MoveCameraToY(float targetY)
-    {
-        Vector3 camPos = topDownCamera.transform.position;
-        camPos.y = targetY;
-        topDownCamera.transform.position = camPos;
+        // Optional: Keep rotation fixed (top-down view)
+        topDownCamera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
     }
 }

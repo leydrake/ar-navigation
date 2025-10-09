@@ -50,8 +50,15 @@ public class PathArrowVisualisation : MonoBehaviour {
     }
 
     private void AddArrowOffset() {
-        if (navigationYOffset.value != 0) {
-            arrow.transform.position = new Vector3(arrow.transform.position.x, navigationYOffset.value, arrow.transform.position.z);
+        if (arrow == null) return;
+
+        // Use this object's Y (map surface) as the base and add the slider value as an offset.
+        // Previous code set the arrow Y to the raw slider value (often small like 0-1),
+        // which placed the arrow below the map. This keeps it positioned above the map.
+        Vector3 pos = arrow.transform.position;
+        if (navigationYOffset != null) {
+            pos.y = transform.position.y + navigationYOffset.value;
         }
+        arrow.transform.position = pos;
     }
 }

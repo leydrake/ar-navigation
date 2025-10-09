@@ -4535,7 +4535,11 @@ MonoBehaviour:
   sessionOrigin: {fileID: 1812123496}
   cameraManager: {fileID: 849970941}
   targetHandler: {fileID: 1861698585}
+  indicatorSphere: {fileID: 0}
   qrCodeScanningPanel: {fileID: 91077451}
+  minimapCamera: {fileID: 0}
+  minimapHeight: 20
+  minimapNorthUp: 1
 --- !u!4 &392314195
 Transform:
   m_ObjectHideFlags: 0
@@ -8240,10 +8244,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bottomPanel: {fileID: 1866992896}
   dragHandle: {fileID: 1089050005}
+  bottomPanel2: {fileID: 0}
+  dragHandle2: {fileID: 0}
+  simpleContainer: {fileID: 0}
+  advancedContainer: {fileID: 0}
   useCollider: 1
   colliderHeight: 50
   originalYPosition: 0
   collapsedYPosition: 300
+  advancedOriginalYPosition: 0
+  advancedCollapsedYPosition: -550
   animationDuration: 0.3
   animationCurve:
     serializedVersion: 2
@@ -8269,6 +8279,25 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  myDropdown: {fileID: 0}
+  searchInput: {fileID: 0}
+  myTMPDropdown: {fileID: 0}
+  searchTMPInput: {fileID: 0}
+  panelSearchInput: {fileID: 0}
+  panelSearchTMPInput: {fileID: 0}
+  optionsPanel: {fileID: 0}
+  openOptionsButton: {fileID: 0}
+  closeOptionsButton: {fileID: 0}
+  optionsContainer: {fileID: 0}
+  optionItemPrefab: {fileID: 0}
+  locationsContainer: {fileID: 0}
+  searchMethod: 3
+  searchRecursively: 1
+  caseSensitive: 0
+  searchMode: 0
+  ensureOptionsPanelOnTop: 1
+  overridePanelSortingWhileOpen: 0
+  optionsPanelSortingOrder: 1000
 --- !u!4 &974645465
 Transform:
   m_ObjectHideFlags: 0
@@ -8975,7 +9004,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   collectionName: coordinates
   targetModelData: {fileID: 4900000, guid: ffa90575151a4ca40b6791c25646edd1, type: 3}
-  jsonFilePath: Assets/Resources/TargetData.json
   targetHandler: {fileID: 1861698585}
 --- !u!4 &1045393184
 Transform:
@@ -14030,7 +14058,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1619799071
 RectTransform:
   m_ObjectHideFlags: 0
@@ -16069,9 +16097,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agent: {fileID: 1114040581}
   topDownCamera: {fileID: 65284394}
-  floor1Y: 0
-  floor2Y: 5
-  threshold: 2.5
+  offset: {x: 0, y: 10, z: 0}
+  smoothSpeed: 5
 --- !u!4 &1855229140
 Transform:
   m_ObjectHideFlags: 0

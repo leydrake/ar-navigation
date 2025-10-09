@@ -4,6 +4,7 @@ using UnityEngine;
 [Serializable]
 public class Target {
     public string Name;
+    public string Building;
     public int FloorNumber;
     public Vector3 Position;
     public Vector3 Rotation;

@@ -13,23 +13,16 @@ public class FirestoreToCustomJson : MonoBehaviour
     public string collectionName = "targets";
 
     [Header("Local Model JSON (Drag & Drop)")]
-    [SerializeField] private TextAsset targetModelData; // Base JSON file
-    
-    [Header("JSON File Path")]
-    [SerializeField] private string jsonFilePath = "StreamingAssets/TargetData.json"; // Path to save the updated JSON
-    
+    [SerializeField] private TextAsset targetModelData;
+
     [Header("Target Handler Reference")]
-    [SerializeField] private TargetHandler targetHandler; // Reference to TargetHandler to refresh data
+    [SerializeField] private TargetHandler targetHandler;
 
     private TargetListWrapper wrapper;
-    
-    // Public property to access the current JSON data
-    public string CurrentJsonData => JsonUtility.ToJson(wrapper, true);
-    public TargetListWrapper CurrentWrapper => wrapper;
 
     void Start()
     {
-        // Load base JSON (if assigned in Inspector)
+        // Load base JSON
         if (targetModelData != null)
         {
             wrapper = JsonUtility.FromJson<TargetListWrapper>(targetModelData.text);
@@ -58,98 +51,142 @@ public class FirestoreToCustomJson : MonoBehaviour
 
     void FetchData()
     {
+        if (db == null)
+        {
+            Debug.LogError("Firestore DB instance is null. FetchData aborted.");
+            return;
+        }
+
+        Debug.Log($"Starting FetchData for collection '{collectionName}'");
+
         db.Collection(collectionName).GetSnapshotAsync().ContinueWithOnMainThread(task =>
         {
             if (task.IsFaulted || task.IsCanceled)
             {
-                Debug.LogError("Error fetching data: " + task.Exception);
+                Debug.LogError("Error fetching data: " + (task.Exception?.Flatten().Message ?? task.Exception?.Message ?? "unknown"));
                 return;
             }
 
-            QuerySnapshot snapshot = task.Result;
-
-            // Replace with new data (if you want merge, remove this line)
-            wrapper.TargetList.Clear();
-
-            foreach (DocumentSnapshot doc in snapshot.Documents)
-            {
-                Dictionary<string, object> docDict = doc.ToDictionary();
-
-                TargetData target = new TargetData
-                {
-                    Name = docDict.ContainsKey("name") ? docDict["name"].ToString() : "Unknown",
-                    FloorNumber = docDict.ContainsKey("floor") ? GetInt(docDict, "floor") : 0,
-                    Position = new PositionData
-                    {
-                        x = GetFloat(docDict, "x"),
-                        y = GetFloat(docDict, "y"),
-                        z = GetFloat(docDict, "z")
-                    },
-                    Rotation = new RotationData
-                    {
-                        x = docDict.ContainsKey("rotX") ? GetFloat(docDict, "rotX") : 0f,
-                        y = docDict.ContainsKey("rotY") ? GetFloat(docDict, "rotY") : 0f,
-                        z = docDict.ContainsKey("rotZ") ? GetFloat(docDict, "rotZ") : 0f
-                    }
-                };
-
-                wrapper.TargetList.Add(target);
-            }
-
-            // Save updated JSON to file
-            string json = JsonUtility.ToJson(wrapper, true);
-            
-            // Write the JSON data to file
             try
             {
-                // Use persistentDataPath for a writable location on all platforms
-                string fullPath = Path.Combine(Application.persistentDataPath, "TargetData.json");
-                
-                // Ensure the directory exists
-                string directory = Path.GetDirectoryName(fullPath);
-                if (!Directory.Exists(directory))
+                QuerySnapshot snapshot = task.Result;
+                Debug.Log($"Fetched {snapshot?.Count ?? 0} documents from '{collectionName}'.");
+
+                if (wrapper == null) wrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
+                if (wrapper.TargetList == null) wrapper.TargetList = new List<TargetData>();
+                wrapper.TargetList.Clear();
+
+                foreach (DocumentSnapshot doc in snapshot.Documents)
                 {
-                    Directory.CreateDirectory(directory);
+                    if (doc == null)
+                    {
+                        Debug.LogWarning("Encountered null DocumentSnapshot, skipping.");
+                        continue;
+                    }
+
+                    if (!doc.Exists)
+                    {
+                        Debug.LogWarning($"Document {doc.Id} does not exist, skipping.");
+                        continue;
+                    }
+
+                    Debug.Log($"Processing doc: {doc.Id}");
+                    Dictionary<string, object> data = doc.ToDictionary() ?? new Dictionary<string, object>();
+
+                    TargetData target = new TargetData
+                    {
+                        Name = data.ContainsKey("name") && data["name"] != null ? data["name"].ToString() : "Unknown",
+                        Building = data.ContainsKey("building") && data["building"] != null ? data["building"].ToString() : "",
+                        BuildingId = data.ContainsKey("buildingId") && data["buildingId"] != null ? data["buildingId"].ToString() : "",
+                        FloorNumber = GetInt(data, "floor"),
+                        FloorId = data.ContainsKey("floorId") && data["floorId"] != null ? data["floorId"].ToString() : "",
+                        Image = data.ContainsKey("image") && data["image"] != null ? data["image"].ToString() : "",
+                        CreatedAt = data.ContainsKey("createdAt") && data["createdAt"] != null ? data["createdAt"].ToString() : "",
+                        Position = new PositionData
+                        {
+                            x = GetFloat(data, "x"),
+                            y = GetFloat(data, "y"),
+                            z = GetFloat(data, "z")
+                        }
+                    };
+
+                    wrapper.TargetList.Add(target);
                 }
-                
-                // Write the JSON data to the file
-                File.WriteAllText(fullPath, json);
-                Debug.Log($"Successfully wrote updated JSON to: {fullPath}");
-                Debug.Log($"Updated JSON data:\n{json}");
-                
-                // Refresh the TargetHandler if reference is available
-                if (targetHandler != null) {
-                    targetHandler.RefreshTargetData();
-                } else {
-                    Debug.LogWarning("TargetHandler reference not set. Target data won't be refreshed automatically.");
+
+                string json = JsonUtility.ToJson(wrapper, true);
+                string fileName = "TargetData.json";
+                string fullPath = Path.Combine(Application.persistentDataPath, fileName);
+                Debug.Log($"Attempting to write TargetData.json to: {fullPath}");
+
+                try
+                {
+                    File.WriteAllText(fullPath, json);
+                    Debug.Log($"✅ Saved updated TargetData.json at: {fullPath} (length {json.Length})");
+
+                    // verify write by reading back
+                    if (File.Exists(fullPath))
+                    {
+                        string readBack = File.ReadAllText(fullPath);
+                        Debug.Log($"Read-back length: {readBack.Length}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Read-back failed: file missing after write.");
+                    }
+
+                    // ensure we have a TargetHandler reference and refresh it
+                    if (targetHandler == null)
+                    {
+                        targetHandler = FindObjectOfType<TargetHandler>();
+                        Debug.Log(targetHandler == null ? "No TargetHandler found to refresh." : "Found TargetHandler - refreshing it.");
+                    }
+
+                    targetHandler?.RefreshTargetData();
+                }
+                catch (System.Exception ioEx)
+                {
+                    Debug.LogError($"Failed to write/read JSON: {ioEx.Message}\n{ioEx.StackTrace}");
                 }
             }
-            catch (System.Exception e)
+            catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to write JSON file: {e.Message}");
+                Debug.LogError($"Unhandled error processing Firestore snapshot: {ex.Message}\n{ex.StackTrace}");
             }
         });
     }
 
     float GetFloat(Dictionary<string, object> dict, string key)
     {
-        if (dict.ContainsKey(key))
-        {
-            float result;
-            if (float.TryParse(dict[key].ToString(), out result))
-                return result;
-        }
+        if (dict == null || !dict.ContainsKey(key) || dict[key] == null) return 0f;
+
+        object val = dict[key];
+
+        if (val is float f) return f;
+        if (val is double d) return (float)d;
+        if (val is long l) return (float)l;
+        if (val is int i) return (float)i;
+
+        string s = val.ToString();
+        if (float.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float parsed))
+            return parsed;
+
         return 0f;
     }
 
     int GetInt(Dictionary<string, object> dict, string key)
     {
-        if (dict.ContainsKey(key))
-        {
-            int result;
-            if (int.TryParse(dict[key].ToString(), out result))
-                return result;
-        }
+        if (dict == null || !dict.ContainsKey(key) || dict[key] == null) return 0;
+
+        object val = dict[key];
+
+        if (val is int i) return i;
+        if (val is long l) return (int)l;
+        if (val is double d) return Mathf.RoundToInt((float)d);
+
+        string s = val.ToString();
+        if (int.TryParse(s, out int parsed)) return parsed;
+        if (float.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fp)) return Mathf.RoundToInt(fp);
+
         return 0;
     }
 }
@@ -164,21 +201,17 @@ public class TargetListWrapper
 public class TargetData
 {
     public string Name;
+    public string Building;
+    public string BuildingId;
+    public string CreatedAt;
     public int FloorNumber;
+    public string FloorId;
+    public string Image;
     public PositionData Position;
-    public RotationData Rotation;
 }
 
 [System.Serializable]
 public class PositionData
-{
-    public float x;
-    public float y;
-    public float z;
-}
-
-[System.Serializable]
-public class RotationData
 {
     public float x;
     public float y;

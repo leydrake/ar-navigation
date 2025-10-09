@@ -84,6 +84,14 @@ public class AppCanvas : MonoBehaviour
 	public bool caseSensitive = false;
 	[Tooltip("Search mode: Contains (anywhere), StartsWith, or Exact")]
 	public SearchMode searchMode = SearchMode.Contains;
+
+	[Header("Locations Item Size")]
+	[Tooltip("Desired width for each location item (px)")]
+	public float locationItemWidth = 300f;
+	[Tooltip("Desired height for each location item (px)")]
+	public float locationItemHeight = 80f;
+	[Tooltip("Apply item sizes automatically on Start()")]
+	public bool applySizeOnStart = false;
 	
 	[Tooltip("When opening, move panel to end of sibling order and (optionally) bump sorting.")]
 	public bool ensureOptionsPanelOnTop = true;
@@ -154,6 +162,12 @@ public class AppCanvas : MonoBehaviour
 		if (panelSearchTMPInput != null)
 		{
 			panelSearchTMPInput.onValueChanged.AddListener(OnPanelTMPSearchValueChanged);
+		}
+
+		// Optionally size location items on start
+		if (applySizeOnStart)
+		{
+			ApplyLocationItemSizes();
 		}
     }
     
@@ -571,7 +585,7 @@ public class AppCanvas : MonoBehaviour
 		// If we have a locations container, filter its children instead of dropdown options
 		if (locationsContainer != null)
 		{
-			FilterLocationsContainer(filter);
+            FilterLocationsContainer(filter);
 			return;
 		}
 		
@@ -603,16 +617,18 @@ public class AppCanvas : MonoBehaviour
 	{
 		if (locationsContainer == null) return;
 		
-		// Get all items to filter
+		// Get content under ScrollRect and filter its children
+		RectTransform content = GetLocationsContentRect();
+		if (content == null) return;
 		List<GameObject> itemsToFilter = new List<GameObject>();
-		CollectFilterableItems(locationsContainer, itemsToFilter);
+		CollectFilterableItems(content, itemsToFilter);
 		
-		// Apply filter to each item
-		foreach (GameObject item in itemsToFilter)
-		{
-			bool shouldShow = ShouldShowItem(item, filter);
-			item.SetActive(shouldShow);
-		}
+        // Apply filter to each item
+        foreach (GameObject item in itemsToFilter)
+        {
+            bool shouldShow = ShouldShowItem(item, filter);
+            item.SetActive(shouldShow);
+        }
 	}
 	
 	private void CollectFilterableItems(Transform parent, List<GameObject> items)
@@ -631,6 +647,72 @@ public class AppCanvas : MonoBehaviour
 			}
 		}
 	}
+
+	public void ApplyLocationItemSizes()
+	{
+		if (locationsContainer == null) return;
+
+		// Target the ScrollRect content under locationsContainer > Viewport > Content
+		RectTransform content = GetLocationsContentRect();
+		if (content == null) return;
+
+		// If a GridLayoutGroup is present on the content, set cellSize only
+		var grid = content.GetComponent<GridLayoutGroup>();
+		if (grid != null)
+		{
+			grid.cellSize = new Vector2(locationItemWidth, locationItemHeight);
+			return;
+		}
+
+		// Otherwise, set each direct child's RectTransform size only (no LayoutElement)
+		for (int i = 0; i < content.childCount; i++)
+		{
+			RectTransform rt = content.GetChild(i) as RectTransform;
+			if (rt == null) continue;
+			rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, locationItemWidth);
+			rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, locationItemHeight);
+		}
+	}
+
+	private RectTransform GetLocationsContentRect()
+	{
+		// Prefer ScrollRect.content if present
+		var scroll = locationsContainer.GetComponentInParent<ScrollRect>();
+		if (scroll != null && scroll.content != null)
+		{
+			return scroll.content;
+		}
+
+		// Fallback: find child by common names
+		Transform viewport = locationsContainer.Find("Viewport");
+		if (viewport == null && locationsContainer.childCount > 0)
+		{
+			// Try to locate a child that has a Mask and is commonly the viewport
+			for (int i = 0; i < locationsContainer.childCount; i++)
+			{
+				var child = locationsContainer.GetChild(i);
+				if (child.name.ToLowerInvariant().Contains("viewport"))
+				{
+					viewport = child;
+					break;
+				}
+			}
+		}
+		if (viewport != null)
+		{
+			Transform content = viewport.Find("Content");
+			if (content == null && viewport.childCount > 0)
+			{
+				// Heuristic: first child often is content
+				content = viewport.GetChild(0);
+			}
+			return content as RectTransform;
+		}
+
+		// Last resort: if the container itself is the content
+		return locationsContainer;
+	}
+
 	
 	private void CollectAllChildren(Transform parent, List<GameObject> items)
 	{
