@@ -47,6 +47,16 @@
                 <path d="M21 21l-4.35-4.35" stroke="#444" stroke-width="2" stroke-linecap="round"/>
             </svg>
             <input id="searchInput" type="text" placeholder="Search Destination" />
+            <div class="multi-select-container">
+                <button class="multi-select-toggle" id="multiSelectToggle" title="Toggle Multi-Selection Mode">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="toggle-text">Multi-Select</span>
+                </button>
+            </div>
         </div>
 
         <!-- Filters: Building and Floor -->
@@ -62,6 +72,38 @@
                     <path d="M6 6l12 12M18 6L6 18" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             </button>
+        </div>
+
+        <!-- Multi-selection controls -->
+        <div class="multi-selection-controls" id="multiSelectionControls" style="display: none;">
+            <div class="selection-info">
+                <span id="selectionCount">0</span> items selected
+            </div>
+            <div class="bulk-actions">
+                <div class="select-all-container">
+                    <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox">
+                    <label for="selectAllCheckbox" class="select-all-label">Select All</label>
+                </div>
+                <button class="bulk-edit-btn" id="bulkEditBtn" title="Edit Selected">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Edit Selected
+                </button>
+                <button class="bulk-delete-btn" id="bulkDeleteBtn" title="Delete Selected">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Delete Selected
+                </button>
+                <button class="clear-selection-btn" id="clearSelectionBtn" title="Clear Selection">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Clear Selection
+                </button>
+            </div>
         </div>
 
         <div class="destination-list" id="destinationList">
@@ -165,6 +207,49 @@
         </div>
     </div>
 
+    <!-- Bulk Edit Modal -->
+    <div class="modal-overlay" id="bulkEditModal" style="display:none;">
+        <div class="modal-content">
+            <h2>Bulk Edit Destinations</h2>
+            <div class="bulk-edit-info">
+                <p>Editing <span id="bulkEditCount">0</span> selected destinations</p>
+            </div>
+            <form id="bulkEditForm">
+                <label>Building
+                    <select id="bulkDestBuilding">
+                        <option value="" selected>Keep current building...</option>
+                    </select>
+                </label>
+                <label>Floor
+                    <select id="bulkDestFloor" disabled>
+                        <option value="" selected>Keep current floor...</option>
+                    </select>
+                </label>
+                <div class="datetime-container">
+                    <label>X
+                        <input type="number" id="bulkDestX" step="any" placeholder="Keep current X...">
+                    </label>
+                    <label>Y
+                        <input type="number" id="bulkDestY" step="any" placeholder="Keep current Y...">
+                    </label>
+                </div>
+                <label>Z
+                    <input type="number" id="bulkDestZ" step="any" placeholder="Keep current Z...">
+                </label>
+                <label>Image URL
+                    <input type="url" id="bulkDestImage" placeholder="Keep current image...">
+                </label>
+                <label>Description
+                    <textarea id="bulkDestDescription" rows="3" placeholder="Keep current description..."></textarea>
+                </label>
+                <div class="modal-actions">
+                    <button type="submit">Apply Changes</button>
+                    <button type="button" id="closeBulkEditModalBtn" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Clear All Destinations Modal -->
     <div class="modal-overlay" id="clearDestinationsModal" style="display:none;">
         <div class="modal-content">
@@ -259,12 +344,30 @@
 
                 // Get admin document from Firestore
                 const db = firebase.firestore();
-                const adminDoc = await db.collection('admins').doc(adminEmail).get();
-                if (!adminDoc.exists) {
-                    throw new Error('Admin not found');
+                
+                // Try both collections to find admin data
+                let adminData = null;
+                
+                // First try admin_credentials collection
+                const credentialsQuery = await db.collection('admin_credentials')
+                    .where('email', '==', adminEmail)
+                    .limit(1)
+                    .get();
+                
+                if (!credentialsQuery.empty) {
+                    adminData = credentialsQuery.docs[0].data();
+                } else {
+                    // Fallback to admins collection
+                    const adminDoc = await db.collection('admins').doc(adminEmail).get();
+                    if (adminDoc.exists) {
+                        adminData = adminDoc.data();
+                    }
+                }
+                
+                if (!adminData) {
+                    throw new Error('Admin not found in any collection');
                 }
 
-                const adminData = adminDoc.data();
                 const storedPassword = adminData.password; // This should be base64 encoded
                 const enteredPassword = btoa(password); // Base64 encode the entered password
 
@@ -275,28 +378,37 @@
                 }
 
                 // Password is correct, proceed with clearing all data
-                console.log('Clearing all destinations...');
                 
-                // Delete all rooms first
-                const roomsSnapshot = await db.collection('rooms').get();
-                const roomDeletes = roomsSnapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(roomDeletes);
+                // Delete all coordinates (destinations)
+                const coordinatesSnapshot = await db.collection('coordinates').get();
+                
+                if (coordinatesSnapshot.docs.length > 0) {
+                    const coordinateDeletes = coordinatesSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(coordinateDeletes);
+                }
 
-                // Delete all floors
-                const floorsSnapshot = await db.collection('floors').get();
-                const floorDeletes = floorsSnapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(floorDeletes);
+                // Also try to delete from other possible collections (in case they exist)
+                try {
+                    // Try rooms collection
+                    const roomsSnapshot = await db.collection('rooms').get();
+                    if (roomsSnapshot.docs.length > 0) {
+                        const roomDeletes = roomsSnapshot.docs.map(doc => doc.ref.delete());
+                        await Promise.all(roomDeletes);
+                    }
 
-                // Delete all buildings
-                const buildingsSnapshot = await db.collection('buildings').get();
-                const buildingDeletes = buildingsSnapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(buildingDeletes);
+                    // Try locations collection
+                    const locationsSnapshot = await db.collection('locations').get();
+                    if (locationsSnapshot.docs.length > 0) {
+                        const locationDeletes = locationsSnapshot.docs.map(doc => doc.ref.delete());
+                        await Promise.all(locationDeletes);
+                    }
+                } catch (error) {
+                    // Silently handle errors for optional collections
+                }
 
-                // Delete all locations/destinations
-                const locationsSnapshot = await db.collection('locations').get();
-                const locationDeletes = locationsSnapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(locationDeletes);
-
+                // Show success message before reloading
+                alert('All destinations have been successfully cleared!');
+                
                 // Refresh the page to show empty state
                 window.location.reload();
                 
@@ -430,6 +542,81 @@
                 }
             }
 
+            // Bulk edit modal building/floor functionality
+            async function loadBulkEditBuildingsIntoSelect() {
+                const db = safeGetDb();
+                const buildingSelect = document.getElementById('bulkDestBuilding');
+                if (!db || !buildingSelect) return;
+                try {
+                    const snap = await db.collection('buildings').orderBy('name').get();
+                    buildingSelect.innerHTML = '<option value="" selected>Keep current building...</option>';
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data() || {};
+                        const id = docSnap.id;
+                        const name = String(data.name || 'Unnamed Building');
+                        const code = data.code ? ` (${data.code})` : '';
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = name + code;
+                        buildingSelect.appendChild(opt);
+                    });
+                } catch (err) {
+                    console.warn('Failed to load buildings for bulk edit modal:', err);
+                }
+            }
+
+            async function loadBulkEditFloorsForBuildingIntoSelect(buildingId) {
+                const db = safeGetDb();
+                const floorSelect = document.getElementById('bulkDestFloor');
+                if (!db || !floorSelect) return;
+                floorSelect.disabled = true;
+                floorSelect.innerHTML = '<option value="" selected>Loading floors...</option>';
+                try {
+                    if (!buildingId) {
+                        floorSelect.innerHTML = '<option value="" selected>Keep current floor...</option>';
+                        floorSelect.disabled = true;
+                        return;
+                    }
+                    const snap = await db.collection('floors').where('buildingId', '==', buildingId).get();
+                    const floors = [];
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data() || {};
+                        const number = typeof data.number === 'number' ? data.number : parseInt(String(data.number||'0'), 10) || 0;
+                        floors.push({ id: docSnap.id, number, name: String(data.name||'') });
+                    });
+                    floors.sort((a,b)=> (a.number||0) - (b.number||0));
+                    floorSelect.innerHTML = '<option value="" selected>Keep current floor...</option>';
+                    floors.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = `Floor ${f.number}${f.name ? ' - ' + f.name : ''}`;
+                        opt.dataset.number = String(f.number);
+                        opt.dataset.name = f.name || '';
+                        floorSelect.appendChild(opt);
+                    });
+                    floorSelect.disabled = floors.length === 0;
+                } catch (err) {
+                    console.warn('Failed to load floors for bulk edit modal:', err);
+                    floorSelect.innerHTML = '<option value="" selected>Keep current floor...</option>';
+                    floorSelect.disabled = true;
+                }
+            }
+
+            function setupBulkEditModalDropdowns() {
+                const buildingSelect = document.getElementById('bulkDestBuilding');
+                const floorSelect = document.getElementById('bulkDestFloor');
+                if (!buildingSelect || !floorSelect) return;
+                buildingSelect.addEventListener('change', (e) => {
+                    const buildingId = e.target.value;
+                    floorSelect.value = '';
+                    loadBulkEditFloorsForBuildingIntoSelect(buildingId);
+                });
+            }
+
+            // Make functions available globally
+            window.loadBulkEditBuildingsIntoSelect = loadBulkEditBuildingsIntoSelect;
+            window.loadBulkEditFloorsForBuildingIntoSelect = loadBulkEditFloorsForBuildingIntoSelect;
+
             async function reconcileEditModalSelections() {
                 const buildingSelect = document.getElementById('destBuilding');
                 const floorSelect = document.getElementById('destFloor');
@@ -471,6 +658,7 @@
 
             document.addEventListener('DOMContentLoaded', async () => {
                 await loadBuildingsIntoSelect();
+                await loadBulkEditBuildingsIntoSelect();
                 // Display the first building initially if none selected
                 const buildingSelect = document.getElementById('destBuilding');
                 if (buildingSelect && !buildingSelect.value && buildingSelect.options.length > 1) {
@@ -478,6 +666,16 @@
                     loadFloorsForBuildingIntoSelect(buildingSelect.value);
                 }
                 setupEditModalDropdowns();
+                setupBulkEditModalDropdowns();
+                
+                // Add form submission handler for clear destinations modal
+                const clearForm = document.getElementById('clearDestinationsForm');
+                if (clearForm) {
+                    clearForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        confirmClearDestinations();
+                    });
+                }
 
                 // Observe when the Edit modal opens to reconcile values
                 const editModal = document.getElementById('editDestinationModal');

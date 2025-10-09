@@ -118,16 +118,6 @@
                 <div class="form-group">
                     <!-- Campus removed: single campus deployment -->
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="buildingLatitude">Latitude *</label>
-                        <input type="number" id="buildingLatitude" name="latitude" step="any" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="buildingLongitude">Longitude *</label>
-                        <input type="number" id="buildingLongitude" name="longitude" step="any" required>
-                    </div>
-                </div>
                 <div class="form-group">
                     <label for="buildingDescription">Description</label>
                     <textarea id="buildingDescription" name="description" rows="3" placeholder="Brief description of the building..."></textarea>
@@ -550,8 +540,6 @@
             document.getElementById('buildingName').value = building.name;
             document.getElementById('buildingCode').value = building.code || '';
             // Campus fixed to Bustos; no UI field
-            document.getElementById('buildingLatitude').value = building.latitude;
-            document.getElementById('buildingLongitude').value = building.longitude;
             document.getElementById('buildingDescription').value = building.description || '';
             // Image file input cannot be prefilled for security reasons
             document.getElementById('buildingModal').style.display = 'block';
@@ -665,8 +653,6 @@
                 name: formData.get('name'),
                 code: formData.get('code'),
                 campus: 'bustos',
-                latitude: parseFloat(formData.get('latitude')),
-                longitude: parseFloat(formData.get('longitude')),
                 description: formData.get('description'),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };

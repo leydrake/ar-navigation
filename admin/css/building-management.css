@@ -248,7 +248,8 @@ html, body {
 .form-group input[type="number"],
 .form-group input[type="url"],
 .form-group select,
-.form-group textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: #fff; }
+.form-group textarea,
+.form-group input[type="file"] { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: #fff; }
 .form-actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding-top: var(--space-2); }
 .cancel-btn { background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
 .save-btn { background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 10px 14px; font-weight: 600; cursor: pointer; }

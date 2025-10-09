@@ -56,6 +56,8 @@ const destDescription = document.getElementById('destDescription');
 let allDestinations = [];
 let filteredDestinations = [];
 let viewingId = null;
+let selectedDestinations = new Set();
+let isMultiSelectMode = false;
 
 // Caches for building/floor metadata
 const buildingIdToName = new Map();
@@ -158,8 +160,15 @@ function renderDestinations(list) {
     const el = document.createElement('div');
     el.className = 'destination-item';
     el.setAttribute('data-id', item.id);
-    el.style.cursor = 'pointer';
+    el.style.cursor = isMultiSelectMode ? 'pointer' : 'pointer';
+    
+    const isSelected = selectedDestinations.has(item.id);
+    if (isSelected) {
+      el.classList.add('selected');
+    }
+    
     el.innerHTML = `
+      <input type="checkbox" class="item-checkbox" ${isSelected ? 'checked' : ''} data-id="${item.id}">
       <div class="dest-thumb">
         ${item.image ? `<img class="destination-img" src="${item.image}" alt="${item.name}">` : `
           <div class="dest-img-placeholder">
@@ -371,6 +380,223 @@ function applySearchFilter(term) {
   renderDestinations(filteredDestinations);
 }
 
+function toggleMultiSelectMode() {
+  isMultiSelectMode = !isMultiSelectMode;
+  const body = document.body;
+  const toggleBtn = document.getElementById('multiSelectToggle');
+  const toggleText = toggleBtn?.querySelector('.toggle-text');
+  
+  if (isMultiSelectMode) {
+    body.classList.add('multi-select-mode');
+    if (toggleBtn) {
+      toggleBtn.classList.add('active');
+    }
+    if (toggleText) {
+      toggleText.textContent = 'Exit Multi-Select';
+    }
+  } else {
+    body.classList.remove('multi-select-mode');
+    if (toggleBtn) {
+      toggleBtn.classList.remove('active');
+    }
+    if (toggleText) {
+      toggleText.textContent = 'Multi-Select';
+    }
+    // Clear selections when exiting multi-select mode
+    clearAllSelections();
+  }
+  
+  // Re-render destinations to update cursor styles
+  renderDestinations(filteredDestinations);
+}
+
+function updateSelectionUI() {
+  const multiSelectionControls = document.getElementById('multiSelectionControls');
+  const selectionCount = document.getElementById('selectionCount');
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  
+  if (selectionCount) {
+    selectionCount.textContent = selectedDestinations.size;
+  }
+  
+  if (multiSelectionControls) {
+    multiSelectionControls.style.display = selectedDestinations.size > 0 ? 'flex' : 'none';
+  }
+  
+  // Update select all checkbox state
+  if (selectAllCheckbox) {
+    const totalItems = filteredDestinations.length;
+    if (selectedDestinations.size === 0) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = false;
+    } else if (selectedDestinations.size === totalItems) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = true;
+    } else {
+      selectAllCheckbox.indeterminate = true;
+      selectAllCheckbox.checked = false;
+    }
+  }
+}
+
+function toggleDestinationSelection(id) {
+  if (selectedDestinations.has(id)) {
+    selectedDestinations.delete(id);
+  } else {
+    selectedDestinations.add(id);
+  }
+  
+  // Update the item's visual state
+  const item = document.querySelector(`[data-id="${id}"]`);
+  if (item) {
+    const checkbox = item.querySelector('.item-checkbox');
+    if (checkbox) {
+      checkbox.checked = selectedDestinations.has(id);
+    }
+    
+    if (selectedDestinations.has(id)) {
+      item.classList.add('selected');
+    } else {
+      item.classList.remove('selected');
+    }
+  }
+  
+  updateSelectionUI();
+}
+
+function selectAllDestinations() {
+  filteredDestinations.forEach(item => {
+    selectedDestinations.add(item.id);
+  });
+  renderDestinations(filteredDestinations);
+  updateSelectionUI();
+}
+
+function clearAllSelections() {
+  selectedDestinations.clear();
+  renderDestinations(filteredDestinations);
+  updateSelectionUI();
+}
+
+async function bulkDeleteDestinations() {
+  if (selectedDestinations.size === 0) return;
+  
+  const count = selectedDestinations.size;
+  const confirmed = confirm(`Are you sure you want to delete ${count} selected destination(s)?`);
+  if (!confirmed) return;
+  
+  try {
+    const deletePromises = Array.from(selectedDestinations).map(id => 
+      deleteDoc(doc(db, 'coordinates', id))
+    );
+    
+    await Promise.all(deletePromises);
+    
+    selectedDestinations.clear();
+    await fetchDestinations();
+    renderDestinations(filteredDestinations);
+    updateSelectionUI();
+    
+    alert(`${count} destination(s) deleted successfully`);
+  } catch (error) {
+    console.error('Error deleting destinations:', error);
+    alert('Failed to delete some destinations. Please try again.');
+  }
+}
+
+async function bulkEditDestinations() {
+  if (selectedDestinations.size === 0) return;
+  
+  const bulkEditModal = document.getElementById('bulkEditModal');
+  const bulkEditCount = document.getElementById('bulkEditCount');
+  
+  if (bulkEditCount) {
+    bulkEditCount.textContent = selectedDestinations.size;
+  }
+  
+  // Load buildings for bulk edit modal
+  if (typeof window.loadBulkEditBuildingsIntoSelect === 'function') {
+    await window.loadBulkEditBuildingsIntoSelect();
+  }
+  
+  if (bulkEditModal) {
+    bulkEditModal.style.display = 'flex';
+  }
+}
+
+async function applyBulkEdit() {
+  const form = document.getElementById('bulkEditForm');
+  if (!form) return;
+  
+  const formData = new FormData(form);
+  const updates = {};
+  
+  // Only include fields that have values
+  const buildingId = document.getElementById('bulkDestBuilding').value;
+  if (buildingId) {
+    updates.buildingId = buildingId;
+    updates.building = buildingIdToName.get(buildingId) || '';
+  }
+  
+  const floorId = document.getElementById('bulkDestFloor').value;
+  if (floorId) {
+    updates.floorId = floorId;
+    const floorMeta = floorIdToMeta.get(floorId);
+    if (floorMeta && floorMeta.number !== undefined) {
+      updates.floor = floorMeta.number;
+    }
+  }
+  
+  const x = document.getElementById('bulkDestX').value;
+  if (x !== '') updates.x = Number(x);
+  
+  const y = document.getElementById('bulkDestY').value;
+  if (y !== '') updates.y = Number(y);
+  
+  const z = document.getElementById('bulkDestZ').value;
+  if (z !== '') updates.z = Number(z);
+  
+  const image = document.getElementById('bulkDestImage').value.trim();
+  if (image) updates.image = image;
+  
+  const description = document.getElementById('bulkDestDescription').value.trim();
+  if (description) updates.description = description;
+  
+  if (Object.keys(updates).length === 0) {
+    alert('Please fill in at least one field to update.');
+    return;
+  }
+  
+  const count = selectedDestinations.size;
+  
+  try {
+    const updatePromises = Array.from(selectedDestinations).map(id => 
+      updateDoc(doc(db, 'coordinates', id), updates)
+    );
+    
+    await Promise.all(updatePromises);
+    
+    // Close modal and refresh
+    const bulkEditModal = document.getElementById('bulkEditModal');
+    if (bulkEditModal) {
+      bulkEditModal.style.display = 'none';
+    }
+    
+    // Clear form
+    form.reset();
+    
+    selectedDestinations.clear();
+    await fetchDestinations();
+    renderDestinations(filteredDestinations);
+    updateSelectionUI();
+    
+    alert(`${count} destination(s) updated successfully`);
+  } catch (error) {
+    console.error('Error updating destinations:', error);
+    alert('Failed to update some destinations. Please try again.');
+  }
+}
+
 function debounce(fn, delay = 250) {
   let t;
   return (...args) => {
@@ -447,13 +673,84 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  // Event delegation for item clicks
+  // Event delegation for item clicks and checkbox interactions
   if (destinationList) {
     destinationList.addEventListener('click', async function(e) {
       const card = e.target.closest('.destination-item');
       if (!card) return;
+      
       const id = card.getAttribute('data-id');
-      await openViewModal(id);
+      
+      // Handle checkbox clicks
+      if (e.target.classList.contains('item-checkbox')) {
+        e.stopPropagation();
+        toggleDestinationSelection(id);
+        return;
+      }
+      
+      // Handle card clicks based on mode
+      if (isMultiSelectMode) {
+        // In multi-select mode, clicking the card toggles selection
+        toggleDestinationSelection(id);
+      } else {
+        // In single-select mode, clicking the card opens the view modal
+        await openViewModal(id);
+      }
+    });
+  }
+
+  // Multi-select toggle button
+  const multiSelectToggle = document.getElementById('multiSelectToggle');
+  if (multiSelectToggle) {
+    multiSelectToggle.addEventListener('click', toggleMultiSelectMode);
+  }
+
+  // Select All checkbox
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        selectAllDestinations();
+      } else {
+        clearAllSelections();
+      }
+    });
+  }
+
+  // Bulk action buttons
+  const bulkEditBtn = document.getElementById('bulkEditBtn');
+  const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+  const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+  
+  if (bulkEditBtn) {
+    bulkEditBtn.addEventListener('click', bulkEditDestinations);
+  }
+  
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener('click', bulkDeleteDestinations);
+  }
+  
+  if (clearSelectionBtn) {
+    clearSelectionBtn.addEventListener('click', clearAllSelections);
+  }
+
+  // Bulk edit modal handlers
+  const bulkEditModal = document.getElementById('bulkEditModal');
+  const closeBulkEditModalBtn = document.getElementById('closeBulkEditModalBtn');
+  const bulkEditForm = document.getElementById('bulkEditForm');
+  
+  if (closeBulkEditModalBtn) {
+    closeBulkEditModalBtn.addEventListener('click', function() {
+      if (bulkEditModal) {
+        bulkEditModal.style.display = 'none';
+      }
+    });
+  }
+  
+  if (bulkEditForm) {
+    bulkEditForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      applyBulkEdit();
     });
   }
 });
