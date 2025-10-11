@@ -90,7 +90,7 @@ public class AppCanvas : MonoBehaviour
 
 	[Header("Locations Item Size")]
 	[Tooltip("Desired width for each location item (px)")]
-	public float locationItemWidth = 300f;
+	public float locationItemWidth = 400f;
 	[Tooltip("Desired height for each location item (px)")]
 	public float locationItemHeight = 80f;
 	[Tooltip("Apply item sizes automatically on Start()")]

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
 using TMPro;
 
 public class DropdownScrollBinder : MonoBehaviour
@@ -27,11 +28,20 @@ public class DropdownScrollBinder : MonoBehaviour
 	public bool delayOneFrameBeforeBuild = true;
 	public bool verboseLogging = false;
 
+	[Header("Image Loading")]
+	public bool loadImages = true;
+	public Sprite defaultImage; // Fallback image when loading fails or no image URL
+	public float imageLoadTimeout = 10f; // Timeout for image loading in seconds
+
 	private readonly List<GameObject> spawned = new List<GameObject>();
+	private readonly Dictionary<string, Sprite> imageCache = new Dictionary<string, Sprite>();
 
 
 [SerializeField]
 private AppCanvas appCanvas;
+
+[SerializeField]
+private EventsFetcher eventsFetcher; // Reference to get EventData for image loading
 	void Awake()
 	{
 		if ((dropdown == null && tmpDropdown == null) || scrollRect == null || content == null || rowPrefab == null)
@@ -105,6 +115,12 @@ private AppCanvas appCanvas;
 			string optionText = GetOptionText(i);
 			if (txt != null) txt.text = optionText;
 			if (tmpTxt != null) tmpTxt.text = optionText;
+
+			// Load image for this row if enabled
+			if (loadImages)
+			{
+				LoadImageForRow(go, i);
+			}
 
 			int idx = i;
 			if (btn == null)
@@ -247,6 +263,189 @@ private AppCanvas appCanvas;
 		int idx = GetSelectedIndex();
 		string text = GetOptionText(idx);
 		selectedLabel.text = text;
+	}
+
+	private void LoadImageForRow(GameObject rowObject, int index)
+	{
+		// Find the ImageForDestination component in the row
+		Transform imageTransform = rowObject.transform.Find("ImageForDestination");
+		if (imageTransform == null)
+		{
+			if (verboseLogging)
+			{
+				Debug.LogWarning($"[DropdownScrollBinder] ImageForDestination not found in row {index}");
+			}
+			return;
+		}
+
+		Image imageComponent = imageTransform.GetComponent<Image>();
+		if (imageComponent == null)
+		{
+			if (verboseLogging)
+			{
+				Debug.LogWarning($"[DropdownScrollBinder] Image component not found on ImageForDestination for row {index}");
+			}
+			return;
+		}
+
+		// Get the image URL from EventData
+		string imageUrl = GetImageUrlForIndex(index);
+		if (string.IsNullOrEmpty(imageUrl))
+		{
+			if (verboseLogging)
+			{
+				Debug.Log($"[DropdownScrollBinder] No image URL for row {index}, using default image");
+			}
+			imageComponent.sprite = defaultImage;
+			return;
+		}
+
+		// Check if image is already cached
+		if (imageCache.ContainsKey(imageUrl))
+		{
+			imageComponent.sprite = imageCache[imageUrl];
+			if (verboseLogging)
+			{
+				Debug.Log($"[DropdownScrollBinder] Using cached image for row {index}");
+			}
+			return;
+		}
+
+		// Load image asynchronously
+		StartCoroutine(LoadImageCoroutine(imageUrl, imageComponent, index));
+	}
+
+	private string GetImageUrlForIndex(int index)
+	{
+		if (eventsFetcher == null || eventsFetcher.events == null || index < 0 || index >= eventsFetcher.events.Count)
+		{
+			return string.Empty;
+		}
+
+		EventData eventData = eventsFetcher.events[index];
+		return eventData?.image ?? string.Empty;
+	}
+
+	private IEnumerator LoadImageCoroutine(string imageUrl, Image imageComponent, int rowIndex)
+	{
+		if (verboseLogging)
+		{
+			Debug.Log($"[DropdownScrollBinder] Loading image for row {rowIndex}: {imageUrl}");
+		}
+
+		using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
+		{
+			request.timeout = (int)imageLoadTimeout;
+			
+			yield return request.SendWebRequest();
+
+			if (request.result == UnityWebRequest.Result.Success)
+			{
+				Texture2D texture = DownloadHandlerTexture.GetContent(request);
+				if (texture != null)
+				{
+					Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+					
+					// Cache the sprite
+					imageCache[imageUrl] = sprite;
+					
+					// Set the sprite on the image component
+					imageComponent.sprite = sprite;
+					
+					if (verboseLogging)
+					{
+						Debug.Log($"[DropdownScrollBinder] Successfully loaded image for row {rowIndex}");
+					}
+				}
+				else
+				{
+					if (verboseLogging)
+					{
+						Debug.LogWarning($"[DropdownScrollBinder] Failed to create texture for row {rowIndex}");
+					}
+					imageComponent.sprite = defaultImage;
+				}
+			}
+			else
+			{
+				if (verboseLogging)
+				{
+					Debug.LogWarning($"[DropdownScrollBinder] Failed to load image for row {rowIndex}: {request.error}");
+				}
+				imageComponent.sprite = defaultImage;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Clears the image cache. Call this when you want to force reload all images.
+	/// </summary>
+	public void ClearImageCache()
+	{
+		imageCache.Clear();
+		if (verboseLogging)
+		{
+			Debug.Log("[DropdownScrollBinder] Image cache cleared");
+		}
+	}
+
+	/// <summary>
+	/// Preloads images for all current events. Useful for improving performance.
+	/// </summary>
+	public void PreloadAllImages()
+	{
+		if (eventsFetcher == null || eventsFetcher.events == null)
+		{
+			return;
+		}
+
+		StartCoroutine(PreloadImagesCoroutine());
+	}
+
+	private IEnumerator PreloadImagesCoroutine()
+	{
+		if (verboseLogging)
+		{
+			Debug.Log("[DropdownScrollBinder] Starting image preload");
+		}
+
+		foreach (EventData eventData in eventsFetcher.events)
+		{
+			if (!string.IsNullOrEmpty(eventData.image) && !imageCache.ContainsKey(eventData.image))
+			{
+				yield return StartCoroutine(LoadImageToCache(eventData.image));
+			}
+		}
+
+		if (verboseLogging)
+		{
+			Debug.Log("[DropdownScrollBinder] Image preload completed");
+		}
+	}
+
+	private IEnumerator LoadImageToCache(string imageUrl)
+	{
+		using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
+		{
+			request.timeout = (int)imageLoadTimeout;
+			
+			yield return request.SendWebRequest();
+
+			if (request.result == UnityWebRequest.Result.Success)
+			{
+				Texture2D texture = DownloadHandlerTexture.GetContent(request);
+				if (texture != null)
+				{
+					Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+					imageCache[imageUrl] = sprite;
+					
+					if (verboseLogging)
+					{
+						Debug.Log($"[DropdownScrollBinder] Preloaded image: {imageUrl}");
+					}
+				}
+			}
+		}
 	}
 }
 
