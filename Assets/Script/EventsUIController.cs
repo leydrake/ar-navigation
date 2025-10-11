@@ -66,6 +66,10 @@ public class EventsUIController : MonoBehaviour
 	[Header("Navigation Integration")]
 	[SerializeField]
 	private TargetHandler targetHandler;
+	
+	[Header("App Canvas Integration")]
+	[SerializeField]
+	private AppCanvas appCanvas;
 
 	private void Awake()
 	{
@@ -157,6 +161,16 @@ public class EventsUIController : MonoBehaviour
 #endif
 		}
 
+		// Find AppCanvas if not assigned
+		if (appCanvas == null)
+		{
+#if UNITY_2022_2_OR_NEWER
+			appCanvas = FindFirstObjectByType<AppCanvas>(FindObjectsInactive.Include);
+#else
+			appCanvas = FindObjectOfType<AppCanvas>(true);
+#endif
+		}
+
 		if (eventsFetcher == null)
 		{
 			Debug.LogWarning("EventsUIController: No EventsFetcher found in scene (active or inactive). UI will be empty.");
@@ -217,7 +231,7 @@ public class EventsUIController : MonoBehaviour
 		current = list ?? new List<EventData>();
 		Debug.Log($"Current data set to {current.Count} events");
 		RebuildList(current);
-		Debug.Log("RebuildList completed");
+		Debug.Log("RebuildList completed");            
 	}
 
 	private void ApplyFilter()
@@ -612,6 +626,7 @@ public class EventsUIController : MonoBehaviour
 #endif
 			}
 			Debug.Log($"EventsFetcher present: {(fetcher!=null)}");
+			Debug.Log($"AppCanvas present: {(appCanvas!=null)}");
 			if (fetcher != null)
 			{
 				fetcher.EmitCachedEvents();
@@ -640,11 +655,11 @@ public class EventsUIController : MonoBehaviour
 	{
 		var row = new VisualElement();
 		row.style.flexDirection = FlexDirection.Row;
-		row.style.height = 180;
-		row.style.marginBottom = 25;
+		row.style.height = 300;
+		row.style.marginBottom = 30;
 		row.style.marginLeft = 16;
 		row.style.marginRight = 16;
-		row.style.backgroundColor = new Color(224f/255f, 224f/255f, 224f/255f, 1f); // rgb(224, 224, 224)
+		row.style.backgroundColor = new Color(0.851f, 0.851f, 0.851f, 1f); // rgb(224, 224, 224)
 		row.style.borderBottomLeftRadius = 10;
 		row.style.borderBottomRightRadius = 10;
 		row.style.borderTopLeftRadius = 10;
@@ -673,8 +688,8 @@ public class EventsUIController : MonoBehaviour
 
 		// Image container with question mark icon
 		var imgContainer = new VisualElement();
-		imgContainer.style.width = 100;
-		imgContainer.style.height = 100;
+		imgContainer.style.width = 161;
+		imgContainer.style.height = 210;
 		imgContainer.style.backgroundColor = new Color(240f/255f, 240f/255f, 240f/255f, 1f); // rgb(240, 240, 240)
 		imgContainer.style.borderBottomLeftRadius = 6;
 		imgContainer.style.borderBottomRightRadius = 6;
@@ -702,19 +717,17 @@ public class EventsUIController : MonoBehaviour
 		// Title
 		var title = new Label(string.IsNullOrEmpty(data.name) ? "(untitled)" : data.name);
 		title.style.unityFontStyleAndWeight = FontStyle.Bold;
-		title.style.fontSize = 24;
+		title.style.fontSize = 36;
 		title.style.color = new Color(0f, 0f, 0f, 1f);
-		title.style.marginBottom = 4;
 
 		// Location
 		var location = new Label(string.IsNullOrEmpty(data.location) ? string.Empty : $"Location: {data.location}");
-		location.style.fontSize = 20;
+		location.style.fontSize = 32;
 		location.style.color = new Color(0.4f, 0.4f, 0.4f, 1f);
-		location.style.marginBottom = 4;
 
 		// Time
 		var time = new Label(string.IsNullOrEmpty(data.time) ? "No time set" : data.time);
-		time.style.fontSize = 20;
+		time.style.fontSize = 32;
 		time.style.color = new Color(0.4f, 0.4f, 0.4f, 1f);
 
 		col.Add(title);
@@ -767,8 +780,8 @@ public class EventsUIController : MonoBehaviour
 		searchFieldShadow.style.borderBottomRightRadius = 8;
 		
 		// Position shadow slightly offset to create shadow effect
-		searchFieldShadow.style.left = 2;
-		searchFieldShadow.style.top = 2;
+		searchFieldShadow.style.left = 5;
+		searchFieldShadow.style.top = 5;
 		
 		// Insert shadow behind the search field
 		var parent = searchField.parent;
@@ -814,7 +827,7 @@ public class EventsUIController : MonoBehaviour
     modalContent.style.left = Length.Percent(50);
     modalContent.style.top = Length.Percent(50);
     modalContent.style.width = 800;   // was 400
-    modalContent.style.height = 1000; // was 500
+    modalContent.style.height = 1100; // was 500
     modalContent.style.marginLeft = -400; // half of new width
     modalContent.style.marginTop = -500;  // half of new height
     modalContent.style.backgroundColor = Color.white;
@@ -832,8 +845,8 @@ public class EventsUIController : MonoBehaviour
     closeButton.style.position = Position.Absolute;
     closeButton.style.top = 20;   // was 10
     closeButton.style.right = 20; // was 10
-    closeButton.style.width = 60; // was 30
-    closeButton.style.height = 60; // was 30
+    closeButton.style.width = 70; // was 30
+    closeButton.style.height = 70; // was 30
     closeButton.style.backgroundColor = new Color(0.9f, 0.9f, 0.9f);
     closeButton.style.borderTopLeftRadius = 30;
     closeButton.style.borderTopRightRadius = 30;
@@ -843,15 +856,15 @@ public class EventsUIController : MonoBehaviour
     closeButton.style.justifyContent = Justify.Center;
     closeButton.RegisterCallback<ClickEvent>(evt => HideEventModal());
 
-    var closeLabel = new Label("×");
-    closeLabel.style.fontSize = 40; // was 20
+    var closeLabel = new Label("x");
+    closeLabel.style.fontSize = 45; // was 20
     closeLabel.style.color = Color.black;
     closeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
     closeButton.Add(closeLabel);
 
     // Title (bigger font)
     modalTitle = new Label("Event Details");
-    modalTitle.style.fontSize = 48; // was 24
+    modalTitle.style.fontSize = 64; // was 24
     modalTitle.style.color = new Color(0.2f, 0.4f, 0.2f);
     modalTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
     modalTitle.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -877,25 +890,25 @@ public class EventsUIController : MonoBehaviour
 
     // Event info labels (double font size + spacing)
     modalDescription = new Label();
-    modalDescription.style.fontSize = 28; // was 14
+    modalDescription.style.fontSize = 32; // was 14
     modalDescription.style.color = Color.black;
     modalDescription.style.marginBottom = 20; // was 10
     modalDescription.style.whiteSpace = WhiteSpace.Normal;
 
     modalLocation = new Label();
-    modalLocation.style.fontSize = 28;
+    modalLocation.style.fontSize = 32;
     modalLocation.style.color = Color.black;
     modalLocation.style.marginBottom = 20;
     modalLocation.style.whiteSpace = WhiteSpace.Normal;
 
     modalStartTime = new Label();
-    modalStartTime.style.fontSize = 28;
+    modalStartTime.style.fontSize = 32;
     modalStartTime.style.color = Color.black;
     modalStartTime.style.marginBottom = 20;
     modalStartTime.style.whiteSpace = WhiteSpace.Normal;
 
     modalEndTime = new Label();
-    modalEndTime.style.fontSize = 28;
+    modalEndTime.style.fontSize = 32;
     modalEndTime.style.color = Color.black;
     modalEndTime.style.marginBottom = 20;
     modalEndTime.style.whiteSpace = WhiteSpace.Normal;
@@ -903,19 +916,19 @@ public class EventsUIController : MonoBehaviour
     // Navigation button
     navigationButton = new VisualElement();
     navigationButton.style.width = Length.Percent(100);
-    navigationButton.style.height = 60;
-    navigationButton.style.backgroundColor = new Color(0.2f, 0.6f, 0.2f, 1f); // Green color
+    navigationButton.style.height = 120;
+    navigationButton.style.backgroundColor = new Color(0.1059f, 0.3725f, 0.1843f, 1f); // Green color
     navigationButton.style.borderTopLeftRadius = 12;
     navigationButton.style.borderTopRightRadius = 12;
     navigationButton.style.borderBottomLeftRadius = 12;
     navigationButton.style.borderBottomRightRadius = 12;
-    navigationButton.style.marginTop = 20;
+    navigationButton.style.marginTop = 50;
     navigationButton.style.alignItems = Align.Center;
     navigationButton.style.justifyContent = Justify.Center;
     navigationButton.style.cursor = StyleKeyword.Auto;
 
     var navigationLabel = new Label("Navigate to Event Location");
-    navigationLabel.style.fontSize = 24;
+    navigationLabel.style.fontSize = 32;
     navigationLabel.style.color = Color.white;
     navigationLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
     navigationLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -1047,6 +1060,18 @@ public class EventsUIController : MonoBehaviour
 		if (found)
 		{
 			Debug.Log("[EventsUI] Successfully set dropdown to event location");
+			
+			// Update the name label in AppCanvas with the event name
+			if (appCanvas != null)
+			{
+				appCanvas.UpdateNameLabel(currentEventData.name);
+				Debug.Log($"[EventsUI] Updated name label with event: {currentEventData.name}");
+			}
+			else
+			{
+				Debug.LogWarning("[EventsUI] AppCanvas not found, cannot update name label");
+			}
+			
 			// Use existing back button functionality to close events UI and show menu/burger
 			GoBackToMenu();
 		}

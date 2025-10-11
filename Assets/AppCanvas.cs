@@ -62,6 +62,9 @@ public class AppCanvas : MonoBehaviour
 	[Header("Search UI - TextMeshPro (optional)")]
 	public TMP_Dropdown myTMPDropdown;
 	public TMP_InputField searchTMPInput;
+	
+	[Header("Name Label")]
+	public TMP_Text nameLabel; // Label to display the selected event name
 
 	[Header("Search UI - Options Panel (optional)")]
 	public InputField panelSearchInput; // Search field inside the popup panel (UGUI)
@@ -1021,5 +1024,17 @@ public class AppCanvas : MonoBehaviour
         
         // Fallback to first panel
         return bottomPanel;
+    }
+    
+    /// <summary>
+    /// Updates the name label with the provided event name
+    /// </summary>
+    /// <param name="eventName">The name of the event to display</param>
+    public void UpdateNameLabel(string eventName)
+    {
+        if (nameLabel != null)
+        {
+            nameLabel.text = string.IsNullOrEmpty(eventName) ? "No event selected" : eventName;
+        }
     }
 }
