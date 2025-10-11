@@ -378,6 +378,30 @@
 
 
 
+            // Export Management - show if super_admin or has export permission
+            if (role === 'super_admin' || permissions.includes('export')) {
+                content += `
+                    <div class="dashboard-card" onclick="goToExport()">
+                        <div class="card-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Data Export</h3>
+                            <p class="card-description">Export analytics, feedback, and system data</p>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
             // Settings button - show to all admins
             if (role) {
                 const settingsBtn = document.getElementById('settingsBtn');
@@ -461,6 +485,10 @@
         
         function goToSurveys() {
             window.location.href = "./surveys.html";
+        }
+        
+        function goToExport() {
+            window.location.href = "./export.html";
         }
 
         // Add manual refresh function for debugging

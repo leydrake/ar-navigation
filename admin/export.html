@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Export - Admin Dashboard</title>
+    <link rel="icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="shortcut icon" type="image/png" href="../icons/AR_ICON_W_Border.png">
+    <link rel="stylesheet" href="css/export.css">
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading export data...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainContainer" class="main-container" style="display: none;">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="back-btn" onclick="goBack()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Back to Dashboard
+                    </button>
+                    <div class="header-title">
+                        <h1>Data Export</h1>
+                        <p>Export analytics, feedback, and system data</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="print-btn" onclick="printData()" id="printBtn" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6,18H4a2,2,0,0,1-2-2V11a2,2,0,0,1,2-2H20a2,2,0,0,1,2,2v5a2,2,0,0,1-2,2H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Print
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Export Controls -->
+        <div class="export-controls">
+            <div class="controls-grid">
+                <!-- Data Type Selection -->
+                <div class="control-group">
+                    <label for="dataType">Data Type *</label>
+                    <select id="dataType" onchange="onDataTypeChange()" required>
+                        <option value="">Select data type first</option>
+                        <option value="events">Events Data</option>
+                        <option value="reviews">Reviews</option>
+                        <option value="admin_credentials">Admin Users</option>
+                        <option value="coordinates">Coordinates</option>
+                        <option value="buildings">Buildings</option>
+                    </select>
+                </div>
+
+                <!-- Time Range Selection -->
+                <div class="control-group" id="timeRangeGroup" style="display: none;">
+                    <label for="timeRange">Time Range</label>
+                    <select id="timeRange" onchange="onTimeRangeChange()">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="quarter">Last 3 Months</option>
+                        <option value="year">Last Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+
+                <!-- Custom Date Range -->
+                <div class="control-group" id="customDateRange" style="display: none;">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+
+                <div class="control-group" id="customEndDate" style="display: none;">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+
+                <!-- Archive Status -->
+                <div class="control-group" id="archiveStatusGroup" style="display: none;">
+                    <label for="archiveStatus">Archive Status</label>
+                    <select id="archiveStatus">
+                        <option value="all">All Records</option>
+                        <option value="active">Active Only</option>
+                        <option value="archived">Archived Only</option>
+                    </select>
+                </div>
+
+                <!-- Export Format -->
+                <div class="control-group">
+                    <label for="exportFormat">Export Format</label>
+                    <select id="exportFormat">
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                        <option value="pdf">PDF Report</option>
+                        <option value="excel">Excel</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="control-group action-group">
+                    <button class="btn btn-primary" onclick="loadData()" id="loadDataBtn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Load Data
+                    </button>
+                    <button class="btn btn-success" onclick="exportData()" id="exportBtn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Preview -->
+        <div class="data-preview" id="dataPreview" style="display: none;">
+            <div class="preview-header">
+                <h3>Data Preview</h3>
+                <div class="preview-stats">
+                    <span class="stat-item">
+                        <span class="stat-label">Records:</span>
+                        <span class="stat-value" id="recordCount">0</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-label">Date Range:</span>
+                        <span class="stat-value" id="dateRange">-</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="preview-content">
+                <div class="table-container">
+                    <table class="data-table" id="dataTable">
+                        <thead id="tableHead">
+                            <!-- Dynamic headers will be inserted here -->
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Dynamic data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="preview-footer">
+                <div class="pagination-info">
+                    <span id="paginationInfo">Showing 1-10 of 0 records</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="btn btn-sm" onclick="previousPage()" id="prevBtn" disabled>Previous</button>
+                    <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                    <button class="btn btn-sm" onclick="nextPage()" id="nextBtn" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Progress -->
+        <div class="export-progress" id="exportProgress" style="display: none;">
+            <div class="progress-content">
+                <div class="progress-spinner"></div>
+                <h4>Exporting Data...</h4>
+                <p id="exportStatus">Preparing export...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8Xi8J7t3wRSy1TeIxiGFz-Is6U0zDFVg",
+            authDomain: "navigatecampus.firebaseapp.com",
+            projectId: "navigatecampus",
+            storageBucket: "navigatecampus.appspot.com",
+            messagingSenderId: "55012323145",
+            appId: "1:55012323145:web:3408681d5a450f05b2b498",
+            measurementId: "G-39WFZN3VPV"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const recordsPerPage = 10;
+        let totalPages = 1;
+
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminEmail = sessionStorage.getItem('adminEmail');
+            if (!isLoggedIn || !adminEmail) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Check permissions
+        async function checkPermissions() {
+            try {
+                const email = sessionStorage.getItem('adminEmail');
+                const querySnapshot = await db.collection('admin_credentials')
+                    .where('email', '==', email)
+                    .limit(1)
+                    .get();
+
+                if (querySnapshot.empty) {
+                    window.location.href = 'index.html';
+                    return false;
+                }
+
+                const data = querySnapshot.docs[0].data();
+                const role = data.role ? data.role.toString().trim().toLowerCase() : null;
+                const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+
+                // Check if user has export permission
+                if (role !== 'super_admin' && !permissions.includes('export')) {
+                    alert('You do not have permission to access the export feature.');
+                    window.location.href = 'admin-tools.html';
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Error checking permissions:', error);
+                window.location.href = 'index.html';
+                return false;
+            }
+        }
+
+        // Initialize page
+        async function initializePage() {
+            if (!checkAuth() || !(await checkPermissions())) return;
+
+            // Set default dates
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            document.getElementById('startDate').value = yesterday.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+            // Hide loading, show main container
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.location.href = 'admin-tools.html';
+        }
+
+        function onDataTypeChange() {
+            const dataType = document.getElementById('dataType').value;
+            const timeRangeGroup = document.getElementById('timeRangeGroup');
+            const archiveStatusGroup = document.getElementById('archiveStatusGroup');
+            const customDateRange = document.getElementById('customDateRange');
+            const customEndDate = document.getElementById('customEndDate');
+            const loadDataBtn = document.getElementById('loadDataBtn');
+            
+            // Reset all controls
+            timeRangeGroup.style.display = 'none';
+            archiveStatusGroup.style.display = 'none';
+            customDateRange.style.display = 'none';
+            customEndDate.style.display = 'none';
+            
+            // Reset data when type changes
+            currentData = [];
+            filteredData = [];
+            hideDataPreview();
+            
+            if (!dataType) {
+                loadDataBtn.disabled = true;
+                return;
+            }
+            
+            // Enable Load Data button when data type is selected
+            loadDataBtn.disabled = false;
+            
+            // Show time range for collections that have timestamps
+            const timeBasedCollections = ['events', 'feedback', 'bug_reports', 'surveys'];
+            if (timeBasedCollections.includes(dataType)) {
+                timeRangeGroup.style.display = 'block';
+            }
+            
+            // Show archive status for collections that support archiving
+            const archiveSupportedCollections = ['events', 'feedback', 'bug_reports', 'ARLocations'];
+            if (archiveSupportedCollections.includes(dataType)) {
+                archiveStatusGroup.style.display = 'block';
+            }
+        }
+
+        function onTimeRangeChange() {
+            const timeRange = document.getElementById('timeRange').value;
+            const customDateRange = document.getElementById('customDateRange');
+            const customEndDate = document.getElementById('customEndDate');
+
+            if (timeRange === 'custom') {
+                customDateRange.style.display = 'block';
+                customEndDate.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+                customEndDate.style.display = 'none';
+            }
+        }
+
+        // Load data based on filters
+        async function loadData() {
+            const dataType = document.getElementById('dataType').value;
+            const timeRange = document.getElementById('timeRange').value;
+            const archiveStatus = document.getElementById('archiveStatus').value;
+            
+            showLoading();
+
+            try {
+                let query = db.collection(dataType);
+                
+                // Apply time filter based on collection type
+                if (timeRange !== 'all') {
+                    const dateFilter = getDateFilter(timeRange);
+                    if (dateFilter) {
+                        // Different collections use different timestamp field names
+                        const timestampField = getTimestampField(dataType);
+                        if (timestampField) {
+                            query = query.where(timestampField, '>=', dateFilter.start)
+                                       .where(timestampField, '<=', dateFilter.end);
+                        }
+                    }
+                }
+
+                // Apply archive filter for collections that support it
+                if (archiveStatus !== 'all' && supportsArchive(dataType)) {
+                    query = query.where('archived', '==', archiveStatus === 'archived');
+                }
+
+                // Order by appropriate field
+                const orderField = getOrderField(dataType);
+                if (orderField) {
+                    query = query.orderBy(orderField, 'desc');
+                }
+
+                const snapshot = await query.get();
+                currentData = [];
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Convert Firestore timestamps to readable format
+                    const processedData = processDocumentData(data);
+                    
+                    // Filter fields based on data type
+                    const filteredData = filterFieldsByDataType(processedData, dataType);
+                    
+                    currentData.push({
+                        ...filteredData
+                    });
+                });
+
+                filteredData = [...currentData];
+                currentPage = 1;
+                
+                updateDataPreview();
+                showDataPreview();
+                hideLoading();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                hideLoading();
+                alert('Error loading data: ' + error.message);
+            }
+        }
+
+        // Get the appropriate timestamp field for each collection
+        function getTimestampField(dataType) {
+            const timestampFields = {
+                'events': 'startTime',
+                'reviews': 'timestamp',
+                'admin_credentials': 'createdAt',
+                'coordinates': 'createdAt',
+                'buildings': 'createdAt'
+            };
+            return timestampFields[dataType] || 'timestamp';
+        }
+
+        // Get the appropriate order field for each collection
+        function getOrderField(dataType) {
+            const orderFields = {
+                'events': 'startTime',
+                'feedback': 'timestamp',
+                'bug_reports': 'timestamp',
+                'surveys': 'timestamp',
+                'admin_credentials': 'createdAt',
+                'coordinates': 'createdAt',
+                'buildings': 'name',
+                'floors': 'floorNumber',
+                'ARLocations': 'name'
+            };
+            return orderFields[dataType] || 'timestamp';
+        }
+
+        // Check if collection supports archive functionality
+        function supportsArchive(dataType) {
+            const archiveSupported = ['events', 'feedback', 'bug_reports', 'ARLocations'];
+            return archiveSupported.includes(dataType);
+        }
+
+        // Process document data to handle Firestore-specific types
+        function processDocumentData(data) {
+            const processed = {};
+            for (const [key, value] of Object.entries(data)) {
+                if (value && typeof value === 'object' && value.toDate) {
+                    // Firestore timestamp
+                    processed[key] = value.toDate();
+                } else if (value && typeof value === 'object' && value.seconds) {
+                    // Firestore timestamp (alternative format)
+                    processed[key] = new Date(value.seconds * 1000);
+                } else if (Array.isArray(value)) {
+                    // Handle arrays
+                    processed[key] = value.map(item => 
+                        item && typeof item === 'object' && item.toDate ? item.toDate() : item
+                    );
+                } else {
+                    processed[key] = value;
+                }
+            }
+            return processed;
+        }
+
+        // Filter fields based on data type
+        function filterFieldsByDataType(data, dataType) {
+            if (dataType === 'admin_credentials') {
+                // Format admin user data with proper labels and formatting
+                const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+                const formattedPermissions = permissions.length > 0 
+                    ? permissions.join(', ') 
+                    : 'No permissions';
+                
+                return {
+                    name: data.name || 'Unnamed User',
+                    role: formatRole(data.role || 'viewer'),
+                    email: data.email || 'No email',
+                    permissions: formattedPermissions
+                };
+            }
+            
+            if (dataType === 'events') {
+                // Format events data with specific fields in order
+                return {
+                    name: data.name || data.title || 'Untitled Event',
+                    location: data.location || 'No location specified',
+                    description: data.description || 'No description',
+                    startTime: formatDateTime(data.startTime),
+                    endTime: formatDateTime(data.endTime)
+                };
+            }
+            
+            // For other data types, return all fields
+            return data;
+        }
+
+        // Format role names for better display
+        function formatRole(role) {
+            const roleMap = {
+                'super_admin': 'Super Admin',
+                'events_admin': 'Events Admin',
+                'locations_admin': 'Locations Admin',
+                'viewer': 'Viewer',
+                'admin': 'Admin'
+            };
+            return roleMap[role] || role.charAt(0).toUpperCase() + role.slice(1);
+        }
+
+        // Format date and time for display
+        function formatDateTime(dateValue) {
+            if (!dateValue) return 'Not specified';
+            
+            let date;
+            if (dateValue instanceof Date) {
+                date = dateValue;
+            } else if (dateValue.toDate) {
+                date = dateValue.toDate();
+            } else if (typeof dateValue === 'string') {
+                date = new Date(dateValue);
+            } else {
+                return 'Invalid date';
+            }
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                return 'Invalid date';
+            }
+            
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function getDateFilter(timeRange) {
+            const now = new Date();
+            const start = new Date();
+            
+            switch (timeRange) {
+                case 'today':
+                    start.setHours(0, 0, 0, 0);
+                    return { start, end: now };
+                case 'yesterday':
+                    start.setDate(start.getDate() - 1);
+                    start.setHours(0, 0, 0, 0);
+                    const endYesterday = new Date(start);
+                    endYesterday.setHours(23, 59, 59, 999);
+                    return { start, end: endYesterday };
+                case 'week':
+                    start.setDate(start.getDate() - 7);
+                    return { start, end: now };
+                case 'month':
+                    start.setDate(start.getDate() - 30);
+                    return { start, end: now };
+                case 'quarter':
+                    start.setMonth(start.getMonth() - 3);
+                    return { start, end: now };
+                case 'year':
+                    start.setFullYear(start.getFullYear() - 1);
+                    return { start, end: now };
+                case 'custom':
+                    const startDate = document.getElementById('startDate').value;
+                    const endDate = document.getElementById('endDate').value;
+                    if (startDate && endDate) {
+                        return {
+                            start: new Date(startDate + 'T00:00:00'),
+                            end: new Date(endDate + 'T23:59:59')
+                        };
+                    }
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        function updateDataPreview() {
+            totalPages = Math.ceil(filteredData.length / recordsPerPage);
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = Math.min(startIndex + recordsPerPage, filteredData.length);
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Update stats
+            document.getElementById('recordCount').textContent = filteredData.length;
+            document.getElementById('dateRange').textContent = getDateRangeText();
+
+            // Update table
+            updateTable(pageData);
+            updatePagination();
+
+            // Enable export button
+            document.getElementById('exportBtn').disabled = filteredData.length === 0;
+            document.getElementById('printBtn').style.display = filteredData.length > 0 ? 'block' : 'none';
+        }
+
+        function updateTable(data) {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            if (data.length === 0) {
+                tableHead.innerHTML = '<tr><th>No data available</th></tr>';
+                tableBody.innerHTML = '<tr><td colspan="100%">No records found matching your criteria</td></tr>';
+                return;
+            }
+
+            // Get headers from first record
+            const headers = Object.keys(data[0]);
+            tableHead.innerHTML = `
+                <tr>
+                    ${headers.map(header => `<th>${formatHeader(header)}</th>`).join('')}
+                </tr>
+            `;
+
+            // Add data rows
+            tableBody.innerHTML = data.map(record => `
+                <tr>
+                    ${headers.map(header => `<td>${formatCellValue(record[header])}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function formatHeader(header) {
+            return header.replace(/([A-Z])/g, ' $1')
+                        .replace(/^./, str => str.toUpperCase())
+                        .replace(/_/g, ' ');
+        }
+
+        function formatCellValue(value) {
+            if (value === null || value === undefined) return '-';
+            if (typeof value === 'object') {
+                if (value instanceof Date) {
+                    return value.toLocaleString();
+                }
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (typeof value === 'string' && value.length > 100) {
+                return value.substring(0, 100) + '...';
+            }
+            return value.toString();
+        }
+
+        function updatePagination() {
+            const startIndex = (currentPage - 1) * recordsPerPage + 1;
+            const endIndex = Math.min(currentPage * recordsPerPage, filteredData.length);
+            
+            document.getElementById('paginationInfo').textContent = 
+                `Showing ${startIndex}-${endIndex} of ${filteredData.length} records`;
+            document.getElementById('pageInfo').textContent = 
+                `Page ${currentPage} of ${totalPages}`;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateDataPreview();
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateDataPreview();
+            }
+        }
+
+        function getDateRangeText() {
+            const timeRange = document.getElementById('timeRange').value;
+            if (timeRange === 'all') return 'All Time';
+            if (timeRange === 'custom') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                return `${startDate} to ${endDate}`;
+            }
+            return timeRange.charAt(0).toUpperCase() + timeRange.slice(1);
+        }
+
+        // Export functions
+        async function exportData() {
+            const format = document.getElementById('exportFormat').value;
+            const dataType = document.getElementById('dataType').value;
+            
+            showExportProgress();
+
+            try {
+                switch (format) {
+                    case 'csv':
+                        await exportToCSV();
+                        break;
+                    case 'json':
+                        await exportToJSON();
+                        break;
+                    case 'pdf':
+                        await exportToPDF();
+                        break;
+                    case 'excel':
+                        await exportToExcel();
+                        break;
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Export failed: ' + error.message);
+            } finally {
+                hideExportProgress();
+            }
+        }
+
+        async function exportToCSV() {
+            updateExportStatus('Generating CSV...');
+            
+            const headers = Object.keys(filteredData[0] || {});
+            const csvContent = [
+                headers.map(formatHeader).join(','),
+                ...filteredData.map(record => 
+                    headers.map(header => `"${formatCellValue(record[header])}"`).join(',')
+                )
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const filename = `${document.getElementById('dataType').value}_export_${new Date().toISOString().split('T')[0]}.csv`;
+            saveAs(blob, filename);
+        }
+
+        async function exportToJSON() {
+            updateExportStatus('Generating JSON...');
+            
+            const jsonContent = JSON.stringify(filteredData, null, 2);
+            const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+            const filename = `${document.getElementById('dataType').value}_export_${new Date().toISOString().split('T')[0]}.json`;
+            saveAs(blob, filename);
+        }
+
+        async function exportToPDF() {
+            updateExportStatus('Generating PDF...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.text(`${formatHeader(document.getElementById('dataType').value)} Export Report`, 20, 20);
+            
+            // Add metadata
+            doc.setFontSize(12);
+            doc.text(`Export Date: ${new Date().toLocaleString()}`, 20, 35);
+            doc.text(`Records: ${filteredData.length}`, 20, 45);
+            doc.text(`Date Range: ${getDateRangeText()}`, 20, 55);
+            
+            // Add data table
+            if (filteredData.length > 0) {
+                const headers = Object.keys(filteredData[0]);
+                const tableData = filteredData.map(record => 
+                    headers.map(header => formatCellValue(record[header]))
+                );
+                
+                // Use autoTable with proper syntax
+                doc.autoTable({
+                    head: [headers.map(formatHeader)],
+                    body: tableData,
+                    startY: 70,
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 3
+                    },
+                    headStyles: { 
+                        fillColor: [32, 98, 51],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [248, 249, 250]
+                    },
+                    margin: { top: 70, left: 20, right: 20 },
+                    pageBreak: 'auto'
+                });
+            } else {
+                doc.setFontSize(14);
+                doc.text('No data available for export.', 20, 80);
+            }
+            
+            const filename = `${document.getElementById('dataType').value}_export_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+        }
+
+        async function exportToExcel() {
+            updateExportStatus('Generating Excel...');
+            
+            const headers = Object.keys(filteredData[0] || {});
+            const wsData = [
+                headers.map(formatHeader),
+                ...filteredData.map(record => 
+                    headers.map(header => formatCellValue(record[header]))
+                )
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Export Data');
+            
+            const filename = `${document.getElementById('dataType').value}_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+        }
+
+        function printData() {
+            const printWindow = window.open('', '_blank');
+            const dataType = document.getElementById('dataType').value;
+            
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${formatHeader(dataType)} Export Report</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            h1 { color: #206233; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background-color: #206233; color: white; }
+                            .metadata { margin-bottom: 20px; }
+                            .metadata p { margin: 5px 0; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${formatHeader(dataType)} Export Report</h1>
+                        <div class="metadata">
+                            <p><strong>Export Date:</strong> ${new Date().toLocaleString()}</p>
+                            <p><strong>Records:</strong> ${filteredData.length}</p>
+                            <p><strong>Date Range:</strong> ${getDateRangeText()}</p>
+                        </div>
+                        ${generatePrintableTable()}
+                    </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function generatePrintableTable() {
+            if (filteredData.length === 0) {
+                return '<p>No data available for printing.</p>';
+            }
+            
+            const headers = Object.keys(filteredData[0]);
+            const tableRows = filteredData.map(record => 
+                `<tr>${headers.map(header => `<td>${formatCellValue(record[header])}</td>`).join('')}</tr>`
+            ).join('');
+            
+            return `
+                <table>
+                    <thead>
+                        <tr>${headers.map(formatHeader).map(header => `<th>${header}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // UI Helper functions
+        function showLoading() {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+        }
+
+        function showDataPreview() {
+            document.getElementById('dataPreview').style.display = 'block';
+        }
+
+        function hideDataPreview() {
+            document.getElementById('dataPreview').style.display = 'none';
+        }
+
+        function showExportProgress() {
+            document.getElementById('exportProgress').style.display = 'flex';
+        }
+
+        function hideExportProgress() {
+            document.getElementById('exportProgress').style.display = 'none';
+        }
+
+        function updateExportStatus(message) {
+            document.getElementById('exportStatus').textContent = message;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
