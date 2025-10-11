@@ -56,7 +56,7 @@
                         <option value="events">Events Data</option>
                         <option value="reviews">Reviews</option>
                         <option value="admin_credentials">Admin Users</option>
-                        <option value="coordinates">Coordinates</option>
+                        <option value="coordinates">Locations</option>
                         <option value="buildings">Buildings</option>
                     </select>
                 </div>
@@ -312,13 +312,13 @@
             loadDataBtn.disabled = false;
             
             // Show time range for collections that have timestamps
-            const timeBasedCollections = ['events', 'feedback', 'bug_reports', 'surveys'];
+            const timeBasedCollections = ['events', 'reviews'];
             if (timeBasedCollections.includes(dataType)) {
                 timeRangeGroup.style.display = 'block';
             }
             
             // Show archive status for collections that support archiving
-            const archiveSupportedCollections = ['events', 'feedback', 'bug_reports', 'ARLocations'];
+            const archiveSupportedCollections = ['events'];
             if (archiveSupportedCollections.includes(dataType)) {
                 archiveStatusGroup.style.display = 'block';
             }
@@ -367,10 +367,14 @@
                     query = query.where('archived', '==', archiveStatus === 'archived');
                 }
 
-                // Order by appropriate field
+                // Order by appropriate field (skip for buildings to avoid index issues)
                 const orderField = getOrderField(dataType);
-                if (orderField) {
-                    query = query.orderBy(orderField, 'desc');
+                if (orderField && dataType !== 'buildings') {
+                    if (orderField === 'name') {
+                        query = query.orderBy(orderField, 'asc');
+                    } else {
+                        query = query.orderBy(orderField, 'desc');
+                    }
                 }
 
                 const snapshot = await query.get();
@@ -407,10 +411,10 @@
         function getTimestampField(dataType) {
             const timestampFields = {
                 'events': 'startTime',
-                'reviews': 'timestamp',
+                'reviews': 'createdAt',
                 'admin_credentials': 'createdAt',
                 'coordinates': 'createdAt',
-                'buildings': 'createdAt'
+                'buildings': null // Buildings don't have timestamps
             };
             return timestampFields[dataType] || 'timestamp';
         }
@@ -419,21 +423,17 @@
         function getOrderField(dataType) {
             const orderFields = {
                 'events': 'startTime',
-                'feedback': 'timestamp',
-                'bug_reports': 'timestamp',
-                'surveys': 'timestamp',
+                'reviews': 'createdAt',
                 'admin_credentials': 'createdAt',
                 'coordinates': 'createdAt',
-                'buildings': 'name',
-                'floors': 'floorNumber',
-                'ARLocations': 'name'
+                'buildings': 'name'
             };
             return orderFields[dataType] || 'timestamp';
         }
 
         // Check if collection supports archive functionality
         function supportsArchive(dataType) {
-            const archiveSupported = ['events', 'feedback', 'bug_reports', 'ARLocations'];
+            const archiveSupported = ['events'];
             return archiveSupported.includes(dataType);
         }
 
@@ -484,6 +484,33 @@
                     description: data.description || 'No description',
                     startTime: formatDateTime(data.startTime),
                     endTime: formatDateTime(data.endTime)
+                };
+            }
+            
+            if (dataType === 'reviews') {
+                // Format reviews data with specific fields
+                return {
+                    studentNo: data.studentNo || 'No student number',
+                    rating: data.rating || 'No rating',
+                    comment: data.comment || 'No comment',
+                    createdAt: formatDateTime(data.createdAt)
+                };
+            }
+            
+            if (dataType === 'coordinates') {
+                // Format coordinates data with specific fields in order
+                const x = data.x || data.X || 0;
+                const y = data.y || data.Y || 0;
+                const z = data.z || data.Z || 0;
+                const coordinates = `(${x}, ${y}, ${z})`;
+                
+                return {
+                    createdAt: formatDateTime(data.createdAt),
+                    name: data.name || 'Unnamed Location',
+                    description: data.description || 'No description',
+                    building: data.building || data.buildingName || 'No building',
+                    floor: data.floor || data.floorName || 'No floor',
+                    coordinates: coordinates
                 };
             }
             
