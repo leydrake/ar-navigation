@@ -89,7 +89,50 @@
                     </svg>
                 </button>
             </div>
-            <div id="archiveList" style="max-height:360px; overflow:auto;"></div>
+            <div class="modal-body">
+                <div class="archive-search-container">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="text" id="archiveSearchInput" placeholder="Search archived locations..." class="archive-search-input">
+                    </div>
+                    <div class="filter-dropdown-wrapper">
+                        <button type="button" id="filterDropdownBtn" class="filter-dropdown-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M3 6h18M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span id="filterDropdownText">All</span>
+                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div id="filterDropdownMenu" class="filter-dropdown-menu" style="display: none;">
+                            <div class="filter-option" data-filter="all">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                All
+                            </div>
+                            <div class="filter-option" data-filter="recent">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Recent
+                            </div>
+                            <div class="filter-option" data-filter="old">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Older
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="archiveList" style="max-height:300px; overflow:auto;"></div>
+            </div>
             <div class="modal-actions">
                 <div style="flex:1;"></div>
                 <button type="button" id="selectAllArchiveBtn" class="mini-btn primary">Select All</button>
@@ -103,11 +146,57 @@
             window.location.href = "./admin-tools.html"
         }
 
+        // Archive modal functionality
+        const archiveBtn = document.getElementById('archiveBtn');
+        const archiveModal = document.getElementById('archiveModal');
+        const archiveList = document.getElementById('archiveList');
+        const closeArchiveBtn = document.getElementById('closeArchiveBtn');
+        const selectAllArchiveBtn = document.getElementById('selectAllArchiveBtn');
+        const deleteSelectedArchiveBtn = document.getElementById('deleteSelectedArchiveBtn');
+        const clearAllArchiveBtn = document.getElementById('clearAllArchiveBtn');
+
+        // Add event listeners for archive functionality
+        if (archiveBtn) {
+            archiveBtn.addEventListener('click', () => {
+                if (window.openArchiveModal) {
+                    window.openArchiveModal();
+                }
+            });
+        }
+        if (closeArchiveBtn) {
+            closeArchiveBtn.addEventListener('click', () => {
+                archiveModal.style.display = 'none';
+            });
+        }
+        if (selectAllArchiveBtn) {
+            selectAllArchiveBtn.addEventListener('click', () => {
+                if (window.selectAllArchiveItems) {
+                    window.selectAllArchiveItems();
+                }
+            });
+        }
+        if (deleteSelectedArchiveBtn) {
+            deleteSelectedArchiveBtn.addEventListener('click', () => {
+                if (window.deleteSelectedArchiveItems) {
+                    window.deleteSelectedArchiveItems();
+                }
+            });
+        }
+        if (clearAllArchiveBtn) {
+            clearAllArchiveBtn.addEventListener('click', () => {
+                if (window.clearAllArchiveItems) {
+                    window.clearAllArchiveItems();
+                }
+            });
+        }
+
+        // Archive modal functions will be defined in the module script below
+
     </script>
     <script src="js/validation-utils.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, query, where, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         // Reuse the same Firebase config as other admin pages
         const firebaseConfig = {
@@ -352,16 +441,29 @@
                     image: imageDataUrl || null,
                     createdAt: serverTimestamp()
                 });
-                // Remove the source ARLocation document if one is selected
+                
+                // Archive the source ARLocation document if one is selected
                 if (selectedARId) {
                     try {
-                        await deleteDoc(doc(db, 'ARLocations', selectedARId));
+                        const srcRef = doc(db, 'ARLocations', selectedARId);
+                        const srcSnap = await getDoc(srcRef);
+                        if (srcSnap.exists()) {
+                            const srcData = srcSnap.data();
+                            // Write to archive collection with timestamp
+                            await addDoc(collection(db, 'ARLocations_archive'), { 
+                                ...srcData, 
+                                archivedAt: serverTimestamp(), 
+                                sourceId: selectedARId 
+                            });
+                            // Remove from source
+                            await deleteDoc(srcRef);
+                        }
                         arLocationsById.delete(selectedARId);
                         if (selectedOption) {
                             selectedOption.remove();
                         }
                     } catch (delErr) {
-                        console.warn('Saved to coordinates but failed to delete ARLocation:', delErr);
+                        console.warn('Saved to coordinates but failed to archive ARLocation:', delErr);
                     }
                 }
                 alert('Location saved to Firestore.');
@@ -395,6 +497,223 @@
         }
 
         clearBtn.addEventListener('click', clearAllFields);
+
+        // Archive data storage
+        let allArchiveItems = [];
+        let filteredArchiveItems = [];
+
+        // Archive modal functions
+        async function openArchiveModal() {
+            try {
+                archiveList.innerHTML = 'Loading...';
+                archiveModal.style.display = 'flex';
+                
+                const snap = await getDocs(query(collection(db, 'ARLocations_archive'), orderBy('archivedAt', 'desc')));
+                allArchiveItems = [];
+                
+                snap.forEach(docSnap => {
+                    const d = docSnap.data() || {};
+                    const item = {
+                        id: docSnap.id,
+                        name: String(d.Name ?? d.name ?? docSnap.id),
+                        x: d.PositionX ?? d.x ?? '-',
+                        y: d.PositionY ?? d.y ?? '-',
+                        z: d.PositionZ ?? d.z ?? '-',
+                        archivedAt: d.archivedAt ? new Date(d.archivedAt) : null,
+                        archivedAtString: d.archivedAt ? new Date(d.archivedAt).toLocaleString() : '',
+                        deviceModel: d.DeviceModel || '',
+                        platform: d.Platform || ''
+                    };
+                    allArchiveItems.push(item);
+                });
+                
+                filteredArchiveItems = [...allArchiveItems];
+                renderArchiveItems();
+                setupSearchAndFilter();
+            } catch (err) {
+                console.error('Failed to open archive modal:', err);
+                alert('Could not load archived items. Check console for details.');
+            }
+        }
+
+        function renderArchiveItems() {
+            const items = [];
+            
+            filteredArchiveItems.forEach(item => {
+                items.push(`<label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid #eee;">`+
+                    `<input type="checkbox" class="archive-checkbox" data-id="${item.id}">`+
+                    `<div style="flex:1;">`+
+                        `<div style="font-weight:600;">${item.name}</div>`+
+                        `<div style="font-size:12px;color:#555;">X:${item.x} Y:${item.y} Z:${item.z}</div>`+
+                        `<div style="font-size:12px;color:#888;">Archived: ${item.archivedAtString}</div>`+
+                        `${item.deviceModel ? `<div style="font-size:11px;color:#999;">Device: ${item.deviceModel}</div>` : ''}`+
+                    `</div>`+
+                `</label>`);
+            });
+            
+            archiveList.innerHTML = items.length ? items.join('') : '<div style="padding:10px;text-align:center;color:#666;">No archived items found.</div>';
+        }
+
+        function setupSearchAndFilter() {
+            const searchInput = document.getElementById('archiveSearchInput');
+            const filterDropdownBtn = document.getElementById('filterDropdownBtn');
+            const filterDropdownMenu = document.getElementById('filterDropdownMenu');
+            const filterDropdownText = document.getElementById('filterDropdownText');
+
+            // Search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    filterArchiveItems(searchTerm);
+                });
+            }
+
+            // Dropdown toggle functionality
+            if (filterDropdownBtn && filterDropdownMenu) {
+                filterDropdownBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = filterDropdownMenu.style.display === 'block';
+                    filterDropdownMenu.style.display = isOpen ? 'none' : 'block';
+                    filterDropdownBtn.classList.toggle('open', !isOpen);
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!filterDropdownBtn.contains(e.target) && !filterDropdownMenu.contains(e.target)) {
+                        filterDropdownMenu.style.display = 'none';
+                        filterDropdownBtn.classList.remove('open');
+                    }
+                });
+
+                // Filter option clicks
+                const filterOptions = filterDropdownMenu.querySelectorAll('.filter-option');
+                filterOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        const filterType = option.dataset.filter;
+                        const filterText = option.textContent.trim();
+                        
+                        // Update button text
+                        filterDropdownText.textContent = filterText;
+                        
+                        // Update active state
+                        filterOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        
+                        // Close dropdown
+                        filterDropdownMenu.style.display = 'none';
+                        filterDropdownBtn.classList.remove('open');
+                        
+                        // Apply filter
+                        setActiveFilter(filterType);
+                        filterArchiveItems(document.getElementById('archiveSearchInput')?.value || '');
+                    });
+                });
+            }
+        }
+
+        function setActiveFilter(filterType) {
+            // Update the dropdown button text and active state
+            const filterDropdownText = document.getElementById('filterDropdownText');
+            const filterOptions = document.querySelectorAll('.filter-option');
+            
+            // Remove active class from all options
+            filterOptions.forEach(opt => opt.classList.remove('active'));
+            
+            // Add active class to selected option
+            const selectedOption = document.querySelector(`[data-filter="${filterType}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('active');
+            }
+        }
+
+        function filterArchiveItems(searchTerm = '') {
+            const activeFilter = document.querySelector('.filter-option.active')?.dataset.filter;
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+            filteredArchiveItems = allArchiveItems.filter(item => {
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    item.name.toLowerCase().includes(searchTerm) ||
+                    item.deviceModel.toLowerCase().includes(searchTerm) ||
+                    item.platform.toLowerCase().includes(searchTerm) ||
+                    `${item.x},${item.y},${item.z}`.includes(searchTerm);
+
+                // Time filter
+                let matchesTime = true;
+                if (activeFilter === 'recent') {
+                    matchesTime = item.archivedAt && item.archivedAt >= thirtyDaysAgo;
+                } else if (activeFilter === 'old') {
+                    matchesTime = item.archivedAt && item.archivedAt < thirtyDaysAgo;
+                }
+
+                return matchesSearch && matchesTime;
+            });
+
+            renderArchiveItems();
+        }
+
+        function selectAllArchiveItems() {
+            const boxes = archiveList.querySelectorAll('.archive-checkbox');
+            const allChecked = Array.from(boxes).every(b => b.checked);
+            boxes.forEach(b => b.checked = !allChecked);
+        }
+
+        async function deleteSelectedArchiveItems() {
+            try {
+                const boxes = Array.from(archiveList.querySelectorAll('.archive-checkbox')).filter(b => b.checked);
+                if (boxes.length === 0) {
+                    alert('No items selected.');
+                    return;
+                }
+                if (!confirm(`Delete ${boxes.length} selected item(s)? This cannot be undone.`)) return;
+                
+                for (const box of boxes) {
+                    const id = box.getAttribute('data-id');
+                    await deleteDoc(doc(db, 'ARLocations_archive', id));
+                }
+                
+                // Refresh the archive data
+                await openArchiveModal();
+            } catch (err) {
+                console.error('Failed to delete selected archive items:', err);
+                alert('Could not delete selected items. Check console for details.');
+            }
+        }
+
+        async function clearAllArchiveItems() {
+            try {
+                const activeFilter = document.querySelector('.filter-option.active')?.dataset.filter;
+                let confirmMessage = 'Delete ALL archived items? This cannot be undone.';
+                
+                if (activeFilter === 'recent') {
+                    confirmMessage = 'Delete ALL recent archived items (last 30 days)? This cannot be undone.';
+                } else if (activeFilter === 'old') {
+                    confirmMessage = 'Delete ALL old archived items (older than 30 days)? This cannot be undone.';
+                }
+                
+                if (!confirm(confirmMessage)) return;
+                
+                // Delete only filtered items
+                const itemsToDelete = filteredArchiveItems.map(item => item.id);
+                
+                for (const id of itemsToDelete) {
+                    await deleteDoc(doc(db, 'ARLocations_archive', id));
+                }
+                
+                // Refresh the archive data
+                await openArchiveModal();
+            } catch (err) {
+                console.error('Failed to clear archive items:', err);
+                alert('Could not clear items. Check console for details.');
+            }
+        }
+
+        // Make archive functions globally available
+        window.openArchiveModal = openArchiveModal;
+        window.selectAllArchiveItems = selectAllArchiveItems;
+        window.deleteSelectedArchiveItems = deleteSelectedArchiveItems;
+        window.clearAllArchiveItems = clearAllArchiveItems;
 
         // Initial load
         loadARLocations();

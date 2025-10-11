@@ -207,10 +207,18 @@ async function archiveExpiredEvents() {
             // If event has ended and is not already archived
             if (endTime && endTime < now && !data.archived) {
                 console.log(`Archiving expired event: ${data.name || data.title}`);
+                
+                // Prepare event data for archive
+                const eventData = { ...data };
+                eventData.archivedAt = now.toISOString();
+                eventData.archiveReason = 'expired';
+                
+                // Add to archive collection
                 archivePromises.push(
-                    updateDoc(doc(db, "events", docSnap.id), {
-                        archived: true,
-                        archivedAt: now.toISOString()
+                    addDoc(collection(db, "events_archive"), eventData)
+                    .then(() => {
+                        // Delete from main events collection
+                        return deleteDoc(doc(db, "events", docSnap.id));
                     })
                 );
             }
@@ -243,10 +251,8 @@ async function fetchAndRenderEvents() {
             const data = docSnap.data();
             const event = { id: docSnap.id, ...data };
             
-            // Only show active (non-archived) events in main list
-            if (!data.archived) {
-                events.push(event);
-            }
+            // All events in the main collection are active (non-archived)
+            events.push(event);
         });
         
         // Sort events by start time (soonest first)
@@ -500,15 +506,34 @@ deleteEventBtn.onclick = async function() {
     // Check permissions before allowing delete
     if (!checkEventsPermission()) return;
     
-    const confirmed = confirm('Are you sure you want to delete this event?');
+    const confirmed = confirm('Are you sure you want to delete this event? It will be moved to archive.');
     if (!confirmed) return;
     
     try {
+        // Get the event data first
+        const eventDoc = await getDoc(doc(db, "events", viewingEventId));
+        if (!eventDoc.exists()) {
+            alert('Event not found!');
+            return;
+        }
+        
+        const eventData = eventDoc.data();
+        
+        // Add archivedAt timestamp
+        const archivedData = { ...eventData };
+        archivedData.archivedAt = new Date().toISOString();
+        archivedData.archiveReason = 'deleted';
+        
+        // Add to archive collection
+        await addDoc(collection(db, "events_archive"), archivedData);
+        
+        // Delete from main events collection
         await deleteDoc(doc(db, "events", viewingEventId));
+        
         viewEventModal.style.display = 'none';
         viewingEventId = null;
         await fetchAndRenderEvents();
-        alert('Event deleted successfully!');
+        alert('Event deleted and moved to archive successfully!');
     } catch (error) {
         console.error('Error deleting event:', error);
         alert('Error deleting event: ' + error.message);
@@ -832,6 +857,8 @@ eventForm.onsubmit = async function(e) {
 
 // Archive modal functionality
 let selectedArchivedEvents = new Set();
+let allArchiveItems = [];
+let filteredArchiveItems = [];
 
 async function openArchiveModal() {
     const archiveModal = document.getElementById('archiveModal');
@@ -844,59 +871,40 @@ async function openArchiveModal() {
         archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Loading archived events...</div>';
         archiveModal.style.display = 'flex';
         
-        // Fetch archived events
-        const querySnapshot = await getDocs(eventsRef);
-        const archivedEvents = [];
+        // Fetch archived events from events_archive collection
+        const archiveRef = collection(db, "events_archive");
+        const querySnapshot = await getDocs(archiveRef);
+        allArchiveItems = [];
         
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            if (data.archived) {
-                archivedEvents.push({ id: docSnap.id, ...data });
-            }
+            const event = {
+                id: docSnap.id,
+                name: data.name || data.title || 'Untitled Event',
+                description: data.description || '',
+                location: data.location || '',
+                locationBuilding: data.locationBuilding || '',
+                locationFloor: data.locationFloor || '',
+                startTime: data.startTime || '',
+                endTime: data.endTime || '',
+                image: data.image || '',
+                archivedAt: data.archivedAt ? new Date(data.archivedAt) : null,
+                archivedAtString: data.archivedAt ? new Date(data.archivedAt).toLocaleString() : 'Unknown',
+                archiveReason: data.archiveReason || 'expired' // 'expired', 'deleted', or 'manual'
+            };
+            allArchiveItems.push(event);
         });
         
         // Sort by archive time (most recent first)
-        archivedEvents.sort((a, b) => {
-            const aTime = a.archivedAt ? new Date(a.archivedAt) : new Date(0);
-            const bTime = b.archivedAt ? new Date(b.archivedAt) : new Date(0);
+        allArchiveItems.sort((a, b) => {
+            const aTime = a.archivedAt ? a.archivedAt : new Date(0);
+            const bTime = b.archivedAt ? b.archivedAt : new Date(0);
             return bTime - aTime;
         });
         
-        // Render archived events
-        if (archivedEvents.length === 0) {
-            archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No archived events found.</div>';
-        } else {
-            archiveList.innerHTML = archivedEvents.map(event => {
-                const locationDisplay = event.locationBuilding && event.locationFloor 
-                    ? `${event.location} (${event.locationBuilding} • ${event.locationFloor})`
-                    : event.location;
-                
-                const archivedDate = event.archivedAt ? new Date(event.archivedAt).toLocaleString() : 'Unknown';
-                
-                return `
-                    <div class="archived-event-item" data-event-id="${event.id}">
-                        <div class="archived-event-checkbox">
-                            <input type="checkbox" class="archive-event-checkbox" data-event-id="${event.id}">
-                        </div>
-                        <div class="archived-event-content">
-                            <div class="archived-event-image">
-                                ${event.image ? `<img src="${event.image}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;"/>` : '<div class="no-image-placeholder">📅</div>'}
-                            </div>
-                            <div class="archived-event-details">
-                                <div class="archived-event-title">${event.name || event.title || 'Untitled Event'}</div>
-                                <div class="archived-event-location">📍 ${locationDisplay}</div>
-                                <div class="archived-event-time">📅 ${event.startTime ? new Date(event.startTime).toLocaleString() : 'No time set'}</div>
-                                <div class="archived-event-date">📁 Archived: ${archivedDate}</div>
-                            </div>
-                            <div class="archived-event-actions">
-                                <button class="mini-btn success" onclick="restoreSingleEvent('${event.id}')">Restore</button>
-                                <button class="mini-btn danger" onclick="deleteSingleArchivedEvent('${event.id}')">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+        filteredArchiveItems = [...allArchiveItems];
+        renderArchiveItems();
+        setupSearchAndFilter();
         
         // Clear selection
         selectedArchivedEvents.clear();
@@ -906,6 +914,155 @@ async function openArchiveModal() {
         console.error('Error loading archived events:', error);
         archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">Error loading archived events. Please try again.</div>';
     }
+}
+
+function renderArchiveItems() {
+    const archiveList = document.getElementById('archiveList');
+    if (!archiveList) return;
+    
+    if (filteredArchiveItems.length === 0) {
+        archiveList.innerHTML = '<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No archived events found.</div>';
+        return;
+    }
+    
+    archiveList.innerHTML = filteredArchiveItems.map(event => {
+        const locationDisplay = event.locationBuilding && event.locationFloor 
+            ? `${event.location} (${event.locationBuilding} • ${event.locationFloor})`
+            : event.location;
+        
+        // Determine archive reason display
+        let archiveReasonDisplay = '';
+        if (event.archiveReason === 'deleted') {
+            archiveReasonDisplay = '🗑️ Manually deleted';
+        } else if (event.archiveReason === 'expired') {
+            archiveReasonDisplay = '⏰ Expired';
+        } else {
+            archiveReasonDisplay = '📁 Archived';
+        }
+        
+        return `
+            <div class="archived-event-item" data-event-id="${event.id}">
+                <div class="archived-event-checkbox">
+                    <input type="checkbox" class="archive-event-checkbox" data-event-id="${event.id}">
+                </div>
+                <div class="archived-event-content">
+                    <div class="archived-event-image">
+                        ${event.image ? `<img src="${event.image}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;"/>` : '<div class="no-image-placeholder">📅</div>'}
+                    </div>
+                    <div class="archived-event-details">
+                        <div class="archived-event-title">${event.name}</div>
+                        <div class="archived-event-location">📍 ${locationDisplay}</div>
+                        <div class="archived-event-time">📅 ${event.startTime ? new Date(event.startTime).toLocaleString() : 'No time set'}</div>
+                        <div class="archived-event-date">${archiveReasonDisplay}: ${event.archivedAtString}</div>
+                    </div>
+                    <div class="archived-event-actions">
+                        <button class="mini-btn success" onclick="restoreSingleEvent('${event.id}')">Restore</button>
+                        <button class="mini-btn danger" onclick="deleteSingleArchivedEvent('${event.id}')">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function setupSearchAndFilter() {
+    const searchInput = document.getElementById('archiveSearchInput');
+    const filterDropdownBtn = document.getElementById('filterDropdownBtn');
+    const filterDropdownMenu = document.getElementById('filterDropdownMenu');
+    const filterDropdownText = document.getElementById('filterDropdownText');
+
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            filterArchiveItems(searchTerm);
+        });
+    }
+
+    // Dropdown toggle functionality
+    if (filterDropdownBtn && filterDropdownMenu) {
+        filterDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = filterDropdownMenu.style.display === 'block';
+            filterDropdownMenu.style.display = isOpen ? 'none' : 'block';
+            filterDropdownBtn.classList.toggle('open', !isOpen);
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!filterDropdownBtn.contains(e.target) && !filterDropdownMenu.contains(e.target)) {
+                filterDropdownMenu.style.display = 'none';
+                filterDropdownBtn.classList.remove('open');
+            }
+        });
+
+        // Filter option clicks
+        const filterOptions = filterDropdownMenu.querySelectorAll('.filter-option');
+        filterOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const filterType = option.dataset.filter;
+                const filterText = option.textContent.trim();
+                
+                // Update button text
+                filterDropdownText.textContent = filterText;
+                
+                // Update active state
+                filterOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Close dropdown
+                filterDropdownMenu.style.display = 'none';
+                filterDropdownBtn.classList.remove('open');
+                
+                // Apply filter
+                setActiveFilter(filterType);
+                filterArchiveItems(document.getElementById('archiveSearchInput')?.value || '');
+            });
+        });
+    }
+}
+
+function setActiveFilter(filterType) {
+    // Update the dropdown button text and active state
+    const filterDropdownText = document.getElementById('filterDropdownText');
+    const filterOptions = document.querySelectorAll('.filter-option');
+    
+    // Remove active class from all options
+    filterOptions.forEach(opt => opt.classList.remove('active'));
+    
+    // Add active class to selected option
+    const selectedOption = document.querySelector(`[data-filter="${filterType}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('active');
+    }
+}
+
+function filterArchiveItems(searchTerm = '') {
+    const activeFilter = document.querySelector('.filter-option.active')?.dataset.filter;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+    filteredArchiveItems = allArchiveItems.filter(item => {
+        // Search filter
+        const matchesSearch = !searchTerm || 
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.description.toLowerCase().includes(searchTerm) ||
+            item.location.toLowerCase().includes(searchTerm) ||
+            item.locationBuilding.toLowerCase().includes(searchTerm) ||
+            item.locationFloor.toLowerCase().includes(searchTerm);
+
+        // Time filter
+        let matchesTime = true;
+        if (activeFilter === 'recent') {
+            matchesTime = item.archivedAt && item.archivedAt >= thirtyDaysAgo;
+        } else if (activeFilter === 'old') {
+            matchesTime = item.archivedAt && item.archivedAt < thirtyDaysAgo;
+        }
+
+        return matchesSearch && matchesTime;
+    });
+
+    renderArchiveItems();
 }
 
 function closeArchiveModal() {
@@ -920,6 +1077,7 @@ function updateArchiveModalButtons() {
     const selectAllBtn = document.getElementById('selectAllArchiveBtn');
     const deleteSelectedBtn = document.getElementById('deleteSelectedArchiveBtn');
     const restoreSelectedBtn = document.getElementById('restoreSelectedArchiveBtn');
+    const clearAllBtn = document.getElementById('clearAllArchiveBtn');
     
     if (selectAllBtn) {
         const allCheckboxes = document.querySelectorAll('.archive-event-checkbox');
@@ -935,24 +1093,55 @@ function updateArchiveModalButtons() {
     }
     
     const hasSelection = selectedArchivedEvents.size > 0;
+    const hasItems = filteredArchiveItems.length > 0;
+    
     if (deleteSelectedBtn) deleteSelectedBtn.disabled = !hasSelection;
     if (restoreSelectedBtn) restoreSelectedBtn.disabled = !hasSelection;
+    if (clearAllBtn) clearAllBtn.disabled = !hasItems;
 }
 
 async function restoreSingleEvent(eventId) {
+    console.log('Attempting to restore event:', eventId);
     if (!confirm('Are you sure you want to restore this event?')) return;
     
     try {
-        await updateDoc(doc(db, "events", eventId), {
-            archived: false,
-            restoredAt: new Date().toISOString()
-        });
+        console.log('Getting archived event from events_archive collection:', eventId);
         
-        // Remove from modal
-        const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
-        if (eventItem) {
-            eventItem.remove();
+        // Get the archived event data
+        const archivedEventRef = doc(db, "events_archive", eventId);
+        const archivedEventSnap = await getDoc(archivedEventRef);
+        
+        if (!archivedEventSnap.exists()) {
+            alert('Archived event not found!');
+            return;
         }
+        
+        const archivedData = archivedEventSnap.data();
+        
+        // Remove archivedAt field and add restoredAt
+        const { archivedAt, ...eventData } = archivedData;
+        eventData.restoredAt = new Date().toISOString();
+        
+        console.log('Adding event back to events collection');
+        
+        // Add the event back to the main events collection
+        await addDoc(eventsRef, eventData);
+        
+        console.log('Deleting from events_archive collection');
+        
+        // Delete from archive collection
+        await deleteDoc(archivedEventRef);
+        
+        console.log('Successfully restored event, updating UI');
+        
+        // Remove from arrays
+        allArchiveItems = allArchiveItems.filter(item => item.id !== eventId);
+        filteredArchiveItems = filteredArchiveItems.filter(item => item.id !== eventId);
+        selectedArchivedEvents.delete(eventId);
+        
+        // Re-render the list
+        renderArchiveItems();
+        updateArchiveModalButtons();
         
         // Refresh main events list
         await fetchAndRenderEvents();
@@ -968,19 +1157,178 @@ async function deleteSingleArchivedEvent(eventId) {
     if (!confirm('Are you sure you want to permanently delete this archived event? This action cannot be undone.')) return;
     
     try {
-        await deleteDoc(doc(db, "events", eventId));
+        console.log('Deleting archived event from events_archive collection:', eventId);
         
-        // Remove from modal
-        const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
-        if (eventItem) {
-            eventItem.remove();
-        }
+        // Delete from events_archive collection
+        await deleteDoc(doc(db, "events_archive", eventId));
+        
+        console.log('Successfully deleted archived event');
+        
+        // Remove from arrays
+        allArchiveItems = allArchiveItems.filter(item => item.id !== eventId);
+        filteredArchiveItems = filteredArchiveItems.filter(item => item.id !== eventId);
+        selectedArchivedEvents.delete(eventId);
+        
+        // Re-render the list
+        renderArchiveItems();
+        updateArchiveModalButtons();
         
         alert('Event deleted permanently!');
         
     } catch (error) {
         console.error('Error deleting archived event:', error);
         alert('Error deleting event: ' + error.message);
+    }
+}
+
+// Bulk action functions
+function selectAllArchiveItems() {
+    const allCheckboxes = document.querySelectorAll('.archive-event-checkbox');
+    const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+    
+    allCheckboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        const eventId = cb.dataset.eventId;
+        if (cb.checked) {
+            selectedArchivedEvents.add(eventId);
+        } else {
+            selectedArchivedEvents.delete(eventId);
+        }
+    });
+    
+    updateArchiveModalButtons();
+}
+
+async function restoreSelectedArchiveItems() {
+    if (selectedArchivedEvents.size === 0) return;
+    
+    const count = selectedArchivedEvents.size;
+    console.log('Attempting to restore', count, 'events:', Array.from(selectedArchivedEvents));
+    if (!confirm(`Are you sure you want to restore ${count} archived event(s)?`)) return;
+    
+    try {
+        console.log('Starting bulk restore operation');
+        
+        const restorePromises = Array.from(selectedArchivedEvents).map(async (eventId) => {
+            console.log('Restoring event:', eventId);
+            
+            // Get the archived event data
+            const archivedEventRef = doc(db, "events_archive", eventId);
+            const archivedEventSnap = await getDoc(archivedEventRef);
+            
+            if (!archivedEventSnap.exists()) {
+                console.warn('Archived event not found:', eventId);
+                return;
+            }
+            
+            const archivedData = archivedEventSnap.data();
+            
+            // Remove archivedAt field and add restoredAt
+            const { archivedAt, ...eventData } = archivedData;
+            eventData.restoredAt = new Date().toISOString();
+            
+            // Add the event back to the main events collection
+            await addDoc(eventsRef, eventData);
+            
+            // Delete from archive collection
+            await deleteDoc(archivedEventRef);
+            
+            console.log('Successfully restored event:', eventId);
+        });
+        
+        await Promise.all(restorePromises);
+        console.log('All events restored successfully');
+        
+        // Remove from arrays
+        allArchiveItems = allArchiveItems.filter(item => !selectedArchivedEvents.has(item.id));
+        filteredArchiveItems = filteredArchiveItems.filter(item => !selectedArchivedEvents.has(item.id));
+        
+        selectedArchivedEvents.clear();
+        renderArchiveItems();
+        updateArchiveModalButtons();
+        
+        // Refresh main events list
+        await fetchAndRenderEvents();
+        alert(`${count} event(s) restored successfully!`);
+        
+    } catch (error) {
+        console.error('Error restoring selected events:', error);
+        alert('Error restoring events: ' + error.message);
+    }
+}
+
+async function deleteSelectedArchiveItems() {
+    if (selectedArchivedEvents.size === 0) return;
+    
+    const count = selectedArchivedEvents.size;
+    if (!confirm(`Are you sure you want to permanently delete ${count} archived event(s)? This action cannot be undone.`)) return;
+    
+    try {
+        console.log('Starting bulk delete operation for', count, 'events');
+        
+        const deletePromises = Array.from(selectedArchivedEvents).map(eventId => {
+            console.log('Deleting archived event:', eventId);
+            return deleteDoc(doc(db, "events_archive", eventId));
+        });
+        
+        await Promise.all(deletePromises);
+        console.log('All events deleted successfully');
+        
+        // Remove from arrays
+        allArchiveItems = allArchiveItems.filter(item => !selectedArchivedEvents.has(item.id));
+        filteredArchiveItems = filteredArchiveItems.filter(item => !selectedArchivedEvents.has(item.id));
+        
+        selectedArchivedEvents.clear();
+        renderArchiveItems();
+        updateArchiveModalButtons();
+        
+        alert(`${count} event(s) deleted permanently!`);
+        
+    } catch (error) {
+        console.error('Error deleting selected events:', error);
+        alert('Error deleting events: ' + error.message);
+    }
+}
+
+async function clearAllArchiveItems() {
+    const activeFilter = document.querySelector('.filter-option.active')?.dataset.filter;
+    let confirmMessage = 'Delete ALL archived events? This action cannot be undone.';
+    
+    if (activeFilter === 'recent') {
+        confirmMessage = 'Delete ALL recent archived events (last 30 days)? This action cannot be undone.';
+    } else if (activeFilter === 'old') {
+        confirmMessage = 'Delete ALL old archived events (older than 30 days)? This action cannot be undone.';
+    }
+    
+    if (!confirm(confirmMessage)) return;
+    
+    try {
+        console.log('Starting clear all operation');
+        
+        // Delete only filtered items
+        const itemsToDelete = filteredArchiveItems.map(item => item.id);
+        
+        const deletePromises = itemsToDelete.map(id => {
+            console.log('Deleting archived event:', id);
+            return deleteDoc(doc(db, "events_archive", id));
+        });
+        
+        await Promise.all(deletePromises);
+        console.log('All filtered events deleted successfully');
+        
+        // Remove from arrays
+        allArchiveItems = allArchiveItems.filter(item => !itemsToDelete.includes(item.id));
+        filteredArchiveItems = [];
+        selectedArchivedEvents.clear();
+        
+        renderArchiveItems();
+        updateArchiveModalButtons();
+        
+        alert(`${itemsToDelete.length} event(s) deleted permanently!`);
+        
+    } catch (error) {
+        console.error('Error clearing archive items:', error);
+        alert('Error clearing events: ' + error.message);
     }
 }
 
@@ -1021,96 +1369,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const selectAllArchiveBtn = document.getElementById('selectAllArchiveBtn');
     if (selectAllArchiveBtn) {
-        selectAllArchiveBtn.onclick = function() {
-            const allCheckboxes = document.querySelectorAll('.archive-event-checkbox');
-            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
-            
-            allCheckboxes.forEach(cb => {
-                cb.checked = !allChecked;
-                const eventId = cb.dataset.eventId;
-                if (cb.checked) {
-                    selectedArchivedEvents.add(eventId);
-                } else {
-                    selectedArchivedEvents.delete(eventId);
-                }
-            });
-            
-            updateArchiveModalButtons();
-        };
+        selectAllArchiveBtn.onclick = selectAllArchiveItems;
     }
     
     const deleteSelectedArchiveBtn = document.getElementById('deleteSelectedArchiveBtn');
     if (deleteSelectedArchiveBtn) {
-        deleteSelectedArchiveBtn.onclick = async function() {
-            if (selectedArchivedEvents.size === 0) return;
-            
-            const count = selectedArchivedEvents.size;
-            if (!confirm(`Are you sure you want to permanently delete ${count} archived event(s)? This action cannot be undone.`)) return;
-            
-            try {
-                const deletePromises = Array.from(selectedArchivedEvents).map(eventId => 
-                    deleteDoc(doc(db, "events", eventId))
-                );
-                
-                await Promise.all(deletePromises);
-                
-                // Remove from modal
-                selectedArchivedEvents.forEach(eventId => {
-                    const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
-                    if (eventItem) {
-                        eventItem.remove();
-                    }
-                });
-                
-                selectedArchivedEvents.clear();
-                updateArchiveModalButtons();
-                alert(`${count} event(s) deleted permanently!`);
-                
-            } catch (error) {
-                console.error('Error deleting selected events:', error);
-                alert('Error deleting events: ' + error.message);
-            }
-        };
+        deleteSelectedArchiveBtn.onclick = deleteSelectedArchiveItems;
     }
     
     const restoreSelectedArchiveBtn = document.getElementById('restoreSelectedArchiveBtn');
     if (restoreSelectedArchiveBtn) {
-        restoreSelectedArchiveBtn.onclick = async function() {
-            if (selectedArchivedEvents.size === 0) return;
-            
-            const count = selectedArchivedEvents.size;
-            if (!confirm(`Are you sure you want to restore ${count} archived event(s)?`)) return;
-            
-            try {
-                const restorePromises = Array.from(selectedArchivedEvents).map(eventId => 
-                    updateDoc(doc(db, "events", eventId), {
-                        archived: false,
-                        restoredAt: new Date().toISOString()
-                    })
-                );
-                
-                await Promise.all(restorePromises);
-                
-                // Remove from modal
-                selectedArchivedEvents.forEach(eventId => {
-                    const eventItem = document.querySelector(`[data-event-id="${eventId}"]`);
-                    if (eventItem) {
-                        eventItem.remove();
-                    }
-                });
-                
-                selectedArchivedEvents.clear();
-                updateArchiveModalButtons();
-                
-                // Refresh main events list
-                await fetchAndRenderEvents(false);
-                alert(`${count} event(s) restored successfully!`);
-                
-            } catch (error) {
-                console.error('Error restoring selected events:', error);
-                alert('Error restoring events: ' + error.message);
-            }
-        };
+        restoreSelectedArchiveBtn.onclick = restoreSelectedArchiveItems;
+    }
+    
+    const clearAllArchiveBtn = document.getElementById('clearAllArchiveBtn');
+    if (clearAllArchiveBtn) {
+        clearAllArchiveBtn.onclick = clearAllArchiveItems;
     }
     
     // Handle checkbox changes in archive modal
@@ -1125,4 +1399,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateArchiveModalButtons();
         }
     });
+    
+    // Make functions globally accessible for onclick handlers
+    window.restoreSingleEvent = restoreSingleEvent;
+    window.deleteSingleArchivedEvent = deleteSingleArchivedEvent;
 });

@@ -261,29 +261,165 @@ body, html {
 .modal-content {
     background: #fff;
     border-radius: 16px;
-    padding: 24px 24px 16px 24px;
+    padding: 0;
     min-width: 340px;
     max-width: 95vw;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    overflow: hidden;
 }
 
 .modal-header {
     background: #206233;
     color: #fff;
-    border-radius: 12px;
+    border-radius: 16px 16px 0 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
+    padding: 16px 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
+    color: #ffffff;
+}
+
+.modal-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Archive search and filter styles */
+.archive-search-container {
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: #6c757d;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.archive-search-input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #ffffff;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.archive-search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.archive-search-input:focus + .search-icon,
+.archive-search-input:focus ~ .search-icon {
+    color: #007bff;
+}
+
+/* Filter dropdown styles */
+.filter-dropdown-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.filter-dropdown-btn {
+    padding: 10px 12px;
+    border: 2px solid #e9ecef;
+    background: #ffffff;
+    color: #495057;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: space-between;
+    box-sizing: border-box;
+}
+
+.filter-dropdown-btn:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
+
+.filter-dropdown-btn:hover svg {
+    color: #007bff;
+}
+
+.dropdown-arrow {
+    transition: transform 0.2s;
+}
+
+.filter-dropdown-btn.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.filter-option {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+    color: #495057;
+}
+
+.filter-option:hover {
+    background: #f8f9fa;
+}
+
+.filter-option.active {
+    background: #007bff;
+    color: #ffffff;
+}
+
+.filter-option.active svg {
     color: #ffffff;
 }
 
@@ -305,7 +441,9 @@ body, html {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
-    margin-top: 8px;
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-radius: 0 0 16px 16px;
 }
 
 .modal-actions button {
@@ -325,15 +463,51 @@ body, html {
 
 /* Small action buttons inside archive modal */
 .mini-btn {
-    padding: 6px 10px;
+    padding: 8px 16px;
     border-radius: 8px;
-    border: 1px solid #216a39;
+    border: 1px solid #206233;
     background: #ffffff;
-    color: #216a39;
-    font-size: 12px;
+    color: #206233;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s;
 }
 
-.mini-btn:hover { background: #e8f5ea; }
-.mini-btn.danger { border-color: #c82333; color: #c82333; }
-.mini-btn.danger:hover { background: #fde7ea; }
+.mini-btn:hover { 
+    background: #e8f5ea; 
+    border-color: #174b25;
+}
+
+.mini-btn.primary {
+    background: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+}
+
+.mini-btn.primary:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.mini-btn.danger { 
+    background: #dc3545;
+    color: #ffffff;
+    border-color: #dc3545;
+}
+
+.mini-btn.danger:hover { 
+    background: #c82333;
+    border-color: #c82333;
+}
+
+.mini-btn.warning {
+    background: #ffc107;
+    color: #212529;
+    border-color: #ffc107;
+}
+
+.mini-btn.warning:hover {
+    background: #e0a800;
+    border-color: #e0a800;
+}

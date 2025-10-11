@@ -195,14 +195,58 @@
                     </svg>
                 </button>
             </div>
-            <div id="archiveList" style="max-height:500px; overflow-y:auto; padding:16px;">
-                <!-- Archived events will be loaded here -->
+            <div class="modal-body">
+                <div class="archive-search-container">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="text" id="archiveSearchInput" placeholder="Search archived events..." class="archive-search-input">
+                    </div>
+                    <div class="filter-dropdown-wrapper">
+                        <button type="button" id="filterDropdownBtn" class="filter-dropdown-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M3 6h18M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span id="filterDropdownText">All</span>
+                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div id="filterDropdownMenu" class="filter-dropdown-menu" style="display: none;">
+                            <div class="filter-option" data-filter="all">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                All
+                            </div>
+                            <div class="filter-option" data-filter="recent">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Recent
+                            </div>
+                            <div class="filter-option" data-filter="old">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Older
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="archiveList" style="max-height:400px; overflow-y:auto;">
+                    <!-- Archived events will be loaded here -->
+                </div>
             </div>
             <div class="modal-actions">
                 <div style="flex:1;"></div>
                 <button type="button" id="selectAllArchiveBtn" class="mini-btn primary">Select All</button>
-                <button type="button" id="deleteSelectedArchiveBtn" class="mini-btn danger">Delete Selected</button>
                 <button type="button" id="restoreSelectedArchiveBtn" class="mini-btn success">Restore Selected</button>
+                <button type="button" id="deleteSelectedArchiveBtn" class="mini-btn danger">Delete Selected</button>
+                <button type="button" id="clearAllArchiveBtn" class="mini-btn warning">Clear All</button>
             </div>
         </div>
     </div>
@@ -421,7 +465,8 @@
 
             // Load buildings and floors into filters
             (async function preloadBuildingFloorFilters(){
-                const db = safeGetDb();
+                // Use the global firebase instance from the compat SDK
+                const db = firebase.firestore();
                 if (!db) return;
                 try {
                     const [bSnap, fSnap] = await Promise.all([
