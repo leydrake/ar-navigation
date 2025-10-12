@@ -284,6 +284,29 @@ body, html {
     margin: 0;
 }
 
+.analytics-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.analytics-filter {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.analytics-filter:focus {
+    outline: none;
+    border-color: #206233;
+    box-shadow: 0 0 0 2px rgba(32, 98, 51, 0.1);
+}
+
 .refresh-analytics-btn {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
