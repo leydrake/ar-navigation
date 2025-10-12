@@ -23,6 +23,7 @@ body, html {
     min-height: 100vh;
     background: #f8f9fa;
     gap: 1.5rem;
+   
 }
 
 .loading-spinner {
@@ -32,6 +33,9 @@ body, html {
     border-top: 4px solid #206233;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin: 0 auto;
+   
+   
 }
 
 @keyframes spin {
@@ -43,6 +47,8 @@ body, html {
     font-size: 1.1rem;
     color: #6c757d;
     font-weight: 500;
+    text-align: center;
+    margin: 0;
 }
 
 /* Main Container */

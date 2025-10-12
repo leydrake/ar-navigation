@@ -425,25 +425,32 @@
                 // Get all analytics records
                 const analyticsSnapshot = await db.collection('analytics').doc('data').collection('summary').get();
                 
-                if (analyticsSnapshot.empty) {
+                // Get all coordinates
+                const coordinatesSnapshot = await db.collection('coordinates').get();
+                
+                if (coordinatesSnapshot.empty) {
                     currentData = [];
                     return;
                 }
 
-                // Get all coordinate names for comparison
-                const coordinatesSnapshot = await db.collection('coordinates').get();
+                // Create a map of analytics data by name for quick lookup
+                const analyticsMap = new Map();
+                analyticsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const name = (data.name || doc.id).toLowerCase().trim();
+                    analyticsMap.set(name, data);
+                });
+
+                // Create a set of existing coordinate names for cleanup
                 const existingCoordinates = new Set();
-                
                 coordinatesSnapshot.forEach(doc => {
                     const data = doc.data();
                     const name = data.name || data.buildingName || doc.id;
                     existingCoordinates.add(name.toLowerCase().trim());
                 });
 
-                // Find orphaned analytics records and clean them up automatically
+                // Clean up orphaned analytics records
                 const orphanedRecords = [];
-                const validRecords = [];
-                
                 analyticsSnapshot.forEach(doc => {
                     const data = doc.data();
                     const analyticsName = (data.name || doc.id).toLowerCase().trim();
@@ -453,11 +460,6 @@
                             id: doc.id,
                             name: data.name || doc.id,
                             completedCount: data.completedCount || 0
-                        });
-                    } else {
-                        validRecords.push({
-                            doc: doc,
-                            data: data
                         });
                     }
                 });
@@ -476,10 +478,23 @@
                     console.log(`Successfully auto-deleted ${orphanedRecords.length} orphaned analytics records`);
                 }
 
-                // Process valid records
+                // Process all coordinates - include those with and without analytics data
                 currentData = [];
-                validRecords.forEach(({ doc, data }) => {
-                    const processedData = processDocumentData(data);
+                coordinatesSnapshot.forEach(doc => {
+                    const coordinateData = doc.data();
+                    const coordinateName = coordinateData.name || coordinateData.buildingName || doc.id;
+                    const analyticsName = coordinateName.toLowerCase().trim();
+                    
+                    // Get analytics data if it exists, otherwise use default values
+                    const analyticsData = analyticsMap.get(analyticsName) || {
+                        name: coordinateName,
+                        completedCount: 0,
+                        lastCompleted: null,
+                        lastTravelTime: null
+                    };
+
+                    // Process the data
+                    const processedData = processDocumentData(analyticsData);
                     const filteredData = filterFieldsByDataType(processedData, 'analytics');
                     
                     currentData.push({
@@ -487,7 +502,7 @@
                     });
                 });
                 
-                // Sort by completedCount to show most popular first
+                // Sort by completedCount to show most popular first (including 0 counts)
                 currentData.sort((a, b) => (b.completedCount || 0) - (a.completedCount || 0));
                 
             } catch (error) {
@@ -1018,7 +1033,7 @@
 
         // UI Helper functions
         function showLoading() {
-            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('loadingState').style.display = 'flex';
             document.getElementById('mainContainer').style.display = 'none';
         }
 
