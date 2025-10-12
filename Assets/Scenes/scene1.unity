@@ -189,6 +189,7 @@ MonoBehaviour:
   termsPageUXML: {fileID: 9197481963319205126, guid: ef645c794a157474288e1401908b2fe7, type: 3}
   permissionPageUXML: {fileID: 9197481963319205126, guid: ebb100c1c8c3b834fa25a4980983d4cd, type: 3}
   nextSceneName: SampleScene
+  tutorialURL: https://navigatemycampus.capstone-two.com/tutorial
 --- !u!1 &1811606774
 GameObject:
   m_ObjectHideFlags: 0

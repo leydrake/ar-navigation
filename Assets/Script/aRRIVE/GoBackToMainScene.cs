@@ -7,4 +7,11 @@ public class GoBackToMainScene : MonoBehaviour
     {
         SceneManager.LoadScene("SampleScene");
     }
+
+    public void GoBackToScene1()
+    {
+        SceneManager.LoadScene("scene1");
+    }
+
+
 }
