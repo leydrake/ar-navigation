@@ -58,6 +58,7 @@
                         <option value="admin_credentials">Admin Users</option>
                         <option value="coordinates">Locations</option>
                         <option value="buildings">Buildings</option>
+                        <option value="analytics">Analytics Summary</option>
                     </select>
                 </div>
 
@@ -322,6 +323,12 @@
             if (archiveSupportedCollections.includes(dataType)) {
                 archiveStatusGroup.style.display = 'block';
             }
+            
+            // Analytics data doesn't need time range or archive filters
+            if (dataType === 'analytics') {
+                timeRangeGroup.style.display = 'none';
+                archiveStatusGroup.style.display = 'none';
+            }
         }
 
         function onTimeRangeChange() {
@@ -347,51 +354,56 @@
             showLoading();
 
             try {
-                let query = db.collection(dataType);
-                
-                // Apply time filter based on collection type
-                if (timeRange !== 'all') {
-                    const dateFilter = getDateFilter(timeRange);
-                    if (dateFilter) {
-                        // Different collections use different timestamp field names
-                        const timestampField = getTimestampField(dataType);
-                        if (timestampField) {
-                            query = query.where(timestampField, '>=', dateFilter.start)
-                                       .where(timestampField, '<=', dateFilter.end);
+                // Handle analytics data differently
+                if (dataType === 'analytics') {
+                    await loadAnalyticsData();
+                } else {
+                    let query = db.collection(dataType);
+                    
+                    // Apply time filter based on collection type
+                    if (timeRange !== 'all') {
+                        const dateFilter = getDateFilter(timeRange);
+                        if (dateFilter) {
+                            // Different collections use different timestamp field names
+                            const timestampField = getTimestampField(dataType);
+                            if (timestampField) {
+                                query = query.where(timestampField, '>=', dateFilter.start)
+                                           .where(timestampField, '<=', dateFilter.end);
+                            }
                         }
                     }
-                }
 
-                // Apply archive filter for collections that support it
-                if (archiveStatus !== 'all' && supportsArchive(dataType)) {
-                    query = query.where('archived', '==', archiveStatus === 'archived');
-                }
-
-                // Order by appropriate field (skip for buildings to avoid index issues)
-                const orderField = getOrderField(dataType);
-                if (orderField && dataType !== 'buildings') {
-                    if (orderField === 'name') {
-                        query = query.orderBy(orderField, 'asc');
-                    } else {
-                        query = query.orderBy(orderField, 'desc');
+                    // Apply archive filter for collections that support it
+                    if (archiveStatus !== 'all' && supportsArchive(dataType)) {
+                        query = query.where('archived', '==', archiveStatus === 'archived');
                     }
-                }
 
-                const snapshot = await query.get();
-                currentData = [];
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Convert Firestore timestamps to readable format
-                    const processedData = processDocumentData(data);
+                    // Order by appropriate field (skip for buildings to avoid index issues)
+                    const orderField = getOrderField(dataType);
+                    if (orderField && dataType !== 'buildings') {
+                        if (orderField === 'name') {
+                            query = query.orderBy(orderField, 'asc');
+                        } else {
+                            query = query.orderBy(orderField, 'desc');
+                        }
+                    }
+
+                    const snapshot = await query.get();
+                    currentData = [];
                     
-                    // Filter fields based on data type
-                    const filteredData = filterFieldsByDataType(processedData, dataType);
-                    
-                    currentData.push({
-                        ...filteredData
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        // Convert Firestore timestamps to readable format
+                        const processedData = processDocumentData(data);
+                        
+                        // Filter fields based on data type
+                        const filteredData = filterFieldsByDataType(processedData, dataType);
+                        
+                        currentData.push({
+                            ...filteredData
+                        });
                     });
-                });
+                }
 
                 filteredData = [...currentData];
                 currentPage = 1;
@@ -407,6 +419,83 @@
             }
         }
 
+        // Load analytics data from analytics/data/summary collection with automatic cleanup
+        async function loadAnalyticsData() {
+            try {
+                // Get all analytics records
+                const analyticsSnapshot = await db.collection('analytics').doc('data').collection('summary').get();
+                
+                if (analyticsSnapshot.empty) {
+                    currentData = [];
+                    return;
+                }
+
+                // Get all coordinate names for comparison
+                const coordinatesSnapshot = await db.collection('coordinates').get();
+                const existingCoordinates = new Set();
+                
+                coordinatesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const name = data.name || data.buildingName || doc.id;
+                    existingCoordinates.add(name.toLowerCase().trim());
+                });
+
+                // Find orphaned analytics records and clean them up automatically
+                const orphanedRecords = [];
+                const validRecords = [];
+                
+                analyticsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const analyticsName = (data.name || doc.id).toLowerCase().trim();
+                    
+                    if (!existingCoordinates.has(analyticsName)) {
+                        orphanedRecords.push({
+                            id: doc.id,
+                            name: data.name || doc.id,
+                            completedCount: data.completedCount || 0
+                        });
+                    } else {
+                        validRecords.push({
+                            doc: doc,
+                            data: data
+                        });
+                    }
+                });
+
+                // Automatically delete orphaned records if any exist
+                if (orphanedRecords.length > 0) {
+                    console.log(`Auto-cleaning ${orphanedRecords.length} orphaned analytics records:`, orphanedRecords.map(r => r.name));
+                    
+                    const batch = db.batch();
+                    orphanedRecords.forEach(record => {
+                        const docRef = db.collection('analytics').doc('data').collection('summary').doc(record.id);
+                        batch.delete(docRef);
+                    });
+
+                    await batch.commit();
+                    console.log(`Successfully auto-deleted ${orphanedRecords.length} orphaned analytics records`);
+                }
+
+                // Process valid records
+                currentData = [];
+                validRecords.forEach(({ doc, data }) => {
+                    const processedData = processDocumentData(data);
+                    const filteredData = filterFieldsByDataType(processedData, 'analytics');
+                    
+                    currentData.push({
+                        ...filteredData
+                    });
+                });
+                
+                // Sort by completedCount to show most popular first
+                currentData.sort((a, b) => (b.completedCount || 0) - (a.completedCount || 0));
+                
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+                throw error;
+            }
+        }
+
         // Get the appropriate timestamp field for each collection
         function getTimestampField(dataType) {
             const timestampFields = {
@@ -414,7 +503,8 @@
                 'reviews': 'createdAt',
                 'admin_credentials': 'createdAt',
                 'coordinates': 'createdAt',
-                'buildings': null // Buildings don't have timestamps
+                'buildings': null, // Buildings don't have timestamps
+                'analytics': null // Analytics doesn't use timestamps for filtering
             };
             return timestampFields[dataType] || 'timestamp';
         }
@@ -426,7 +516,8 @@
                 'reviews': 'createdAt',
                 'admin_credentials': 'createdAt',
                 'coordinates': 'createdAt',
-                'buildings': 'name'
+                'buildings': 'name',
+                'analytics': 'completedCount'
             };
             return orderFields[dataType] || 'timestamp';
         }
@@ -461,6 +552,17 @@
 
         // Filter fields based on data type
         function filterFieldsByDataType(data, dataType) {
+            if (dataType === 'analytics') {
+                // Format analytics data with popularity information
+                return {
+                    destination: data.name || 'Unknown Destination',
+                    completedCount: data.completedCount || 0,
+                    lastCompleted: formatDateTime(data.lastCompleted),
+                    lastTravelTime: data.lastTravelTime ? `${data.lastTravelTime} minutes` : 'Not available',
+                    popularity: getPopularityRank(data.completedCount || 0)
+                };
+            }
+            
             if (dataType === 'admin_credentials') {
                 // Format admin user data with proper labels and formatting
                 const permissions = Array.isArray(data.permissions) ? data.permissions : [];
@@ -516,6 +618,16 @@
             
             // For other data types, return all fields
             return data;
+        }
+
+        // Get popularity rank based on completed count
+        function getPopularityRank(completedCount) {
+            if (completedCount === 0) return 'Not Popular';
+            if (completedCount >= 50) return 'Very Popular';
+            if (completedCount >= 20) return 'Popular';
+            if (completedCount >= 10) return 'Moderately Popular';
+            if (completedCount >= 5) return 'Somewhat Popular';
+            return 'Less Popular';
         }
 
         // Format role names for better display
@@ -609,7 +721,14 @@
 
             // Update stats
             document.getElementById('recordCount').textContent = filteredData.length;
-            document.getElementById('dateRange').textContent = getDateRangeText();
+            
+            // Update date range text based on data type
+            const dataType = document.getElementById('dataType').value;
+            if (dataType === 'analytics') {
+                document.getElementById('dateRange').textContent = getAnalyticsSummaryText();
+            } else {
+                document.getElementById('dateRange').textContent = getDateRangeText();
+            }
 
             // Update table
             updateTable(pageData);
@@ -703,6 +822,16 @@
                 return `${startDate} to ${endDate}`;
             }
             return timeRange.charAt(0).toUpperCase() + timeRange.slice(1);
+        }
+
+        function getAnalyticsSummaryText() {
+            if (filteredData.length === 0) return 'No destinations found';
+            
+            const totalCompletions = filteredData.reduce((sum, item) => sum + (item.completedCount || 0), 0);
+            const mostPopular = filteredData[0];
+            const leastPopular = filteredData[filteredData.length - 1];
+            
+            return `Total: ${totalCompletions} completions | Most: ${mostPopular.destination} (${mostPopular.completedCount}) | Least: ${leastPopular.destination} (${leastPopular.completedCount})`;
         }
 
         // Export functions
@@ -917,6 +1046,7 @@
         function updateExportStatus(message) {
             document.getElementById('exportStatus').textContent = message;
         }
+
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', initializePage);
