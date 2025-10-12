@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Networking;
 using TMPro;
+using System;
 
 public class DropdownScrollBinder : MonoBehaviour
 {
@@ -28,20 +28,20 @@ public class DropdownScrollBinder : MonoBehaviour
 	public bool delayOneFrameBeforeBuild = true;
 	public bool verboseLogging = false;
 
-	[Header("Image Loading")]
-	public bool loadImages = true;
-	public Sprite defaultImage; // Fallback image when loading fails or no image URL
-	public float imageLoadTimeout = 10f; // Timeout for image loading in seconds
+	[Header("Data Source")]
+	public bool useLocationData = false; // If true, use LocationData instead of EventData
+	public LocationData[] locationDataArray; // Array of location data
+
+	[Header("Default Image")]
+	public Sprite defaultLocationSprite; // Default image for locations without image data
 
 	private readonly List<GameObject> spawned = new List<GameObject>();
-	private readonly Dictionary<string, Sprite> imageCache = new Dictionary<string, Sprite>();
-
 
 [SerializeField]
 private AppCanvas appCanvas;
 
 [SerializeField]
-private EventsFetcher eventsFetcher; // Reference to get EventData for image loading
+private EventsFetcher eventsFetcher; // Reference to get EventData
 	void Awake()
 	{
 		if ((dropdown == null && tmpDropdown == null) || scrollRect == null || content == null || rowPrefab == null)
@@ -116,10 +116,87 @@ private EventsFetcher eventsFetcher; // Reference to get EventData for image loa
 			if (txt != null) txt.text = optionText;
 			if (tmpTxt != null) tmpTxt.text = optionText;
 
-			// Load image for this row if enabled
-			if (loadImages)
+			// Set image for destination if using location data
+			if (useLocationData && locationDataArray != null && i >= 0 && i < locationDataArray.Length)
 			{
-				LoadImageForRow(go, i);
+				var imageForDestination = FindImageForDestination(go);
+				if (imageForDestination != null)
+				{
+					Sprite sprite = null;
+					
+					if (!string.IsNullOrEmpty(locationDataArray[i].Image))
+					{
+						var texture = Base64ToTexture2D(locationDataArray[i].Image);
+						
+						if (texture != null)
+						{
+							sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+							
+							if (verboseLogging)
+							{
+								Debug.Log($"[DropdownScrollBinder] Set custom image for location '{optionText}' - Image size: {texture.width}x{texture.height}");
+							}
+						}
+						else
+						{
+							Debug.LogWarning($"[DropdownScrollBinder] Failed to convert base64 image for location '{optionText}', using default sprite");
+						}
+					}
+					
+					// Use default sprite if no custom image or conversion failed
+					if (sprite == null)
+					{
+						if (defaultLocationSprite != null)
+						{
+							sprite = defaultLocationSprite;
+							
+							if (verboseLogging)
+							{
+								Debug.Log($"[DropdownScrollBinder] Using default sprite for location '{optionText}'");
+							}
+						}
+						else
+						{
+							// Fallback to test sprite if no default sprite is assigned
+							sprite = CreateTestSprite();
+							Debug.LogWarning($"[DropdownScrollBinder] No default sprite assigned, using test sprite for location '{optionText}'");
+						}
+					}
+					
+					if (sprite != null)
+					{
+						imageForDestination.sprite = sprite;
+						
+						// Force the image to be visible
+						imageForDestination.color = Color.white;
+						imageForDestination.enabled = true;
+						
+						// Check and fix RectTransform
+						var rectTransform = imageForDestination.GetComponent<RectTransform>();
+						if (rectTransform != null)
+						{
+							// Set a minimum size if it's too small
+							if (rectTransform.sizeDelta.x < 10 || rectTransform.sizeDelta.y < 10)
+							{
+								rectTransform.sizeDelta = new Vector2(100, 100);
+								Debug.Log($"[DropdownScrollBinder] Fixed ImageForDestination size for '{optionText}'");
+							}
+						}
+						
+						if (verboseLogging)
+						{
+							Debug.Log($"[DropdownScrollBinder] Sprite set: {sprite != null}, Image color: {imageForDestination.color}");
+							Debug.Log($"[DropdownScrollBinder] Image enabled: {imageForDestination.enabled}");
+							Debug.Log($"[DropdownScrollBinder] ImageForDestination size: {rectTransform?.sizeDelta}");
+							Debug.Log($"[DropdownScrollBinder] ImageForDestination position: {rectTransform?.anchoredPosition}");
+							Debug.Log($"[DropdownScrollBinder] ImageForDestination active: {imageForDestination.gameObject.activeInHierarchy}");
+						}
+					}
+				}
+				else
+				{
+					Debug.LogWarning($"[DropdownScrollBinder] ImageForDestination component not found for location '{optionText}'");
+				}
 			}
 
 			int idx = i;
@@ -184,20 +261,41 @@ private EventsFetcher eventsFetcher; // Reference to get EventData for image loa
 
 	private int GetOptionsCount()
 	{
-		if (dropdown != null && dropdown.options != null) return dropdown.options.Count;
-		if (tmpDropdown != null && tmpDropdown.options != null) return tmpDropdown.options.Count;
+		if (useLocationData)
+		{
+			// Use LocationData array count
+			return locationDataArray?.Length ?? 0;
+		}
+		else
+		{
+			// Use dropdown options count (original behavior)
+			if (dropdown != null && dropdown.options != null) return dropdown.options.Count;
+			if (tmpDropdown != null && tmpDropdown.options != null) return tmpDropdown.options.Count;
+		}
 		return 0;
 	}
 
 	private string GetOptionText(int index)
 	{
-		if (dropdown != null && dropdown.options != null && index >= 0 && index < dropdown.options.Count)
+		if (useLocationData)
 		{
-			return dropdown.options[index].text;
+			// Use LocationData for text
+			if (locationDataArray != null && index >= 0 && index < locationDataArray.Length)
+			{
+				return locationDataArray[index]?.Name ?? string.Empty;
+			}
 		}
-		if (tmpDropdown != null && tmpDropdown.options != null && index >= 0 && index < tmpDropdown.options.Count)
+		else
 		{
-			return tmpDropdown.options[index].text;
+			// Use dropdown options for text (original behavior)
+			if (dropdown != null && dropdown.options != null && index >= 0 && index < dropdown.options.Count)
+			{
+				return dropdown.options[index].text;
+			}
+			if (tmpDropdown != null && tmpDropdown.options != null && index >= 0 && index < tmpDropdown.options.Count)
+			{
+				return tmpDropdown.options[index].text;
+			}
 		}
 		return string.Empty;
 	}
@@ -265,188 +363,201 @@ private EventsFetcher eventsFetcher; // Reference to get EventData for image loa
 		selectedLabel.text = text;
 	}
 
-	private void LoadImageForRow(GameObject rowObject, int index)
+	/// <summary>
+	/// Sets the location data array and enables location data mode
+	/// </summary>
+	/// <param name="locations">Array of location data</param>
+	public void SetLocationData(LocationData[] locations)
 	{
-		// Find the ImageForDestination component in the row
-		Transform imageTransform = rowObject.transform.Find("ImageForDestination");
-		if (imageTransform == null)
-		{
-			if (verboseLogging)
-			{
-				Debug.LogWarning($"[DropdownScrollBinder] ImageForDestination not found in row {index}");
-			}
-			return;
-		}
-
-		Image imageComponent = imageTransform.GetComponent<Image>();
-		if (imageComponent == null)
-		{
-			if (verboseLogging)
-			{
-				Debug.LogWarning($"[DropdownScrollBinder] Image component not found on ImageForDestination for row {index}");
-			}
-			return;
-		}
-
-		// Get the image URL from EventData
-		string imageUrl = GetImageUrlForIndex(index);
-		if (string.IsNullOrEmpty(imageUrl))
-		{
-			if (verboseLogging)
-			{
-				Debug.Log($"[DropdownScrollBinder] No image URL for row {index}, using default image");
-			}
-			imageComponent.sprite = defaultImage;
-			return;
-		}
-
-		// Check if image is already cached
-		if (imageCache.ContainsKey(imageUrl))
-		{
-			imageComponent.sprite = imageCache[imageUrl];
-			if (verboseLogging)
-			{
-				Debug.Log($"[DropdownScrollBinder] Using cached image for row {index}");
-			}
-			return;
-		}
-
-		// Load image asynchronously
-		StartCoroutine(LoadImageCoroutine(imageUrl, imageComponent, index));
-	}
-
-	private string GetImageUrlForIndex(int index)
-	{
-		if (eventsFetcher == null || eventsFetcher.events == null || index < 0 || index >= eventsFetcher.events.Count)
-		{
-			return string.Empty;
-		}
-
-		EventData eventData = eventsFetcher.events[index];
-		return eventData?.image ?? string.Empty;
-	}
-
-	private IEnumerator LoadImageCoroutine(string imageUrl, Image imageComponent, int rowIndex)
-	{
+		locationDataArray = locations;
+		useLocationData = true;
+		
 		if (verboseLogging)
 		{
-			Debug.Log($"[DropdownScrollBinder] Loading image for row {rowIndex}: {imageUrl}");
-		}
-
-		using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
-		{
-			request.timeout = (int)imageLoadTimeout;
+			Debug.Log($"[DropdownScrollBinder] Set location data with {locations?.Length ?? 0} locations");
 			
-			yield return request.SendWebRequest();
-
-			if (request.result == UnityWebRequest.Result.Success)
+			// Debug each location's image data
+			if (locations != null)
 			{
-				Texture2D texture = DownloadHandlerTexture.GetContent(request);
-				if (texture != null)
+				for (int i = 0; i < locations.Length; i++)
 				{
-					Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-					
-					// Cache the sprite
-					imageCache[imageUrl] = sprite;
-					
-					// Set the sprite on the image component
-					imageComponent.sprite = sprite;
-					
-					if (verboseLogging)
+					var location = locations[i];
+					bool hasImage = !string.IsNullOrEmpty(location.Image);
+					Debug.Log($"[DropdownScrollBinder] Location {i}: '{location.Name}' - Has Image: {hasImage}");
+					if (hasImage)
 					{
-						Debug.Log($"[DropdownScrollBinder] Successfully loaded image for row {rowIndex}");
+						Debug.Log($"[DropdownScrollBinder] Image data length: {location.Image.Length} characters");
 					}
 				}
-				else
+			}
+		}
+		
+		// Rebuild the dropdown with new data
+		RebuildFromDropdown();
+	}
+
+	/// <summary>
+	/// Sets the location data from JSON string
+	/// </summary>
+	/// <param name="jsonString">JSON string containing TargetListData</param>
+	public void SetLocationDataFromJson(string jsonString)
+	{
+		try
+		{
+			TargetListData targetListData = JsonUtility.FromJson<TargetListData>(jsonString);
+			if (targetListData != null && targetListData.TargetList != null)
+			{
+				SetLocationData(targetListData.TargetList);
+			}
+			else
+			{
+				Debug.LogError("[DropdownScrollBinder] Failed to parse JSON or TargetList is null");
+			}
+		}
+		catch (System.Exception ex)
+		{
+			Debug.LogError($"[DropdownScrollBinder] Error parsing JSON: {ex.Message}");
+		}
+	}
+
+	/// <summary>
+	/// Loads location data from JSON file path
+	/// </summary>
+	/// <param name="filePath">Path to the JSON file</param>
+	public void LoadLocationDataFromFile(string filePath)
+	{
+		try
+		{
+			if (System.IO.File.Exists(filePath))
+			{
+				string jsonContent = System.IO.File.ReadAllText(filePath);
+				SetLocationDataFromJson(jsonContent);
+				
+				if (verboseLogging)
 				{
-					if (verboseLogging)
-					{
-						Debug.LogWarning($"[DropdownScrollBinder] Failed to create texture for row {rowIndex}");
-					}
-					imageComponent.sprite = defaultImage;
+					Debug.Log($"[DropdownScrollBinder] Loaded location data from file: {filePath}");
 				}
 			}
 			else
 			{
-				if (verboseLogging)
-				{
-					Debug.LogWarning($"[DropdownScrollBinder] Failed to load image for row {rowIndex}: {request.error}");
-				}
-				imageComponent.sprite = defaultImage;
+				Debug.LogError($"[DropdownScrollBinder] File not found: {filePath}");
 			}
+		}
+		catch (System.Exception ex)
+		{
+			Debug.LogError($"[DropdownScrollBinder] Error loading file {filePath}: {ex.Message}");
 		}
 	}
 
 	/// <summary>
-	/// Clears the image cache. Call this when you want to force reload all images.
+	/// Converts base64 string to Texture2D
 	/// </summary>
-	public void ClearImageCache()
+	/// <param name="base64String">Base64 encoded image string</param>
+	/// <returns>Texture2D or null if conversion fails</returns>
+	private Texture2D Base64ToTexture2D(string base64String)
 	{
-		imageCache.Clear();
-		if (verboseLogging)
+		if (string.IsNullOrEmpty(base64String))
+			return null;
+
+		try
 		{
-			Debug.Log("[DropdownScrollBinder] Image cache cleared");
+			// Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+			if (base64String.StartsWith("data:"))
+			{
+				int commaIndex = base64String.IndexOf(',');
+				if (commaIndex != -1)
+				{
+					base64String = base64String.Substring(commaIndex + 1);
+				}
+			}
+
+			byte[] imageBytes = Convert.FromBase64String(base64String);
+			Texture2D texture = new Texture2D(2, 2);
+			texture.LoadImage(imageBytes);
+			return texture;
+		}
+		catch (Exception ex)
+		{
+			Debug.LogError($"[DropdownScrollBinder] Error converting base64 to texture: {ex.Message}");
+			return null;
 		}
 	}
 
 	/// <summary>
-	/// Preloads images for all current events. Useful for improving performance.
+	/// Finds the ImageForDestination component in the prefab
 	/// </summary>
-	public void PreloadAllImages()
+	/// <param name="prefab">The prefab GameObject to search in</param>
+	/// <returns>Image component or null if not found</returns>
+	private Image FindImageForDestination(GameObject prefab)
 	{
-		if (eventsFetcher == null || eventsFetcher.events == null)
+		// First try to find by name
+		Transform imageTransform = prefab.transform.Find("ImageForDestination");
+		if (imageTransform != null)
 		{
-			return;
+			var image = imageTransform.GetComponent<Image>();
+			if (verboseLogging)
+			{
+				Debug.Log($"[DropdownScrollBinder] Found ImageForDestination by name: {image != null}");
+			}
+			return image;
 		}
 
-		StartCoroutine(PreloadImagesCoroutine());
-	}
-
-	private IEnumerator PreloadImagesCoroutine()
-	{
+		// If not found by name, search recursively
+		var allImages = prefab.GetComponentsInChildren<Image>();
 		if (verboseLogging)
 		{
-			Debug.Log("[DropdownScrollBinder] Starting image preload");
-		}
-
-		foreach (EventData eventData in eventsFetcher.events)
-		{
-			if (!string.IsNullOrEmpty(eventData.image) && !imageCache.ContainsKey(eventData.image))
+			Debug.Log($"[DropdownScrollBinder] Found {allImages.Length} Image components in prefab");
+			foreach (var img in allImages)
 			{
-				yield return StartCoroutine(LoadImageToCache(eventData.image));
+				Debug.Log($"[DropdownScrollBinder] Image component: {img.name}");
 			}
 		}
-
-		if (verboseLogging)
-		{
-			Debug.Log("[DropdownScrollBinder] Image preload completed");
-		}
+		
+		// Return the first Image component found
+		return allImages.Length > 0 ? allImages[0] : null;
 	}
 
-	private IEnumerator LoadImageToCache(string imageUrl)
+	/// <summary>
+	/// Creates a simple default sprite for locations without images
+	/// </summary>
+	/// <returns>A simple gray sprite with a location icon</returns>
+	private Sprite CreateTestSprite()
 	{
-		using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
+		Texture2D testTexture = new Texture2D(64, 64);
+		Color[] pixels = new Color[64 * 64];
+		
+		// Fill with light gray background
+		for (int i = 0; i < pixels.Length; i++)
 		{
-			request.timeout = (int)imageLoadTimeout;
-			
-			yield return request.SendWebRequest();
-
-			if (request.result == UnityWebRequest.Result.Success)
+			pixels[i] = new Color(0.8f, 0.8f, 0.8f, 1f); // Light gray
+		}
+		
+		// Draw a simple location pin icon in the center
+		int centerX = 32;
+		int centerY = 32;
+		int radius = 8;
+		
+		for (int y = 0; y < 64; y++)
+		{
+			for (int x = 0; x < 64; x++)
 			{
-				Texture2D texture = DownloadHandlerTexture.GetContent(request);
-				if (texture != null)
+				int index = y * 64 + x;
+				float distance = Vector2.Distance(new Vector2(x, y), new Vector2(centerX, centerY));
+				
+				if (distance <= radius)
 				{
-					Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-					imageCache[imageUrl] = sprite;
-					
-					if (verboseLogging)
-					{
-						Debug.Log($"[DropdownScrollBinder] Preloaded image: {imageUrl}");
-					}
+					pixels[index] = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark gray circle
+				}
+				else if (distance <= radius + 2)
+				{
+					pixels[index] = new Color(0.5f, 0.5f, 0.5f, 1f); // Medium gray border
 				}
 			}
 		}
+		
+		testTexture.SetPixels(pixels);
+		testTexture.Apply();
+		
+		return Sprite.Create(testTexture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f));
 	}
 }
-
-

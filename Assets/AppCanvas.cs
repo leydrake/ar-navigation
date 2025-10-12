@@ -632,6 +632,9 @@ public class AppCanvas : MonoBehaviour
             bool shouldShow = ShouldShowItem(item, filter);
             item.SetActive(shouldShow);
         }
+        
+        // Fix scroll bounds after filtering since content visibility changed
+        FixLocationsScrollBounds();
 	}
 	
 	private void CollectFilterableItems(Transform parent, List<GameObject> items)
@@ -664,6 +667,8 @@ public class AppCanvas : MonoBehaviour
 		if (grid != null)
 		{
 			grid.cellSize = new Vector2(locationItemWidth, locationItemHeight);
+			// Fix scroll bounds after setting grid size
+			FixLocationsScrollBounds();
 			return;
 		}
 
@@ -675,6 +680,9 @@ public class AppCanvas : MonoBehaviour
 			rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, locationItemWidth);
 			rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, locationItemHeight);
 		}
+		
+		// Fix scroll bounds after setting individual item sizes
+		FixLocationsScrollBounds();
 	}
 
 	private RectTransform GetLocationsContentRect()
@@ -714,6 +722,32 @@ public class AppCanvas : MonoBehaviour
 
 		// Last resort: if the container itself is the content
 		return locationsContainer;
+	}
+
+	/// <summary>
+	/// Fixes scrolling bounds for the locations container to prevent unlimited scrolling
+	/// </summary>
+	public void FixLocationsScrollBounds()
+	{
+		if (locationsContainer == null) return;
+
+		// Get the ScrollRect component
+		var scrollRect = locationsContainer.GetComponentInParent<ScrollRect>();
+		if (scrollRect == null) return;
+
+		// Get the content rect
+		RectTransform content = GetLocationsContentRect();
+		if (content == null) return;
+
+		// Force layout rebuild to get accurate content size
+		LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+		// Just ensure the ScrollRect has proper movement type to prevent unlimited scrolling
+		// Don't override horizontal/vertical settings as they might be intentionally configured
+		scrollRect.movementType = ScrollRect.MovementType.Clamped;
+		
+		// Set deceleration rate to prevent excessive momentum
+		scrollRect.decelerationRate = 0.135f; // Unity's default value
 	}
 
 	

@@ -11,6 +11,8 @@ public class TargetHandler : MonoBehaviour {
     private NavigationController navigationController;
     [SerializeField]
     private TMP_Dropdown targetDataDropdown;
+    [SerializeField]
+    private DropdownScrollBinder dropdownScrollBinder;
     
     [Header("JSON File Settings")]
     [SerializeField]
@@ -302,6 +304,35 @@ public class TargetHandler : MonoBehaviour {
         targetDataDropdown.ClearOptions();
         targetDataDropdown.AddOptions(targetFacadeOptionData);
         Debug.Log($"Dropdown populated with {targetFacadeOptionData.Count} options.");
+
+        // Also populate DropdownScrollBinder with location data if available
+        if (dropdownScrollBinder != null && targetDataWrapper != null && targetDataWrapper.TargetList != null)
+        {
+            // Convert TargetData to LocationData format
+            LocationData[] locationDataArray = targetDataWrapper.TargetList.Select(targetData => new LocationData
+            {
+                Name = targetData.Name,
+                Building = targetData.Building,
+                BuildingId = targetData.BuildingId,
+                CreatedAt = targetData.CreatedAt,
+                FloorNumber = targetData.FloorNumber,
+                FloorId = targetData.FloorId,
+                Image = targetData.Image,
+                Position = new LocationPosition
+                {
+                    x = targetData.Position?.x ?? 0,
+                    y = targetData.Position?.y ?? 0,
+                    z = targetData.Position?.z ?? 0
+                }
+            }).ToArray();
+
+            dropdownScrollBinder.SetLocationData(locationDataArray);
+            Debug.Log($"DropdownScrollBinder populated with {locationDataArray.Length} location data items.");
+        }
+        else if (dropdownScrollBinder == null)
+        {
+            Debug.LogWarning("DropdownScrollBinder not assigned in TargetHandler - images will not be displayed in scroll list.");
+        }
     }
 
     private Sprite GetSpriteForFacade(TargetFacade facade)
