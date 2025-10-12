@@ -154,36 +154,113 @@ async function loadAdminEmail() {
 // Function to check password strength
 function checkPasswordStrength(password) {
     let strength = 0;
-    let feedback = [];
+    let requirements = {
+        length: password.length >= 8,
+        lowercase: /[a-z]/.test(password),
+        uppercase: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9]/.test(password)
+    };
     
-    if (password.length >= 8) strength++;
-    else feedback.push('At least 8 characters');
+    // Count met requirements
+    Object.values(requirements).forEach(met => {
+        if (met) strength++;
+    });
     
-    if (/[a-z]/.test(password)) strength++;
-    else feedback.push('Include lowercase letter');
+    // Determine strength level
+    let strengthLevel = 'weak';
+    if (strength >= 4) strengthLevel = 'strong';
+    else if (strength >= 2) strengthLevel = 'medium';
     
-    if (/[A-Z]/.test(password)) strength++;
-    else feedback.push('Include uppercase letter');
-    
-    if (/[0-9]/.test(password)) strength++;
-    else feedback.push('Include number');
-    
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
-    else feedback.push('Include special character');
-    
-    if (strength <= 2) return { strength: 'weak', score: strength, feedback };
-    if (strength <= 3) return { strength: 'medium', score: strength, feedback };
-    return { strength: 'strong', score: strength, feedback };
+    return { 
+        strength: strengthLevel, 
+        score: strength, 
+        requirements: requirements 
+    };
 }
 
 // Function to update password strength indicator
 function updatePasswordStrength(password) {
     const strengthResult = checkPasswordStrength(password);
-    const strengthIndicator = document.getElementById('passwordStrength');
     
-    if (strengthIndicator) {
-        strengthIndicator.textContent = `Password Strength: ${strengthResult.strength.toUpperCase()}`;
-        strengthIndicator.className = `password-strength ${strengthResult.strength}`;
+    // Update strength bars
+    const bars = [
+        document.getElementById('strengthBar1'),
+        document.getElementById('strengthBar2'),
+        document.getElementById('strengthBar3')
+    ];
+    
+    const strengthText = document.getElementById('strengthText');
+    
+    // Reset all bars
+    bars.forEach(bar => {
+        bar.className = 'strength-bar';
+    });
+    
+    // Update bars based on strength
+    if (password.length > 0) {
+        if (strengthResult.strength === 'weak') {
+            bars[0].classList.add('active');
+            strengthText.textContent = 'Weak';
+            strengthText.className = 'strength-text weak';
+        } else if (strengthResult.strength === 'medium') {
+            bars[0].classList.add('medium');
+            bars[1].classList.add('medium');
+            strengthText.textContent = 'Medium';
+            strengthText.className = 'strength-text medium';
+        } else if (strengthResult.strength === 'strong') {
+            bars[0].classList.add('strong');
+            bars[1].classList.add('strong');
+            bars[2].classList.add('strong');
+            strengthText.textContent = 'Strong';
+            strengthText.className = 'strength-text strong';
+        }
+    } else {
+        strengthText.textContent = 'Enter a password';
+        strengthText.className = 'strength-text';
+    }
+    
+    // Update requirements checklist
+    updateRequirementsChecklist(strengthResult.requirements);
+}
+
+// Function to update requirements checklist progressively
+function updateRequirementsChecklist(requirements) {
+    const requirementsContainer = document.getElementById('passwordRequirements');
+    const currentRequirement = document.getElementById('currentRequirement');
+    
+    if (!requirementsContainer || !currentRequirement) return;
+    
+    // Define the order of requirements to show
+    const requirementOrder = [
+        { key: 'length', text: 'At least 8 characters' },
+        { key: 'lowercase', text: 'One lowercase letter' },
+        { key: 'uppercase', text: 'One uppercase letter' },
+        { key: 'number', text: 'One number' },
+        { key: 'special', text: 'One special character' }
+    ];
+    
+    // Find the first unmet requirement
+    let firstUnmet = null;
+    for (const req of requirementOrder) {
+        if (!requirements[req.key]) {
+            firstUnmet = req;
+            break;
+        }
+    }
+    
+    // Show/hide requirements container
+    if (firstUnmet) {
+        requirementsContainer.style.display = 'block';
+        currentRequirement.querySelector('.requirement-text').textContent = firstUnmet.text;
+        currentRequirement.classList.remove('valid');
+        currentRequirement.querySelector('.requirement-icon').textContent = '❌';
+    } else {
+        // All requirements met
+        requirementsContainer.style.display = 'block';
+        currentRequirement.querySelector('.requirement-text').textContent = 'All requirements met!';
+        currentRequirement.classList.add('valid');
+        currentRequirement.querySelector('.requirement-icon').textContent = '✅';
     }
 }
 
@@ -205,15 +282,28 @@ function validateForm() {
     return validation.isValid;
 }
 
+// Function to clear all field errors
+function clearAllFieldErrors() {
+    const errorMessages = document.querySelectorAll('.error-message');
+    errorMessages.forEach(msg => msg.remove());
+    
+    const errorFields = document.querySelectorAll('.form-group.error');
+    errorFields.forEach(field => field.classList.remove('error'));
+}
+
 // Function to show field error
 function showFieldError(input, message) {
     const formGroup = input.closest('.form-group');
     formGroup.classList.add('error');
     
-    const errorMsg = document.createElement('div');
-    errorMsg.className = 'error-message';
+    // Check if error message already exists
+    let errorMsg = formGroup.querySelector('.error-message');
+    if (!errorMsg) {
+        errorMsg = document.createElement('div');
+        errorMsg.className = 'error-message';
+        formGroup.appendChild(errorMsg);
+    }
     errorMsg.textContent = message;
-    formGroup.appendChild(errorMsg);
 }
 
 // Function to show field success
@@ -226,14 +316,7 @@ function showFieldSuccess(input) {
     if (errorMsg) errorMsg.remove();
 }
 
-// Add password strength indicator to the form
-function addPasswordStrengthIndicator() {
-    const newPasswordGroup = newPassword.closest('.form-group');
-    const strengthIndicator = document.createElement('div');
-    strengthIndicator.id = 'passwordStrength';
-    strengthIndicator.className = 'password-strength';
-    newPasswordGroup.appendChild(strengthIndicator);
-}
+// Password strength indicator is now built into the HTML
 
 // Add event listeners for real-time validation
 function addFormValidationListeners() {
@@ -245,17 +328,40 @@ function addFormValidationListeners() {
         }
     });
     
+    // Current password validation
+    currentPassword.addEventListener('input', () => {
+        if (currentPassword.value.length > 0) {
+            showFieldSuccess(currentPassword);
+        }
+    });
+    
     // New password strength checking
     newPassword.addEventListener('input', () => {
         updatePasswordStrength(newPassword.value);
         if (newPassword.value.length >= 6) {
             showFieldSuccess(newPassword);
         }
+        
+        // Only validate confirm password if both fields have content
+        if (confirmPassword.value && newPassword.value) {
+            if (newPassword.value === confirmPassword.value) {
+                showFieldSuccess(confirmPassword);
+            } else {
+                showFieldError(confirmPassword, 'Passwords do not match');
+            }
+        }
     });
     
     // Confirm password validation
     confirmPassword.addEventListener('input', () => {
-        if (confirmPassword.value && confirmPassword.value === newPassword.value) {
+        if (confirmPassword.value && newPassword.value) {
+            if (confirmPassword.value === newPassword.value) {
+                showFieldSuccess(confirmPassword);
+            } else {
+                showFieldError(confirmPassword, 'Passwords do not match');
+            }
+        } else if (!confirmPassword.value) {
+            // Clear error when confirm password is empty
             showFieldSuccess(confirmPassword);
         }
     });
@@ -264,18 +370,54 @@ function addFormValidationListeners() {
 accountForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Validate form first
-    if (!validateForm()) {
-        return;
-    }
+    // Clear any previous error messages
+    clearAllFieldErrors();
     
     const email = adminEmail.value.trim();
     const currentPass = currentPassword.value;
     const newPass = newPassword.value;
     const confirmPass = confirmPassword.value;
     
+    // Validate required fields
+    if (!currentPass) {
+        showFieldError(currentPassword, 'Please enter your current password');
+        return;
+    }
+    
+    if (!newPass) {
+        showFieldError(newPassword, 'Please enter a new password');
+        return;
+    }
+    
+    if (!confirmPass) {
+        showFieldError(confirmPassword, 'Please confirm your new password');
+        return;
+    }
+    
+    // Check if passwords match
+    if (newPass !== confirmPass) {
+        showFieldError(confirmPassword, 'Passwords do not match');
+        showFieldError(newPassword, 'Passwords do not match');
+        return;
+    }
+    
+    // Check if new password is different from current
     if (currentPass === newPass) {
         showFieldError(newPassword, 'New password must be different from current password');
+        return;
+    }
+    
+    // Check password strength and requirements
+    const strengthResult = checkPasswordStrength(newPass);
+    if (strengthResult.strength === 'weak') {
+        showFieldError(newPassword, 'Password is too weak. Please meet all requirements.');
+        return;
+    }
+    
+    // Check if all requirements are met
+    const allRequirementsMet = Object.values(strengthResult.requirements).every(req => req);
+    if (!allRequirementsMet) {
+        showFieldError(newPassword, 'Please meet all password requirements.');
         return;
     }
     
@@ -292,6 +434,7 @@ accountForm.addEventListener('submit', async (e) => {
         
         if (!isCurrentPasswordValid) {
             showFieldError(currentPassword, 'Current password is incorrect');
+            alert('❌ Current password is incorrect. Please check and try again.');
             return;
         }
         
@@ -300,7 +443,7 @@ accountForm.addEventListener('submit', async (e) => {
         
         if (updateSuccess) {
             // Show success message
-            alert('Password updated successfully!');
+            alert('✅ Password updated successfully! You can now use your new password to log in.');
             
             // Clear form and show success states
             currentPassword.value = '';
@@ -311,18 +454,16 @@ accountForm.addEventListener('submit', async (e) => {
             showFieldSuccess(confirmPassword);
             
             // Clear password strength indicator
-            const strengthIndicator = document.getElementById('passwordStrength');
-            if (strengthIndicator) {
-                strengthIndicator.textContent = '';
-                strengthIndicator.className = 'password-strength';
-            }
+            updatePasswordStrength('');
         } else {
-            alert('Failed to update password. Please try again.');
+            showFieldError(newPassword, 'Failed to update password');
+            alert('❌ Failed to update password. Please try again or contact support if the problem persists.');
         }
         
     } catch (error) {
         console.error('Error updating account:', error);
-        alert('An error occurred while updating the password. Please try again.');
+        showFieldError(newPassword, 'An error occurred');
+        alert('❌ An error occurred while updating the password. Please try again or contact support.');
     } finally {
         // Reset button state
         submitBtn.textContent = originalText;
@@ -335,7 +476,6 @@ accountForm.addEventListener('submit', async (e) => {
 loadAdminEmail();
 
 // Initialize enhanced password change functionality
-addPasswordStrengthIndicator();
 addFormValidationListeners();
 
 // Event Management

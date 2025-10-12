@@ -162,6 +162,29 @@ body, html {
     box-shadow: 0 0 0 2px rgba(32, 98, 51, 0.2);
 }
 
+/* Error and Success States */
+.form-group.error input {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.form-group.success input {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 14px;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.error-message::before {
+    content: "⚠️ ";
+    margin-right: 4px;
+}
+
 .password-input-container {
     position: relative;
     display: flex;
@@ -195,6 +218,89 @@ body, html {
 .password-toggle svg {
     width: 20px;
     height: 20px;
+}
+
+/* Password Strength Indicator */
+.password-strength-container {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.password-strength-bars {
+    display: flex;
+    gap: 4px;
+}
+
+.strength-bar {
+    width: 20px;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    transition: background-color 0.3s ease;
+}
+
+.strength-bar.active {
+    background: #dc3545; /* Red for weak */
+}
+
+.strength-bar.medium {
+    background: #ffc107; /* Yellow for medium */
+}
+
+.strength-bar.strong {
+    background: #28a745; /* Green for strong */
+}
+
+.strength-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+}
+
+.strength-text.weak {
+    color: #dc3545;
+}
+
+.strength-text.medium {
+    color: #ffc107;
+}
+
+.strength-text.strong {
+    color: #28a745;
+}
+
+/* Password Requirements */
+.password-requirements {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    font-size: 12px;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.requirement-item.valid {
+    color: #28a745;
+}
+
+.requirement-icon {
+    margin-right: 6px;
+    font-size: 10px;
+    transition: color 0.3s ease;
+}
+
+.requirement-item.valid .requirement-icon {
+    color: #28a745;
 }
 
 .save-btn {

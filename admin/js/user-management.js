@@ -302,6 +302,135 @@ document.addEventListener('DOMContentLoaded', () => {
         loadUsers();
     }
 
+    // Password strength functionality
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let requirements = {
+            length: password.length >= 8,
+            lowercase: /[a-z]/.test(password),
+            uppercase: /[A-Z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        // Count met requirements
+        Object.values(requirements).forEach(met => {
+            if (met) strength++;
+        });
+        
+        // Determine strength level
+        let strengthLevel = 'weak';
+        if (strength >= 4) strengthLevel = 'strong';
+        else if (strength >= 2) strengthLevel = 'medium';
+        
+        return { 
+            strength: strengthLevel, 
+            score: strength, 
+            requirements: requirements 
+        };
+    }
+
+    // Function to update password strength indicator
+    function updatePasswordStrength(password) {
+        const strengthResult = checkPasswordStrength(password);
+        
+        // Update strength bars
+        const bars = [
+            document.getElementById('strengthBar1'),
+            document.getElementById('strengthBar2'),
+            document.getElementById('strengthBar3')
+        ];
+        
+        const strengthText = document.getElementById('strengthText');
+        
+        // Reset all bars
+        bars.forEach(bar => {
+            if (bar) bar.className = 'strength-bar';
+        });
+        
+        // Update bars based on strength
+        if (password.length > 0) {
+            if (strengthResult.strength === 'weak') {
+                if (bars[0]) bars[0].classList.add('active');
+                if (strengthText) {
+                    strengthText.textContent = 'Weak';
+                    strengthText.className = 'strength-text weak';
+                }
+            } else if (strengthResult.strength === 'medium') {
+                if (bars[0]) bars[0].classList.add('medium');
+                if (bars[1]) bars[1].classList.add('medium');
+                if (strengthText) {
+                    strengthText.textContent = 'Medium';
+                    strengthText.className = 'strength-text medium';
+                }
+            } else if (strengthResult.strength === 'strong') {
+                if (bars[0]) bars[0].classList.add('strong');
+                if (bars[1]) bars[1].classList.add('strong');
+                if (bars[2]) bars[2].classList.add('strong');
+                if (strengthText) {
+                    strengthText.textContent = 'Strong';
+                    strengthText.className = 'strength-text strong';
+                }
+            }
+        } else {
+            if (strengthText) {
+                strengthText.textContent = 'Enter a password';
+                strengthText.className = 'strength-text';
+            }
+        }
+        
+        // Update requirements checklist
+        updateRequirementsChecklist(strengthResult.requirements);
+    }
+
+    // Function to update requirements checklist progressively
+    function updateRequirementsChecklist(requirements) {
+        const requirementsContainer = document.getElementById('passwordRequirements');
+        const currentRequirement = document.getElementById('currentRequirement');
+        
+        if (!requirementsContainer || !currentRequirement) return;
+        
+        // Define the order of requirements to show
+        const requirementOrder = [
+            { key: 'length', text: 'At least 8 characters' },
+            { key: 'lowercase', text: 'One lowercase letter' },
+            { key: 'uppercase', text: 'One uppercase letter' },
+            { key: 'number', text: 'One number' },
+            { key: 'special', text: 'One special character' }
+        ];
+        
+        // Find the first unmet requirement
+        let firstUnmet = null;
+        for (const req of requirementOrder) {
+            if (!requirements[req.key]) {
+                firstUnmet = req;
+                break;
+            }
+        }
+        
+        // Show/hide requirements container
+        if (firstUnmet) {
+            requirementsContainer.style.display = 'block';
+            currentRequirement.querySelector('.requirement-text').textContent = firstUnmet.text;
+            currentRequirement.classList.remove('valid');
+            currentRequirement.querySelector('.requirement-icon').textContent = '❌';
+        } else {
+            // All requirements met
+            requirementsContainer.style.display = 'block';
+            currentRequirement.querySelector('.requirement-text').textContent = 'All requirements met!';
+            currentRequirement.classList.add('valid');
+            currentRequirement.querySelector('.requirement-icon').textContent = '✅';
+        }
+    }
+
+    // Add password strength listener
+    const passwordInput = document.getElementById('userPassword');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            updatePasswordStrength(this.value);
+        });
+    }
+
     addUserForm.addEventListener('submit', createUser);
     loadUsers();
 })();

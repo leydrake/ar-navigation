@@ -138,6 +138,22 @@
                                     <div id="fpStepNew" style="display:none;">
                                         <label for="fpNewPass">New password</label>
                                         <input type="password" id="fpNewPass" minlength="8">
+                                        <!-- Password Strength Indicator -->
+                                        <div class="password-strength-container">
+                                            <div class="password-strength-bars">
+                                                <div class="strength-bar" id="fpStrengthBar1"></div>
+                                                <div class="strength-bar" id="fpStrengthBar2"></div>
+                                                <div class="strength-bar" id="fpStrengthBar3"></div>
+                                            </div>
+                                            <span class="strength-text" id="fpStrengthText">Enter a password</span>
+                                        </div>
+                                        <!-- Password Requirements -->
+                                        <div class="password-requirements" id="fpPasswordRequirements" style="display: none;">
+                                            <div class="requirement-item" id="fpCurrentRequirement">
+                                                <span class="requirement-icon">❌</span>
+                                                <span class="requirement-text">At least 8 characters</span>
+                                            </div>
+                                        </div>
                                         <label for="fpConfirmPass">Confirm password</label>
                                         <input type="password" id="fpConfirmPass" minlength="8">
                                         <div id="fpNewHelp" class="error-message"></div>
@@ -356,7 +372,14 @@
             fpEmail.value = '';
             fpNewPass.value = '';
             fpConfirmPass.value = '';
-            fpOtpInputs.forEach(input => input.value = '');
+            
+            // Reset OTP inputs - clear values and ensure they're enabled
+            fpOtpInputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+                input.readOnly = false;
+                input.style.pointerEvents = 'auto';
+            });
             
             // Focus on email input
             setTimeout(() => {
@@ -397,7 +420,22 @@
         // auto-advance OTP inputs
         fpOtpInputs.forEach((el, idx) => {
             el.addEventListener('input', () => {
-                if (el.value.length === 1 && idx < fpOtpInputs.length - 1) fpOtpInputs[idx + 1].focus();
+                if (el.value.length === 1 && idx < fpOtpInputs.length - 1) {
+                    fpOtpInputs[idx + 1].focus();
+                }
+            });
+            
+            // Handle backspace to go to previous input
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && el.value === '' && idx > 0) {
+                    fpOtpInputs[idx - 1].focus();
+                }
+            });
+            
+            // Ensure input is never disabled
+            el.addEventListener('focus', () => {
+                el.disabled = false;
+                el.readOnly = false;
             });
         });
 
@@ -575,16 +613,29 @@
             const emailVal = forgotLink.dataset.fpEmail;
             const p1 = fpNewPass.value || '';
             const p2 = fpConfirmPass.value || '';
+            
+            // Check password strength
+            const strengthResult = checkPasswordStrength(p1);
+            const allRequirementsMet = Object.values(strengthResult.requirements).every(req => req);
+            
             if (p1.length < 8) {
                 fpNewHelp.textContent = 'Password must be at least 8 characters.';
                 fpNewHelp.style.display = 'block';
                 return;
             }
+            
+            if (!allRequirementsMet) {
+                fpNewHelp.textContent = 'Please meet all password requirements.';
+                fpNewHelp.style.display = 'block';
+                return;
+            }
+            
             if (p1 !== p2) {
                 fpNewHelp.textContent = 'Passwords do not match.';
                 fpNewHelp.style.display = 'block';
                 return;
             }
+            
             fpSaveBtn.disabled = true;
             fpSaveBtn.textContent = 'Saving...';
             try {
@@ -648,6 +699,132 @@
                 eyeOffIcon.style.display = 'none';
             }
         }
+
+        // Password strength functionality
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            let requirements = {
+                length: password.length >= 8,
+                lowercase: /[a-z]/.test(password),
+                uppercase: /[A-Z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[^A-Za-z0-9]/.test(password)
+            };
+            
+            // Count met requirements
+            Object.values(requirements).forEach(met => {
+                if (met) strength++;
+            });
+            
+            // Determine strength level
+            let strengthLevel = 'weak';
+            if (strength >= 4) strengthLevel = 'strong';
+            else if (strength >= 2) strengthLevel = 'medium';
+            
+            return { 
+                strength: strengthLevel, 
+                score: strength, 
+                requirements: requirements 
+            };
+        }
+
+        // Function to update password strength indicator
+        function updatePasswordStrength(password) {
+            const strengthResult = checkPasswordStrength(password);
+            
+            // Update strength bars
+            const bars = [
+                document.getElementById('fpStrengthBar1'),
+                document.getElementById('fpStrengthBar2'),
+                document.getElementById('fpStrengthBar3')
+            ];
+            
+            const strengthText = document.getElementById('fpStrengthText');
+            
+            // Reset all bars
+            bars.forEach(bar => {
+                if (bar) bar.className = 'strength-bar';
+            });
+            
+            // Update bars based on strength
+            if (password.length > 0) {
+                if (strengthResult.strength === 'weak') {
+                    if (bars[0]) bars[0].classList.add('active');
+                    if (strengthText) {
+                        strengthText.textContent = 'Weak';
+                        strengthText.className = 'strength-text weak';
+                    }
+                } else if (strengthResult.strength === 'medium') {
+                    if (bars[0]) bars[0].classList.add('medium');
+                    if (bars[1]) bars[1].classList.add('medium');
+                    if (strengthText) {
+                        strengthText.textContent = 'Medium';
+                        strengthText.className = 'strength-text medium';
+                    }
+                } else if (strengthResult.strength === 'strong') {
+                    if (bars[0]) bars[0].classList.add('strong');
+                    if (bars[1]) bars[1].classList.add('strong');
+                    if (bars[2]) bars[2].classList.add('strong');
+                    if (strengthText) {
+                        strengthText.textContent = 'Strong';
+                        strengthText.className = 'strength-text strong';
+                    }
+                }
+            } else {
+                if (strengthText) {
+                    strengthText.textContent = 'Enter a password';
+                    strengthText.className = 'strength-text';
+                }
+            }
+            
+            // Update requirements checklist
+            updateRequirementsChecklist(strengthResult.requirements);
+        }
+
+        // Function to update requirements checklist progressively
+        function updateRequirementsChecklist(requirements) {
+            const requirementsContainer = document.getElementById('fpPasswordRequirements');
+            const currentRequirement = document.getElementById('fpCurrentRequirement');
+            
+            if (!requirementsContainer || !currentRequirement) return;
+            
+            // Define the order of requirements to show
+            const requirementOrder = [
+                { key: 'length', text: 'At least 8 characters' },
+                { key: 'lowercase', text: 'One lowercase letter' },
+                { key: 'uppercase', text: 'One uppercase letter' },
+                { key: 'number', text: 'One number' },
+                { key: 'special', text: 'One special character' }
+            ];
+            
+            // Find the first unmet requirement
+            let firstUnmet = null;
+            for (const req of requirementOrder) {
+                if (!requirements[req.key]) {
+                    firstUnmet = req;
+                    break;
+                }
+            }
+            
+            // Show/hide requirements container
+            if (firstUnmet) {
+                requirementsContainer.style.display = 'block';
+                currentRequirement.querySelector('.requirement-text').textContent = firstUnmet.text;
+                currentRequirement.classList.remove('valid');
+                currentRequirement.querySelector('.requirement-icon').textContent = '❌';
+            } else {
+                // All requirements met
+                requirementsContainer.style.display = 'block';
+                currentRequirement.querySelector('.requirement-text').textContent = 'All requirements met!';
+                currentRequirement.classList.add('valid');
+                currentRequirement.querySelector('.requirement-icon').textContent = '✅';
+            }
+        }
+
+        // Add password strength listener to new password field
+        fpNewPass.addEventListener('input', function() {
+            updatePasswordStrength(this.value);
+        });
 
         // No automatic admin creation on load.
     </script>
