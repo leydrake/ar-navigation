@@ -68,28 +68,14 @@
                 <div class="mobile-menu" id="mobileMenu">
                     <div class="mobile-menu-content">
                         <div class="mobile-nav">
-                            <a href="index.html" class="mobile-nav-link active">Home</a>
+                            <a href="index.html" class="mobile-nav-link">Home</a>
                             <a href="about.html" class="mobile-nav-link">About us</a>
-                            <a href="features.html" class="mobile-nav-link">Features</a>
+                            <a href="features.html" class="mobile-nav-link active">Features</a>
                             <div class="mobile-nav-section">
                                 <div class="section-title">More</div>
-                                <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
-                                <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
-                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
-                                <a href="admin/index.html" class="mobile-nav-link">Admin</a>
-                            </div>
-                            <div class="mobile-nav-section">
-                                <div class="section-title">More</div>
-                                <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
-                                <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
-                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
-                                <a href="admin/index.html" class="mobile-nav-link">Admin</a>
-                            </div>
-                            <div class="mobile-nav-section">
-                                <div class="section-title">More</div>
-                                <a href="tutorial.html" class="mobile-nav-link">Tutorial</a>
-                                <a href="tos.html" class="mobile-nav-link">Terms of Service</a>
-                                <a href="forgot-password.html" class="mobile-nav-link">Forgot Password</a>
+                                <a href="tutorial.html" class="mobile-nav-link">Tutorial</a> -
+                                <a href="tos.html" class="mobile-nav-link">Terms of Service</a>-
+                                <a href="admin/index.html" class="mobile-nav-link">Login</a>
                             </div>
                         </div>
                         <div class="mobile-download">
@@ -209,27 +195,27 @@
             alert('Download functionality would be implemented here');
         }
 
-        // Touch/swipe variables for sliding panel
-        let startX = 0;
-        let startY = 0;
-        let endX = 0;
-        let endY = 0;
-        let isSwiping = false;
-        let justClosed = false; // Flag to prevent immediate reopening
+        // // Touch/swipe variables for sliding panel
+        // let startX = 0;
+        // let startY = 0;
+        // let endX = 0;
+        // let endY = 0;
+        // let isSwiping = false;
+        // let justClosed = false; // Flag to prevent immediate reopening
 
-        // Panel functions
-        function openPanel() {
-            if (justClosed) return; // Prevent opening if just closed
-            document.getElementById('sidePanel').classList.add('open');
-            document.getElementById('overlay').classList.add('active');
-        }
+        // // Panel functions
+        // function openPanel() {
+        //     if (justClosed) return; // Prevent opening if just closed
+        //     document.getElementById('sidePanel').classList.add('open');
+        //     document.getElementById('overlay').classList.add('active');
+        // }
 
-        function closePanel() {
-            document.getElementById('sidePanel').classList.remove('open');
-            document.getElementById('overlay').classList.remove('active');
-            justClosed = true;
-            setTimeout(() => { justClosed = false; }, 300); // Reset flag after animation
-        }
+        // function closePanel() {
+        //     document.getElementById('sidePanel').classList.remove('open');
+        //     document.getElementById('overlay').classList.remove('active');
+        //     justClosed = true;
+        //     setTimeout(() => { justClosed = false; }, 300); // Reset flag after animation
+        // }
 
         // Navigation function for ToS
         function goToTOS() {

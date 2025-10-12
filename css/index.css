@@ -297,7 +297,9 @@ body {
 .mobile-download {
     display: flex;
     justify-content: center;
+   
 }
+
 
 .mobile-download-btn {
     background: #fff;
@@ -311,6 +313,9 @@ body {
     transition: all 0.3s ease;
     width: 100%;
     max-width: 200px;
+    text-decoration: none;
+    text-align: center;
+    
 }
 
 .mobile-download-btn:hover {
@@ -854,7 +859,7 @@ body {
     }
     
     .description-box {
-        padding: 20px;
+       top: -20px;
       
          
     }
