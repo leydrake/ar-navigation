@@ -102,7 +102,7 @@ public class FirestoreToCustomJson : MonoBehaviour
                         FloorId = data.ContainsKey("floorId") && data["floorId"] != null ? data["floorId"].ToString() : "",
                         Image = data.ContainsKey("image") && data["image"] != null ? data["image"].ToString() : "",
                         CreatedAt = data.ContainsKey("createdAt") && data["createdAt"] != null ? data["createdAt"].ToString() : "",
-                        Position = new PositionData
+                        Position = new TargetPosition
                         {
                             x = GetFloat(data, "x"),
                             y = GetFloat(data, "y"),
@@ -191,29 +191,9 @@ public class FirestoreToCustomJson : MonoBehaviour
     }
 }
 
+// Keep only TargetListWrapper here since TargetData and TargetPosition are now in TargetHandler.cs
 [System.Serializable]
 public class TargetListWrapper
 {
     public List<TargetData> TargetList;
-}
-
-[System.Serializable]
-public class TargetData
-{
-    public string Name;
-    public string Building;
-    public string BuildingId;
-    public string CreatedAt;
-    public int FloorNumber;
-    public string FloorId;
-    public string Image;
-    public PositionData Position;
-}
-
-[System.Serializable]
-public class PositionData
-{
-    public float x;
-    public float y;
-    public float z;
 }

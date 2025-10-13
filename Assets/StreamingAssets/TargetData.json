@@ -1,0 +1,88 @@
+{
+    "TargetList": [
+        {
+            "Name": "nigger",
+            "Building": "Activity Center",
+            "BuildingId": "4GK5t0sVlU1dkDUvxKYk",
+            "FloorNumber": 1,
+            "FloorId": "iVnAT4wrKRd2WRXkk3Jv",
+            "Image": "",
+            "CreatedAt": "Timestamp: 2025-10-11T14:00:47.319Z",
+            "Position": {
+                "x": -0.04548373073339462,
+                "y": 0.9737860560417175,
+                "z": -0.03517843782901764
+            }
+        },
+        {
+            "Name": "Canteen",
+            "Building": "Canteen",
+            "BuildingId": "6A739SNmQqou3TQtPSGg",
+            "FloorNumber": 1,
+            "FloorId": "CAOW1j41KimfiU32ancR",
+            "Image": "",
+            "CreatedAt": "Timestamp: 2025-10-09T06:16:49.593Z",
+            "Position": {
+                "x": 34.88999938964844,
+                "y": 0.0,
+                "z": -72.2699966430664
+            }
+        },
+        {
+            "Name": "Library",
+            "Building": "Pancho",
+            "BuildingId": "316J7SmjQGwVcYPnV59P",
+            "FloorNumber": 1,
+            "FloorId": "96BuvWYsL6g92wVrgWx8",
+            "Image": "",
+            "CreatedAt": "Timestamp: 2025-10-09T06:15:33.861Z",
+            "Position": {
+                "x": 64.36599731445313,
+                "y": 0.0,
+                "z": 2.6500000953674318
+            }
+        },
+        {
+            "Name": "Admin building",
+            "Building": "Admin",
+            "BuildingId": "HPAFvA6mF8Q9NYd5ZiwG",
+            "FloorNumber": 0,
+            "FloorId": "",
+            "Image": "",
+            "CreatedAt": "2025-10-09T05:50:04.951Z",
+            "Position": {
+                "x": -0.46000000834465029,
+                "y": 0.0,
+                "z": -0.46000000834465029
+            }
+        },
+        {
+            "Name": "monkeyboy",
+            "Building": "Activity Center",
+            "BuildingId": "4GK5t0sVlU1dkDUvxKYk",
+            "FloorNumber": 1,
+            "FloorId": "iVnAT4wrKRd2WRXkk3Jv",
+            "Image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCACQAIsDASIAAhEBAxEB/8QAHAABAQEAAgMBAAAAAAAAAAAAAAcGBAgCAwUB/8QAQhAAAQMCAwMHCAcGBwAAAAAAAQACAwQFBgcREiExF0FRYXGBoRMUIkJUVZPRFWKRlKSx0zJygrLBwjM0Q1JzkuH/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAQL/xAAWEQEBAQAAAAAAAAAAAAAAAAAAEQH/2gAMAwEAAhEDEQA/AIyiIgIioWA8qa3ErY7jdS+ith3tGmks4+qDwb1nuHOgxNrs9xvdWKS2UU1XMfVjbrp1k8AOsqm2DIqsnDZb/cW0rTxgpdHv73HcD2Aqu2ex2ywUQo7VRx0sI4hg3uPSTxJ6yuepVjI2zKzB1rALbSyqePXqnGTXuPo+C0VLaLZRN2aS3UlOBzRQNZ+QXMRQfhaCNCAR0LhVVitFcCKy1UVQDx8rTsd+YXORFYq65SYPugcWUDqGQ+vSSFun8J1b4KfYhyPu9CHzWOqjuMQ3iF+kcvdr6J+0diuyJUdQKyiqrfVPpa2nlp54zo+OVpa5vcV6V2txFhWzYpojTXWkbIQNGTN3SR9bXc3Zw6QVBMcZbXTB8hqGbVbbHH0aljd8fU8c3bwPVwVqMaiIqCIiAiLa5YYKOLL95arjJtlEQ+c80jvVj7+J6hzahBocrssRcRFiC/Q60m59LTPH+N0PcP8Ab0Dn7ONvAAGgGgC/GMZGxrGNDGNADWtGgA6Av1ZURERRERAREQEREBeE8EVTBJBPG2WKRpa9jxqHA8QQvNEHXrMvLd+FZzc7Y10lpldoQTqadx9U/V6D3Hm1n67f1lHT3Cjmo6uFs0EzCySNw1DgV1ixzhKfB+IpKBxc+mkHlKaU+uw9PWOB/wDVc1GdREVR5RRvmlZFEwvke4Na1o1JJ4ALtNgzDcWFMMUtrZoZWjbqHj15T+0f6DqAURyfsbbvjiGeVusNuYak9G0CAzxOv8K7FqauCIiiiIplmPgzF+IL7FVWW4aUbYQ0Q+cGLYdqdTpwOu7eiKaignJfmL7Z+PKcl+Yvtn48pBe0UE5L8xfbPx5TkvzF9s/HlIL2ignJfmL7Z+PK0GB8B43s+KaWuuVx2KOLaMzPOnSeUGhAbs8OJHHhograIiKLG5o4WbiXCUz4ow6toAZ4DpvIA9JvePEBbJOKDp0i0OPbGMPYzuNBG3Zh8p5WEDgGO9IAdmuncs8tMrjkNbhFYbnciPSqKkQgkczG6/m/wVUWHydgEOXNE8DQzSyvPX6Zb/atws6oiIiiIiAiIgIiICIiAiIgIiIIjn1bhHd7VcmgazwPhdp9Qgj+fwUoV1z5gDsL26o03x1uxr+8xx/tUKVxl2SyieHZa2sD1DMD8V5/qtmpxkdWiowVPTF3pU1Y8adDXNaR4l32KjqKIiIopnmPlre8X3yKvoLlTNhZCI/IVT3tDCCdS3ZaeO5UxERBOQnFHt9p+NL+mnITij2+0/Gl/TV7RKRBOQnFHt9p+NL+mnITij2+0/Gl/TV7RKRBOQnFHt9p+NL+mtBgbKa/4axTS3WsudGIINraZSyPLpNWkbJ1aBpv8FW0SgiIiiIiCZ57vAwbQs53XBp+yOT5qDKzZ+1gEFmoQd7nSyuHRoGgfm77FGVcZ1UsibuKa/11pe7QVkIkYDzvYeH2OJ7lc11KsF3msN9orrBrt0sofoPWHrDvGo712uoqyC40MFbSyCSCojbJG4c7SNQmrj3oiKKLj1VfRUOz53VwU+1+z5WQM17NVyFOsfZWz4xvjLnBd20+kIiMUsZcBoTvBB6+CI230/Zve9D95Z80+n7N73ofvLPmpFyB1/v6n+A75pyB1/v6n+A75oK79P2b3vQ/eWfNPp+ze96H7yz5qRcgdf7+p/gO+acgdf7+p/gO+aCu/T9m970P3lnzXuprnb6yQx0tdTTvA1LYpWuOnYCo5yB1/v6n+A75r7eD8n6nDeJqW7z3pkrabaPk4oi0vJaRoTrw3oKiiIiiIvl4lvkOHMPVt2m0Ip4yWNJ/bedzW95ICCD5wXcXTHtRCx21HQRtpm6dI9J3i4juWGXsqKiWrqZamd5fLM8ve48XOJ1J+1etaZFZslMZNdE7C1dLo9uslEXHiOLmfmR39CjK9lNUzUdVFVU0jopoXh8b28WuB1BQdwUWPy9x5TYxtYjlc2K6U7R5xDw2ubbb1HwO7oJ2Cy0IiICIiAiIgIiICIiAoNnLjJt4urbBRP2qS3vJmcDukm4Edjd47SepbXNDMWPDtHJZ7XNrdpm6Oc3f5s085+sRwHNx6NevxJJ1J1JVxNERFUEREHJttyrLRcIa+gndBUwO2mPaeHzHVzrsFgTNC3YqjZRVpjorrw8kXehN1sJ5/q8e1ddEBIOo3EIO4qKA4TzlvFmEdJeWm6UjRoHl2k7B+963fv61XMP49w3iRrRQ3KNs7h/l5z5OQdWh492qzFaJERFEREBE4LJ4gzMwvh4OZLXtq6hv+hSaSO16CeA7yg1imeP82qWzMltlgkZVXDe1843xwdnM53gOfoU/xdmvfMStfS0x+jaB2oMULtXyD6z/AOg0HasMrErznnmqp5J6iV8ssji573nVzieJJXgiKoIiICIiAiIgIiIPt2vGmJrMGtoL1VxMbwjdJtsH8LtR4LR02dOMIABJLR1PXLTgfykLAogpJz1xSW6eY2kHp8jJ+ouDV5zYyqRpFVU1L/w07T/NqsIiQfVumKb/AHoFtyu9XUMPGN0p2P8AqN3gvlIiAiIgIiICIiD/2Q==",
+            "CreatedAt": "Timestamp: 2025-10-11T14:03:35.811Z",
+            "Position": {
+                "x": -0.5064449310302734,
+                "y": 0.7529616355895996,
+                "z": -1.5236217975616456
+            }
+        },
+        {
+            "Name": "Activity Center",
+            "Building": "Activity Center",
+            "BuildingId": "4GK5t0sVlU1dkDUvxKYk",
+            "FloorNumber": 1,
+            "FloorId": "iVnAT4wrKRd2WRXkk3Jv",
+            "Image": "",
+            "CreatedAt": "Timestamp: 2025-10-09T06:16:20.999Z",
+            "Position": {
+                "x": 58.02000045776367,
+                "y": 0.0,
+                "z": -20.889999389648439
+            }
+        }
+    ]
+}

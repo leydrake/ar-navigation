@@ -18037,7 +18037,10 @@ MonoBehaviour:
   navigationController: {fileID: 0}
   targetDataDropdown: {fileID: 1637629957}
   dropdownScrollBinder: {fileID: 1278761329}
-  jsonFileName: TargetData.json
+  collectionName: coordinates
+  fetchOnStart: 1
+  networkTimeoutSeconds: 30
+  maxRetryAttempts: 3
   targetObjectPrefab: {fileID: 7276002083409978974, guid: 6781ebf4974947f498ac0f1fbabd4ba3, type: 3}
   targetObjectsParentTransforms: []
 --- !u!1 &987177226
@@ -18926,7 +18929,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   collectionName: coordinates
-  targetModelData: {fileID: 0}
+  targetModelData: {fileID: 4900000, guid: ffa90575151a4ca40b6791c25646edd1, type: 3}
   targetHandler: {fileID: 1861698585}
 --- !u!4 &1045393184
 Transform:
@@ -31576,7 +31579,10 @@ MonoBehaviour:
   navigationController: {fileID: 40919615}
   targetDataDropdown: {fileID: 1637629957}
   dropdownScrollBinder: {fileID: 0}
-  jsonFileName: TargetData.json
+  collectionName: coordinates
+  fetchOnStart: 1
+  networkTimeoutSeconds: 30
+  maxRetryAttempts: 3
   targetObjectPrefab: {fileID: 6273123802042645429, guid: 07cf8568fd653914f8c18771ca2d528a, type: 3}
   targetObjectsParentTransforms:
   - {fileID: 95707450}

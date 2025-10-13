@@ -1,9 +1,38 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using System.IO;
 using UnityEngine.Networking;
+using Firebase.Firestore;
+using System;
+
+// Shared data classes - used by both Firebase and JsonUtility
+[System.Serializable]
+public class TargetData
+{
+    public string Name;
+    public string Building;
+    public string BuildingId;
+    public int FloorNumber;
+    public string FloorId;
+    public string Image;
+    public string CreatedAt;
+    public TargetPosition Position;
+    
+    // Document ID from Firestore (not serialized to JSON)
+    [System.NonSerialized]
+    public string id;
+}
+
+[System.Serializable]
+public class TargetPosition
+{
+    public float x;
+    public float y;
+    public float z;
+}
 
 public class TargetHandler : MonoBehaviour {
 
@@ -14,107 +43,365 @@ public class TargetHandler : MonoBehaviour {
     [SerializeField]
     private DropdownScrollBinder dropdownScrollBinder;
     
-    [Header("JSON File Settings")]
+    [Header("Firebase Settings")]
     [SerializeField]
-    private string jsonFileName = "TargetData.json";
+    private string collectionName = "coordinates";
 
+    [SerializeField]
+    private bool fetchOnStart = true;
+
+    [SerializeField]
+    private float networkTimeoutSeconds = 30f;
+
+    [SerializeField]
+    private int maxRetryAttempts = 3;
+
+    [Header("Target Object Settings")]
     [SerializeField]
     private GameObject targetObjectPrefab;
     [SerializeField]
     private Transform[] targetObjectsParentTransforms;
 
     private List<TargetFacade> currentTargetItems = new List<TargetFacade>();
-    private TargetListWrapper targetDataWrapper;
+    private List<TargetData> targets = new List<TargetData>();
 
     // cache sprites created for dropdown to avoid recreating every frame
     private Dictionary<TargetFacade, Sprite> dropdownSpriteCache = new Dictionary<TargetFacade, Sprite>();
 
+    private FirebaseFirestore db;
+    private int retryCount = 0;
+    private bool isInitialized = false;
+    private List<TargetData> pendingTargets = null;
+    private bool hasPendingTargets = false;
+
+    // Events
+    public event Action<List<TargetData>> TargetsChanged;
+    public event Action<bool> LoadingChanged;
+    public event Action<string> ErrorOccurred;
+
     private void Start() {
         Debug.Log("TargetHandler.Start()");
-        LoadTargetData();
-        GenerateTargetItems();
-        FillDropdownWithTargetItems();
+        StartCoroutine(InitializeWithDelay());
     }
 
-    private void LoadTargetData() {
-        Debug.Log("TargetHandler.LoadTargetData() - attempting to load JSON");
-        string persistentPath = Path.Combine(Application.persistentDataPath, jsonFileName);
-        if (File.Exists(persistentPath)) {
-            try {
-                string jsonContent = File.ReadAllText(persistentPath);
-                targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
-                Debug.Log($"Loaded target data from persistent path: {persistentPath}");
-                LogWrapperSummary();
+    private void Update()
+    {
+        // Process pending targets on main thread
+        if (hasPendingTargets && pendingTargets != null)
+        {
+            hasPendingTargets = false;
+            
+            try
+            {
+                GenerateTargetItems();
+                FillDropdownWithTargetItems();
+                TargetsChanged?.Invoke(pendingTargets);
+                try { LoadingChanged?.Invoke(false); } catch (Exception) {}
+            }
+            catch (Exception cbEx)
+            {
+                Debug.LogError($"[TargetHandler] Error while processing targets: {cbEx.Message}");
+            }
+            
+            pendingTargets = null;
+        }
+    }
+
+    private IEnumerator InitializeWithDelay()
+    {
+        // Wait a bit for Firebase to initialize on mobile
+        if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
+        {
+            yield return new WaitForSeconds(1f);
+        }
+        
+        TryInit();
+        
+        // Additional delay for mobile devices
+        if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
+        {
+            yield return new WaitForSeconds(2f);
+        }
+        
+        if (fetchOnStart)
+        {
+            FetchAllTargets();
+        }
+    }
+
+    private void TryInit()
+    {
+        try
+        {
+            // Check internet connectivity first
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                Debug.LogError("[TargetHandler] No internet connection detected");
+                ErrorOccurred?.Invoke("No internet connection");
                 return;
-            } catch (System.Exception e) {
-                Debug.LogWarning($"Failed reading persistent JSON, will try StreamingAssets. Error: {e.Message}");
+            }
+
+            db = FirebaseFirestore.DefaultInstance;
+            if (db != null)
+            {
+                isInitialized = true;
+                Debug.Log("[TargetHandler] Firebase initialized successfully");
+            }
+            else
+            {
+                Debug.LogError("[TargetHandler] Firestore DefaultInstance is null");
+                ErrorOccurred?.Invoke("Firebase not initialized");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[TargetHandler] Failed to get Firestore instance: {e.Message}");
+            ErrorOccurred?.Invoke($"Firebase initialization failed: {e.Message}");
+        }
+    }
+
+    [ContextMenu("Fetch All Targets")]
+    public void FetchAllTargets()
+    {
+        StartCoroutine(FetchAllTargetsCoroutine());
+    }
+
+    private IEnumerator FetchAllTargetsCoroutine()
+    {
+        // Check internet connectivity
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            Debug.LogError("[TargetHandler] No internet connection for data fetch");
+            ErrorOccurred?.Invoke("No internet connection");
+            yield break;
+        }
+
+        if (db == null || !isInitialized)
+        {
+            TryInit();
+            
+            // Shorter delay for PC, longer for mobile
+            if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
+            {
+                yield return new WaitForSeconds(1f);
+            }
+            else
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            if (db == null || !isInitialized)
+            {
+                Debug.LogError("[TargetHandler] Firestore not initialized. Ensure Firebase is set up and initialized.");
+                ErrorOccurred?.Invoke("Firebase not initialized");
+                yield break;
             }
         }
 
-        string streamingPath = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+        try { LoadingChanged?.Invoke(true); } catch (Exception) {}
 
-#if UNITY_ANDROID && !UNITY_EDITOR
-        string jsonContentFromSA = ReadTextFromStreamingAssets(streamingPath);
-        if (!string.IsNullOrEmpty(jsonContentFromSA)) {
-            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContentFromSA);
-            Debug.Log($"Loaded target data from StreamingAssets (Android): {streamingPath}");
-            LogWrapperSummary();
-        } else {
-            Debug.LogWarning($"Target data not found or empty at StreamingAssets (Android): {streamingPath}. Creating empty data.");
-            targetDataWrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
+        bool fetchCompleted = false;
+        Exception fetchException = null;
+
+        db.Collection(collectionName).GetSnapshotAsync().ContinueWith(task =>
+        {
+            if (task.IsFaulted || task.IsCanceled)
+            {
+                Debug.LogError($"[TargetHandler] Failed to fetch targets. Faulted={task.IsFaulted}, Canceled={task.IsCanceled}, Exception={task.Exception}");
+                fetchException = task.Exception;
+            }
+            else
+            {
+                ProcessFetchResult(task.Result);
+            }
+            fetchCompleted = true;
+        });
+
+        // Wait for completion with timeout
+        float timeout = networkTimeoutSeconds;
+        while (!fetchCompleted && timeout > 0)
+        {
+            yield return new WaitForSeconds(0.1f);
+            timeout -= 0.1f;
         }
-#else
-        if (File.Exists(streamingPath)) {
-            string jsonContent = File.ReadAllText(streamingPath);
-            targetDataWrapper = JsonUtility.FromJson<TargetListWrapper>(jsonContent);
-            Debug.Log($"Loaded target data from StreamingAssets: {streamingPath}");
-            LogWrapperSummary();
-        } else {
-            Debug.LogWarning($"Target data file not found at: {streamingPath}. Creating empty data.");
-            targetDataWrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
+
+        if (!fetchCompleted)
+        {
+            Debug.LogError($"[TargetHandler] Fetch timed out after {networkTimeoutSeconds} seconds");
+            HandleFetchError("Request timed out");
         }
-#endif
+        else if (fetchException != null)
+        {
+            HandleFetchError(fetchException.Message);
+        }
+        else
+        {
+            // Deliver results on the main thread immediately
+            if (pendingTargets != null)
+            {
+                try
+                {
+                    GenerateTargetItems();
+                    FillDropdownWithTargetItems();
+                    TargetsChanged?.Invoke(pendingTargets);
+                }
+                catch (Exception cbEx)
+                {
+                    Debug.LogError($"[TargetHandler] Error while processing targets (post-fetch): {cbEx.Message}");
+                }
+                finally
+                {
+                    pendingTargets = null;
+                    hasPendingTargets = false;
+                }
+            }
+            try { LoadingChanged?.Invoke(false); } catch (Exception) {}
+        }
     }
 
-    // Helper to log loaded wrapper contents
-    private void LogWrapperSummary()
+    private void ProcessFetchResult(QuerySnapshot snapshot)
     {
-        if (targetDataWrapper == null || targetDataWrapper.TargetList == null) {
-            Debug.Log("TargetHandler: No targets loaded (wrapper is null or empty).");
+        List<TargetData> loaded = new List<TargetData>();
+
+        if (snapshot == null)
+        {
+            Debug.LogError("[TargetHandler] Snapshot is null");
+            HandleFetchError("Received null snapshot from Firebase");
             return;
         }
 
-        Debug.Log($"TargetHandler: Loaded {targetDataWrapper.TargetList.Count} targets:");
-        for (int i = 0; i < targetDataWrapper.TargetList.Count; i++) {
-            var t = targetDataWrapper.TargetList[i];
-            if (t == null) {
-                Debug.Log($"  [{i}] null entry");
-                continue;
+        Debug.Log($"[TargetHandler] Processing {snapshot.Documents.Count()} documents from Firebase");
+
+        foreach (var doc in snapshot.Documents)
+        {
+            try
+            {
+                // Parse using dictionary since we're using public fields, not properties
+                var dict = doc.ToDictionary();
+                
+                var data = new TargetData
+                {
+                    id = doc.Id,
+                    Name = dict.ContainsKey("name") ? dict["name"]?.ToString() : 
+                           dict.ContainsKey("Name") ? dict["Name"]?.ToString() : string.Empty,
+                    Building = dict.ContainsKey("building") ? dict["building"]?.ToString() : 
+                               dict.ContainsKey("Building") ? dict["Building"]?.ToString() : string.Empty,
+                    BuildingId = dict.ContainsKey("buildingId") ? dict["buildingId"]?.ToString() : 
+                                 dict.ContainsKey("BuildingId") ? dict["BuildingId"]?.ToString() : string.Empty,
+                    FloorNumber = GetInt(dict, "floor") != 0 ? GetInt(dict, "floor") : GetInt(dict, "FloorNumber"),
+                    FloorId = dict.ContainsKey("floorId") ? dict["floorId"]?.ToString() : 
+                              dict.ContainsKey("FloorId") ? dict["FloorId"]?.ToString() : string.Empty,
+                    Image = dict.ContainsKey("image") ? dict["image"]?.ToString() : 
+                            dict.ContainsKey("Image") ? dict["Image"]?.ToString() : string.Empty,
+                    CreatedAt = dict.ContainsKey("createdAt") ? dict["createdAt"]?.ToString() : 
+                                dict.ContainsKey("CreatedAt") ? dict["CreatedAt"]?.ToString() : string.Empty,
+                    Position = new TargetPosition
+                    {
+                        x = GetFloat(dict, "x"),
+                        y = GetFloat(dict, "y"),
+                        z = GetFloat(dict, "z")
+                    }
+                };
+                
+                Debug.Log($"[TargetHandler] Document {doc.Id} - Name: '{data.Name}', Building: '{data.Building}', Floor: {data.FloorNumber}, Image: '{(string.IsNullOrEmpty(data.Image) ? "none" : "present")}'");
+                Debug.Log($"[TargetHandler] Position: ({data.Position.x}, {data.Position.y}, {data.Position.z})");
+                
+                loaded.Add(data);
             }
-            string pos = t.Position != null ? $"{t.Position.x},{t.Position.y},{t.Position.z}" : "null";
-            Debug.Log($"  [{i}] Name='{t.Name}' Building='{t.Building}' Floor={t.FloorNumber} FloorId='{t.FloorId}' ImagePresent={(string.IsNullOrEmpty(t.Image) ? "no" : "yes")} Position={pos} CreatedAt='{t.CreatedAt}'");
+            catch (Exception ex)
+            {
+                Debug.LogError($"[TargetHandler] Failed to parse document '{doc.Id}': {ex.Message}");
+            }
+        }
+
+        // Replace in-memory list atomically
+        targets = loaded;
+        retryCount = 0; // Reset retry count on success
+
+        Debug.Log($"[TargetHandler] Successfully loaded {loaded.Count} targets from Firebase");
+
+        // Store targets to be processed on main thread
+        pendingTargets = new List<TargetData>(targets);
+        hasPendingTargets = true;
+    }
+
+    private void HandleFetchError(string errorMessage)
+    {
+        Debug.LogError($"[TargetHandler] Fetch error: {errorMessage}");
+        ErrorOccurred?.Invoke(errorMessage);
+        try { LoadingChanged?.Invoke(false); } catch (Exception) {}
+        
+        // Retry logic
+        if (retryCount < maxRetryAttempts)
+        {
+            retryCount++;
+            StartCoroutine(RetryFetch());
+        }
+        else
+        {
+            Debug.LogError("[TargetHandler] Max retry attempts reached. Giving up.");
         }
     }
 
-#if UNITY_ANDROID && !UNITY_EDITOR
-    private string ReadTextFromStreamingAssets(string path) {
-        using (UnityWebRequest request = UnityWebRequest.Get(path)) {
-            var op = request.SendWebRequest();
-            while (!op.isDone) { }
-            bool failed = request.result == UnityWebRequest.Result.ConnectionError ||
-                          request.result == UnityWebRequest.Result.ProtocolError ||
-                          request.result == UnityWebRequest.Result.DataProcessingError;
-            if (failed) {
-                Debug.LogWarning($"Failed to read StreamingAssets JSON: {request.error}");
-                return null;
+    private IEnumerator RetryFetch()
+    {
+        yield return new WaitForSeconds(3f);
+        FetchAllTargets();
+    }
+
+    private float GetFloat(Dictionary<string, object> dict, string key)
+    {
+        if (dict == null || !dict.ContainsKey(key) || dict[key] == null) return 0f;
+
+        object val = dict[key];
+
+        if (val is float f) return f;
+        if (val is double d) return (float)d;
+        if (val is long l) return (float)l;
+        if (val is int i) return (float)i;
+
+        string s = val.ToString();
+        if (float.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float parsed))
+            return parsed;
+
+        return 0f;
+    }
+
+    private int GetInt(Dictionary<string, object> dict, string key)
+    {
+        if (dict == null || !dict.ContainsKey(key) || dict[key] == null) return 0;
+
+        object val = dict[key];
+
+        if (val is int i) return i;
+        if (val is long l) return (int)l;
+        if (val is double d) return Mathf.RoundToInt((float)d);
+
+        string s = val.ToString();
+        if (int.TryParse(s, out int parsed)) return parsed;
+        if (float.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fp)) return Mathf.RoundToInt(fp);
+
+        return 0;
+    }
+
+    public void EmitCachedTargets()
+    {
+        if (targets != null && targets.Count > 0)
+        {
+            try
+            {
+                TargetsChanged?.Invoke(new List<TargetData>(targets));
             }
-            return request.downloadHandler.text;
+            catch (Exception ex)
+            {
+                Debug.LogError($"[TargetHandler] Error emitting cached targets: {ex.Message}");
+            }
         }
     }
-#endif
 
     private void GenerateTargetItems() {
         Debug.Log("TargetHandler.GenerateTargetItems() - clearing existing items and creating new ones");
+        
         foreach (var item in currentTargetItems) {
             if (item != null && item.gameObject != null) {
                 Destroy(item.gameObject);
@@ -122,9 +409,9 @@ public class TargetHandler : MonoBehaviour {
         }
         currentTargetItems.Clear();
 
-        if (targetDataWrapper?.TargetList != null) {
-            Debug.Log($"TargetHandler: Generating {targetDataWrapper.TargetList.Count} target items from wrapper.");
-            foreach (TargetData targetData in targetDataWrapper.TargetList) {
+        if (targets != null && targets.Count > 0) {
+            Debug.Log($"TargetHandler: Generating {targets.Count} target items from Firebase.");
+            foreach (TargetData targetData in targets) {
                 TargetFacade created = CreateTargetFacade(targetData);
                 if (created != null) {
                     currentTargetItems.Add(created);
@@ -134,7 +421,7 @@ public class TargetHandler : MonoBehaviour {
                 }
             }
         } else {
-            Debug.Log("TargetHandler: No targetDataWrapper or TargetList to generate from.");
+            Debug.Log("TargetHandler: No targets to generate from Firebase.");
         }
     }
 
@@ -306,10 +593,10 @@ public class TargetHandler : MonoBehaviour {
         Debug.Log($"Dropdown populated with {targetFacadeOptionData.Count} options.");
 
         // Also populate DropdownScrollBinder with location data if available
-        if (dropdownScrollBinder != null && targetDataWrapper != null && targetDataWrapper.TargetList != null)
+        if (dropdownScrollBinder != null && targets != null && targets.Count > 0)
         {
             // Convert TargetData to LocationData format
-            LocationData[] locationDataArray = targetDataWrapper.TargetList.Select(targetData => new LocationData
+            LocationData[] locationDataArray = targets.Select(targetData => new LocationData
             {
                 Name = targetData.Name,
                 Building = targetData.Building,
@@ -410,9 +697,9 @@ public class TargetHandler : MonoBehaviour {
             x.Name.ToLower().Equals(targetText.ToLower()));
     }
 
-    // Public method to refresh target data (call this after Firebase updates the JSON)
+    // Public method to refresh target data (call this to reload from Firebase)
     public void RefreshTargetData() {
-        Debug.Log("TargetHandler.RefreshTargetData() called — reloading JSON and rebuilding targets.");
+        Debug.Log("TargetHandler.RefreshTargetData() called — fetching from Firebase and rebuilding targets.");
 
         if (currentTargetItems != null && currentTargetItems.Count > 0) {
             foreach (var item in currentTargetItems) {
@@ -427,10 +714,6 @@ public class TargetHandler : MonoBehaviour {
             currentTargetItems.Clear();
         }
 
-        LoadTargetData();
-        GenerateTargetItems();
-        FillDropdownWithTargetItems();
-
-        Debug.Log("Target data refreshed successfully!");
+        FetchAllTargets();
     }
-}
+}   
