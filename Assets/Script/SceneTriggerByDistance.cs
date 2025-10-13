@@ -7,20 +7,22 @@ using UnityEngine.XR.ARFoundation;
 
 public class SceneTriggerByDistance : MonoBehaviour
 {
+    [Header("Settings")]
     public TMP_Text distanceText;
     public float arrivalDistance = 1f;
     public string nextSceneName = "ArriveScene";
     public float delayBeforeLoad = 2f;
 
     [Header("Optional References")]
-    public GameObject xrCamera;              // assign AR camera
-    public MonoBehaviour distanceUpdater;    // script that updates distance
+    public GameObject xrCamera;           // assign AR camera
+    public MonoBehaviour distanceUpdater; // script that updates distance
 
     private bool sceneLoaded = false;
 
     void Update()
     {
-        if (sceneLoaded || distanceText == null) return;
+        if (sceneLoaded || distanceText == null)
+            return;
 
         // Manual tester
         if (Input.GetKeyDown(KeyCode.P))
@@ -29,7 +31,7 @@ public class SceneTriggerByDistance : MonoBehaviour
             return;
         }
 
-        // Parse TMP text
+        // Parse TMP text to get numeric distance
         string cleanText = Regex.Replace(distanceText.text, "<.*?>", ""); // remove tags
         cleanText = Regex.Replace(cleanText, "[^0-9.]", "");              // keep digits/decimal
 
@@ -42,19 +44,20 @@ public class SceneTriggerByDistance : MonoBehaviour
         }
     }
 
-    // Called the instant we detect arrival
     void HandleArrival()
     {
-        if (sceneLoaded) return;
+        if (sceneLoaded)
+            return;
+
         sceneLoaded = true;
 
-        // 🔥 Disable everything BEFORE any other frame runs
+        // Disable navigation & camera updates
         DisableNavigation();
 
-        // 🔥 Immediately show "You've arrived!"
+        // Show arrival message
         distanceText.text = "<size=72><b><color=#00AA00>You've arrived!</color></b></size>";
 
-        // Then start the delayed scene load
+        // Start delayed scene load
         StartCoroutine(LoadNextScene());
     }
 
