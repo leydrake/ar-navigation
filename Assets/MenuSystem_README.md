@@ -109,17 +109,14 @@ MenuItem menuItem = GetComponent<MenuItem>();
 
 // Add click event
 menuItem.OnItemClicked.AddListener(() => {
-    Debug.Log("Menu item clicked!");
-});
+    });
 
 // Add hover events
 menuItem.OnItemHover.AddListener(() => {
-    Debug.Log("Hovering over menu item");
-});
+    });
 
 menuItem.OnItemHoverExit.AddListener(() => {
-    Debug.Log("Stopped hovering over menu item");
-});
+    });
 ```
 
 ### Dynamic Menu Creation

@@ -6,15 +6,23 @@ using UnityEngine.XR.ARSubsystems;
 using ZXing;
 using ZXing.Common;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class QrCodeRecenter : MonoBehaviour
 {
+    [Header("AR References")]
     [SerializeField] private ARSession session;
     [SerializeField] private XROrigin sessionOrigin;
     [SerializeField] private ARCameraManager cameraManager;
     [SerializeField] private TargetHandler targetHandler;
+
+    [Header("UI Elements")]
     [SerializeField] private Transform indicatorSphere;
-    [SerializeField] private GameObject qrCodeScanningPanel;
+    [SerializeField] private GameObject qrCodeScanningPanel;  // Panel with mask shader
+    [SerializeField] private Material maskMaterial;           // Material using "UI/HoleMask"
+    [SerializeField] private Button scanAgainButton;
+
+    [Header("Minimap")]
     [SerializeField] private Transform minimapCamera;
     [SerializeField] private float minimapHeight = 20f;
     [SerializeField] private bool minimapNorthUp = true;
@@ -37,10 +45,11 @@ public class QrCodeRecenter : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
-            Instance = this;
-        else
-            Destroy(gameObject);
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+
+        if (scanAgainButton != null)
+            scanAgainButton.onClick.AddListener(OnScanAgainClicked);
     }
 
     private void OnEnable()
@@ -101,14 +110,8 @@ public class QrCodeRecenter : MonoBehaviour
 
         if (result != null)
         {
-            // Hide the panel only once on first success
-            if (!hasScannedSuccessfully)
-            {
-                hasScannedSuccessfully = true;
-                qrCodeScanningPanel.SetActive(false);
-            }
-
-            // Keep updating position if same or new code detected
+            hasScannedSuccessfully = true;
+            StopScanning();
             SetQrCodeRecenterTarget(result.Text);
         }
     }
@@ -116,11 +119,7 @@ public class QrCodeRecenter : MonoBehaviour
     private void SetQrCodeRecenterTarget(string targetText)
     {
         Transform targetTransform = ResolveTargetTransform(targetText);
-        if (targetTransform == null)
-        {
-            Debug.LogWarning($"QrCodeRecenter: No target found for '{targetText}'.");
-            return;
-        }
+        if (targetTransform == null) return;
 
         Vector3 currentCameraWorldPos = sessionOrigin.Camera != null
             ? sessionOrigin.Camera.transform.position
@@ -149,8 +148,6 @@ public class QrCodeRecenter : MonoBehaviour
                 ? Quaternion.Euler(90f, 0f, 0f)
                 : Quaternion.LookRotation(Vector3.down, targetTransform.forward);
         }
-
-        Debug.Log($"QrCodeRecenter: Recentered to target '{targetTransform.name}'.");
     }
 
     private Transform ResolveTargetTransform(string targetText)
@@ -180,17 +177,55 @@ public class QrCodeRecenter : MonoBehaviour
         return null;
     }
 
-    public void StartScanning()
+public void StartScanning()
+{
+    scanningEnabled = true;
+    hasScannedSuccessfully = false;
+
+    // Show overlay
+    if (qrCodeScanningPanel != null)
     {
-        scanningEnabled = true;
         qrCodeScanningPanel.SetActive(true);
-        hasScannedSuccessfully = false;
+
+        // Restore raycast blocking
+        var img = qrCodeScanningPanel.GetComponent<Image>();
+        if (img != null) img.raycastTarget = true;
     }
 
-    public void StopScanning()
+    // Make dark overlay visible
+    if (maskMaterial != null)
     {
-        scanningEnabled = false;
+        Color c = maskMaterial.GetColor("_Color");
+        c.a = 0.7f; // semi-transparent
+        maskMaterial.SetColor("_Color", c);
+    }
+}
+
+public void StopScanning()
+{
+    scanningEnabled = false;
+
+    // Fade mask out
+    if (maskMaterial != null)
+    {
+        Color c = maskMaterial.GetColor("_Color");
+        c.a = 0f;
+        maskMaterial.SetColor("_Color", c);
+    }
+
+    // Allow clicks to pass through or hide the panel
+    if (qrCodeScanningPanel != null)
+    {
+        var img = qrCodeScanningPanel.GetComponent<Image>();
+        if (img != null) img.raycastTarget = false;
+
+        // Optional: fully hide it if you prefer
         qrCodeScanningPanel.SetActive(false);
+    }
+}
+    private void OnScanAgainClicked()
+    {
+        StartScanning();
     }
 
 #if UNITY_EDITOR
@@ -199,8 +234,15 @@ public class QrCodeRecenter : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             hasScannedSuccessfully = true;
-            qrCodeScanningPanel.SetActive(false);
+            StopScanning();
             SetQrCodeRecenterTarget("Target(Sogo)");
+        }
+
+        if (Input.GetKeyDown(KeyCode.Backspace))
+        {
+            hasScannedSuccessfully = false;
+            StartScanning();
+            SetQrCodeRecenterTarget("Target(Gate)");
         }
     }
 #endif
