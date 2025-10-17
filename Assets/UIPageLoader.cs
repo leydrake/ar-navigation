@@ -61,12 +61,12 @@ public class UIPageLoader : MonoBehaviour
             Debug.Log("[UIPageLoader] Cloned UXML into root. Child count: " + root.childCount);
         }
 
-        // 🔗 Always try to wire the 'info' VisualElement to open tutorial URL
-        TryWireClick(root, "info", () =>
-        {
-            Debug.Log("[UIPageLoader] 'info' clicked → opening tutorial URL");
-            Application.OpenURL(tutorialURL);
-        });
+		// 🔗 Always try to wire the 'info' VisualElement to open the tutorial scene
+		TryWireClick(root, "info", () =>
+		{
+			Debug.Log("[UIPageLoader] 'info' clicked → loading 'tutorial' scene");
+			SceneManager.LoadScene("tutorial");
+		});
 
         // 🔘 Handle per-page navigation buttons
         if (pageAsset == startPageUXML)
