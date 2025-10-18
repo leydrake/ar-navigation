@@ -74,11 +74,18 @@ public class AppCanvas : MonoBehaviour
 	public GameObject optionsPanel; // Panel to show/hide
 	public Button openOptionsButton; // Button to open panel
 	public Button closeOptionsButton; // Button to close panel
-	public RectTransform optionsContainer; // Parent container for option items
+	public RectTransform optionsContainer; // Parent container for option items (OptionsScrollView > Viewport > Content)
 	public GameObject optionItemPrefab; // Prefab expected to have a Button and a Text/TMP_Text
 	
+	[Header("Building Filter Panel")]
+	public Button openBuildingsButton; // Button to open buildings filter panel
+	public GameObject buildingsPanel; // Panel to show building options (can reuse optionsPanel structure)
+	public Button closeBuildingsButton; // Button to close buildings panel
+	public RectTransform buildingsContainer; // Parent container for building filter items (BuildingsScrollView > Viewport > Content or reuse optionsContainer)
+	public GameObject buildingItemPrefab; // Prefab for building filter buttons (can reuse optionItemPrefab)
+	
 	[Header("Search Filtering")]
-	public RectTransform locationsContainer; // Container with location items to filter
+	public RectTransform locationsContainer; // Container with location items to filter (LocationsContainer)
 	[Tooltip("How to search for text in location items: Name, Text, TMP_Text, or All")]
 	public SearchMethod searchMethod = SearchMethod.All;
 	[Tooltip("Search in children recursively (not just direct children)")]
@@ -103,9 +110,12 @@ public class AppCanvas : MonoBehaviour
 	public int optionsPanelSortingOrder = 1000;
 
 	private readonly List<GameObject> spawnedOptionItems = new List<GameObject>();
+	private readonly List<GameObject> spawnedBuildingItems = new List<GameObject>();
 	private bool savedPanelOverrideSorting;
 	private int savedPanelSortingOrder;
 	private bool hasSavedSortingState = false;
+	private string currentBuildingFilter = ""; // Empty means show all
+	private readonly HashSet<string> availableBuildings = new HashSet<string>();
     
     [Header("Container State")]
     private bool showingAdvancedOptions = false;
@@ -148,6 +158,21 @@ public class AppCanvas : MonoBehaviour
 			optionsPanel.SetActive(false);
 		}
 
+		// Wire building filter panel open/close
+		if (openBuildingsButton != null)
+		{
+			openBuildingsButton.onClick.AddListener(OpenBuildingsPanel);
+		}
+		if (closeBuildingsButton != null)
+		{
+			closeBuildingsButton.onClick.AddListener(CloseBuildingsPanel);
+		}
+		// Ensure buildings panel starts hidden if assigned
+		if (buildingsPanel != null)
+		{
+			buildingsPanel.SetActive(false);
+		}
+
 		// Optional: live search filtering while panel is open
 		if (searchInput != null)
 		{
@@ -172,6 +197,9 @@ public class AppCanvas : MonoBehaviour
 		{
 			ApplyLocationItemSizes();
 		}
+
+		// Discover available buildings from locations
+		DiscoverAvailableBuildings();
     }
     
     private void InitializeContainers()
@@ -581,6 +609,269 @@ public class AppCanvas : MonoBehaviour
 		ClearSpawnedOptions();
 	}
 
+	// ===== Building Filter Panel Logic =====
+	/// <summary>
+	/// Discovers all unique buildings from location items
+	/// </summary>
+	private void DiscoverAvailableBuildings()
+	{
+		availableBuildings.Clear();
+		
+		if (locationsContainer == null) return;
+		
+		RectTransform content = GetLocationsContentRect();
+		if (content == null) return;
+		
+		List<GameObject> items = new List<GameObject>();
+		CollectFilterableItems(content, items);
+		
+		foreach (GameObject item in items)
+		{
+			string building = GetBuildingFromItem(item);
+			if (!string.IsNullOrEmpty(building))
+			{
+				availableBuildings.Add(building);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets the building identifier from a location item
+	/// Extracts the building name from the FilterBuilding component
+	/// </summary>
+	private string GetBuildingFromItem(GameObject item)
+	{
+		// Primary method: Get from FilterBuilding component
+		FilterBuilding data = item.GetComponent<FilterBuilding>();
+		if (data != null && !string.IsNullOrEmpty(data.building))
+		{
+			return data.building;
+		}
+		
+		// Fallback 1: Try to find FilterBuilding in children
+		data = item.GetComponentInChildren<FilterBuilding>();
+		if (data != null && !string.IsNullOrEmpty(data.building))
+		{
+			return data.building;
+		}
+		
+		// Fallback 2: Parse from GameObject name (in case LocationData is missing)
+		// If your GameObjects are named like "Pancho - Library"
+		string itemName = item.name;
+		if (itemName.Contains("-"))
+		{
+			return itemName.Split('-')[0].Trim();
+		}
+		
+		// Fallback 3: Try to extract from displayed text
+		TMP_Text tmpComp = item.GetComponentInChildren<TMP_Text>();
+		if (tmpComp != null && !string.IsNullOrEmpty(tmpComp.text))
+		{
+			// If text follows pattern "Building - Location"
+			if (tmpComp.text.Contains("-"))
+			{
+				return tmpComp.text.Split('-')[0].Trim();
+			}
+			// Or if it's just the building name on first line
+			string[] lines = tmpComp.text.Split('\n');
+			if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0])) 
+				return lines[0].Trim();
+		}
+		
+		Text textComp = item.GetComponentInChildren<Text>();
+		if (textComp != null && !string.IsNullOrEmpty(textComp.text))
+		{
+			if (textComp.text.Contains("-"))
+			{
+				return textComp.text.Split('-')[0].Trim();
+			}
+			string[] lines = textComp.text.Split('\n');
+			if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0])) 
+				return lines[0].Trim();
+		}
+		
+		// If no building info found, return null (item won't be filterable)
+		return null;
+	}
+
+	public void OpenBuildingsPanel()
+	{
+		if (buildingsPanel == null || buildingsContainer == null || buildingItemPrefab == null) return;
+		
+		buildingsPanel.SetActive(true);
+		
+		// Optionally bring to front
+		if (ensureOptionsPanelOnTop)
+		{
+			buildingsPanel.transform.SetAsLastSibling();
+			
+			if (overridePanelSortingWhileOpen)
+			{
+				Canvas panelCanvas = buildingsPanel.GetComponent<Canvas>();
+				if (panelCanvas != null)
+				{
+					panelCanvas.overrideSorting = true;
+					panelCanvas.sortingOrder = optionsPanelSortingOrder;
+				}
+			}
+		}
+		
+		BuildBuildingsList();
+	}
+
+	public void CloseBuildingsPanel()
+	{
+		if (buildingsPanel == null) return;
+		buildingsPanel.SetActive(false);
+		ClearSpawnedBuildings();
+	}
+
+	private void BuildBuildingsList()
+	{
+		ClearSpawnedBuildings();
+		
+		// Refresh available buildings in case new locations were added
+		DiscoverAvailableBuildings();
+		
+		// Add "All Buildings" option at the top
+		GameObject allItem = Instantiate(buildingItemPrefab, buildingsContainer);
+		SetLabelTextOnItem(allItem, "All Buildings");
+		Button allBtn = allItem.GetComponent<Button>();
+		if (allBtn != null)
+		{
+			allBtn.onClick.AddListener(() => OnBuildingItemClicked(""));
+		}
+		spawnedBuildingItems.Add(allItem);
+		
+		// Add each building as an option
+		List<string> sortedBuildings = new List<string>(availableBuildings);
+		sortedBuildings.Sort(); // Alphabetical order
+		
+		foreach (string building in sortedBuildings)
+		{
+			string buildingName = building; // Capture for lambda
+			GameObject item = Instantiate(buildingItemPrefab, buildingsContainer);
+			SetLabelTextOnItem(item, buildingName);
+			Button btn = item.GetComponent<Button>();
+			if (btn != null)
+			{
+				btn.onClick.AddListener(() => OnBuildingItemClicked(buildingName));
+			}
+			spawnedBuildingItems.Add(item);
+		}
+	}
+
+	private void OnBuildingItemClicked(string buildingName)
+	{
+		currentBuildingFilter = buildingName;
+		
+		// Apply the building filter to locations
+		ApplyBuildingFilter();
+		
+		// Update button text or label to show current filter
+		if (openBuildingsButton != null)
+		{
+			TMP_Text btnText = openBuildingsButton.GetComponentInChildren<TMP_Text>();
+			if (btnText != null)
+			{
+				btnText.text = string.IsNullOrEmpty(buildingName) ? "All Buildings" : buildingName;
+			}
+			else
+			{
+				Text btnUiText = openBuildingsButton.GetComponentInChildren<Text>();
+				if (btnUiText != null)
+				{
+					btnUiText.text = string.IsNullOrEmpty(buildingName) ? "All Buildings" : buildingName;
+				}
+			}
+		}
+		
+		CloseBuildingsPanel();
+	}
+
+	private void ApplyBuildingFilter()
+	{
+		if (locationsContainer == null) return;
+		
+		RectTransform content = GetLocationsContentRect();
+		if (content == null) return;
+		
+		List<GameObject> items = new List<GameObject>();
+		CollectFilterableItems(content, items);
+		
+		foreach (GameObject item in items)
+		{
+			bool shouldShow = ShouldShowItemByBuilding(item);
+			item.SetActive(shouldShow);
+		}
+		
+		// Also apply text search filter if active
+		string currentSearch = GetCurrentSearchFilter();
+		if (!string.IsNullOrEmpty(currentSearch))
+		{
+			FilterLocationsContainer(currentSearch);
+		}
+		
+		FixLocationsScrollBounds();
+	}
+
+	private bool ShouldShowItemByBuilding(GameObject item)
+	{
+		// If no building filter is set, show all
+		if (string.IsNullOrEmpty(currentBuildingFilter))
+		{
+			return true;
+		}
+		
+		string itemBuilding = GetBuildingFromItem(item);
+		
+		// If item has no building data but filter is active, hide it
+		if (string.IsNullOrEmpty(itemBuilding))
+		{
+			return false;
+		}
+		
+		// Show if building matches
+		return itemBuilding == currentBuildingFilter;
+	}
+
+	private void ClearSpawnedBuildings()
+	{
+		for (int i = 0; i < spawnedBuildingItems.Count; i++)
+		{
+			if (spawnedBuildingItems[i] != null)
+			{
+				Destroy(spawnedBuildingItems[i]);
+			}
+		}
+		spawnedBuildingItems.Clear();
+	}
+
+	/// <summary>
+	/// Public method to programmatically set building filter
+	/// </summary>
+	public void SetBuildingFilter(string buildingName)
+	{
+		currentBuildingFilter = buildingName;
+		ApplyBuildingFilter();
+	}
+
+	/// <summary>
+	/// Public method to clear building filter
+	/// </summary>
+	public void ClearBuildingFilter()
+	{
+		SetBuildingFilter("");
+	}
+
+	/// <summary>
+	/// Gets the current building filter
+	/// </summary>
+	public string GetCurrentBuildingFilter()
+	{
+		return currentBuildingFilter;
+	}
+
 	private void BuildOptionsList(string filter)
 	{
 		ClearSpawnedOptions();
@@ -588,7 +879,24 @@ public class AppCanvas : MonoBehaviour
 		// If we have a locations container, filter its children instead of dropdown options
 		if (locationsContainer != null)
 		{
-            FilterLocationsContainer(filter);
+			// Don't call FilterLocationsContainer here - just make locations visible
+			// FilterLocationsContainer will be called separately when needed
+			RectTransform content = GetLocationsContentRect();
+			if (content != null)
+			{
+				List<GameObject> items = new List<GameObject>();
+				CollectFilterableItems(content, items);
+				
+				// Show all items or filter based on search
+				foreach (GameObject item in items)
+				{
+					bool matchesSearch = string.IsNullOrEmpty(filter) || ShouldShowItem(item, filter);
+					bool matchesBuilding = ShouldShowItemByBuilding(item);
+					item.SetActive(matchesSearch && matchesBuilding);
+				}
+				
+				FixLocationsScrollBounds();
+			}
 			return;
 		}
 		
@@ -620,21 +928,21 @@ public class AppCanvas : MonoBehaviour
 	{
 		if (locationsContainer == null) return;
 		
-		// Get content under ScrollRect and filter its children
 		RectTransform content = GetLocationsContentRect();
 		if (content == null) return;
 		List<GameObject> itemsToFilter = new List<GameObject>();
 		CollectFilterableItems(content, itemsToFilter);
 		
-        // Apply filter to each item
-        foreach (GameObject item in itemsToFilter)
-        {
-            bool shouldShow = ShouldShowItem(item, filter);
-            item.SetActive(shouldShow);
-        }
-        
-        // Fix scroll bounds after filtering since content visibility changed
-        FixLocationsScrollBounds();
+		// Apply BOTH search filter AND building filter
+		foreach (GameObject item in itemsToFilter)
+		{
+			bool matchesSearch = ShouldShowItem(item, filter);
+			bool matchesBuilding = ShouldShowItemByBuilding(item);
+			item.SetActive(matchesSearch && matchesBuilding);
+		}
+		
+		// Fix scroll bounds after filtering since content visibility changed
+		FixLocationsScrollBounds();
 	}
 	
 	private void CollectFilterableItems(Transform parent, List<GameObject> items)
@@ -687,40 +995,46 @@ public class AppCanvas : MonoBehaviour
 
 	private RectTransform GetLocationsContentRect()
 	{
-		// Prefer ScrollRect.content if present
-		var scroll = locationsContainer.GetComponentInParent<ScrollRect>();
+		// Your structure: LocationsContainer > Viewport > Content
+		if (locationsContainer == null) return null;
+		
+		// First, try to find Viewport
+		Transform viewport = locationsContainer.Find("Viewport");
+		if (viewport != null)
+		{
+			// Then find Content inside Viewport
+			Transform content = viewport.Find("Content");
+			if (content != null)
+			{
+				return content as RectTransform;
+			}
+		}
+		
+		// Fallback: Use ScrollRect.content if available
+		var scroll = locationsContainer.GetComponent<ScrollRect>();
 		if (scroll != null && scroll.content != null)
 		{
 			return scroll.content;
 		}
 
-		// Fallback: find child by common names
-		Transform viewport = locationsContainer.Find("Viewport");
-		if (viewport == null && locationsContainer.childCount > 0)
+		// Last resort: search for any child named "Content"
+		for (int i = 0; i < locationsContainer.childCount; i++)
 		{
-			// Try to locate a child that has a Mask and is commonly the viewport
-			for (int i = 0; i < locationsContainer.childCount; i++)
+			Transform child = locationsContainer.GetChild(i);
+			if (child.name == "Viewport" || child.name.ToLowerInvariant().Contains("viewport"))
 			{
-				var child = locationsContainer.GetChild(i);
-				if (child.name.ToLowerInvariant().Contains("viewport"))
+				for (int j = 0; j < child.childCount; j++)
 				{
-					viewport = child;
-					break;
+					Transform grandchild = child.GetChild(j);
+					if (grandchild.name == "Content" || grandchild.name.ToLowerInvariant().Contains("content"))
+					{
+						return grandchild as RectTransform;
+					}
 				}
 			}
 		}
-		if (viewport != null)
-		{
-			Transform content = viewport.Find("Content");
-			if (content == null && viewport.childCount > 0)
-			{
-				// Heuristic: first child often is content
-				content = viewport.GetChild(0);
-			}
-			return content as RectTransform;
-		}
 
-		// Last resort: if the container itself is the content
+		// If all else fails, return the container itself
 		return locationsContainer;
 	}
 
@@ -975,6 +1289,14 @@ public class AppCanvas : MonoBehaviour
 		if (closeOptionsButton != null)
 		{
 			closeOptionsButton.onClick.RemoveListener(CloseOptionsPanel);
+		}
+		if (openBuildingsButton != null)
+		{
+			openBuildingsButton.onClick.RemoveListener(OpenBuildingsPanel);
+		}
+		if (closeBuildingsButton != null)
+		{
+			closeBuildingsButton.onClick.RemoveListener(CloseBuildingsPanel);
 		}
 		if (searchInput != null)
 		{

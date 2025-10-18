@@ -15,12 +15,14 @@ public class QrCodeRecenter : MonoBehaviour
     [SerializeField] private XROrigin sessionOrigin;
     [SerializeField] private ARCameraManager cameraManager;
     [SerializeField] private TargetHandler targetHandler;
+    [SerializeField] private ARAnchorManager anchorManager;
 
     [Header("UI Elements")]
     [SerializeField] private Transform indicatorSphere;
-    [SerializeField] private GameObject qrCodeScanningPanel;  // Panel with mask shader
-    [SerializeField] private Material maskMaterial;           // Material using "UI/HoleMask"
+    [SerializeField] private GameObject qrCodeScanningPanel;
+    [SerializeField] private Material maskMaterial;
     [SerializeField] private Button scanAgainButton;
+    [SerializeField] private Button rescanButton;
 
     [Header("Minimap")]
     [SerializeField] private Transform minimapCamera;
@@ -28,53 +30,105 @@ public class QrCodeRecenter : MonoBehaviour
     [SerializeField] private bool minimapNorthUp = true;
 
     private Texture2D cameraImageTexture;
-    private IBarcodeReader reader = new BarcodeReader
-    {
-        AutoRotate = true,
-        TryInverted = true,
-        Options = new DecodingOptions
-        {
-            PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE },
-            TryHarder = true
-        }
-    };
-
+    private IBarcodeReader reader;
     private bool scanningEnabled = false;
+    private ARAnchor currentAnchor;
+    private bool isInitialized = false;
+    
     public static QrCodeRecenter Instance { get; private set; }
     public bool hasScannedSuccessfully { get; private set; } = false;
+
+    private readonly Vector3 defaultPosition = new Vector3(0, 1, 0);
+    private readonly Quaternion defaultRotation = Quaternion.identity;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
+        reader = new BarcodeReader
+        {
+            AutoRotate = true,
+            TryInverted = true,
+            Options = new DecodingOptions
+            {
+                PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE },
+                TryHarder = true
+            }
+        };
+
         if (scanAgainButton != null)
             scanAgainButton.onClick.AddListener(OnScanAgainClicked);
+
+        if (rescanButton != null)
+            rescanButton.onClick.AddListener(OnRescanClicked);
     }
 
     private void OnEnable()
     {
-        cameraManager.frameReceived += OnCameraFrameReceived;
+        if (cameraManager != null)
+            cameraManager.frameReceived += OnCameraFrameReceived;
     }
 
     private void OnDisable()
     {
-        cameraManager.frameReceived -= OnCameraFrameReceived;
+        if (cameraManager != null)
+            cameraManager.frameReceived -= OnCameraFrameReceived;
     }
 
     private System.Collections.IEnumerator Start()
     {
+        // Wait for camera permission
         if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
             yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
 
-        qrCodeScanningPanel.SetActive(true);
+        // Wait a frame for AR to initialize properly
+        yield return new WaitForSeconds(0.5f);
+
+        // Initialize default positions BEFORE starting scan
+        InitializeDefaultPositions();
+        
+        isInitialized = true;
+
+        if (qrCodeScanningPanel != null)
+            qrCodeScanningPanel.SetActive(true);
+            
         StartScanning();
+    }
+
+    private void InitializeDefaultPositions()
+    {
+        // Set origin to default position
+        if (sessionOrigin != null)
+        {
+            sessionOrigin.transform.position = Vector3.zero;
+            sessionOrigin.transform.rotation = Quaternion.identity;
+            
+            // Lock the camera at default position initially
+            sessionOrigin.MoveCameraToWorldLocation(defaultPosition);
+            sessionOrigin.MatchOriginUpCameraForward(Vector3.up, Vector3.forward);
+        }
+
+        // Set indicator to default
+        if (indicatorSphere != null)
+        {
+            indicatorSphere.position = defaultPosition;
+            indicatorSphere.rotation = defaultRotation;
+        }
+
+        // Set minimap to default
+        if (minimapCamera != null)
+        {
+            minimapCamera.position = new Vector3(defaultPosition.x, minimapHeight, defaultPosition.z);
+            minimapCamera.rotation = minimapNorthUp 
+                ? Quaternion.Euler(90f, 0f, 0f) 
+                : Quaternion.LookRotation(Vector3.down, Vector3.forward);
+        }
     }
 
     private void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs)
     {
-        if (!scanningEnabled) return;
-        if (!cameraManager.permissionGranted) return;
+        if (!isInitialized || !scanningEnabled || !cameraManager.permissionGranted) return;
         if (!cameraManager.TryAcquireLatestCpuImage(out XRCpuImage image)) return;
 
         var conversionParams = new XRCpuImage.ConversionParams
@@ -90,11 +144,7 @@ public class QrCodeRecenter : MonoBehaviour
         image.Convert(conversionParams, buffer);
         image.Dispose();
 
-        if (cameraImageTexture != null)
-        {
-            Destroy(cameraImageTexture);
-            cameraImageTexture = null;
-        }
+        if (cameraImageTexture != null) Destroy(cameraImageTexture);
 
         cameraImageTexture = new Texture2D(
             conversionParams.outputDimensions.x,
@@ -119,31 +169,69 @@ public class QrCodeRecenter : MonoBehaviour
     private void SetQrCodeRecenterTarget(string targetText)
     {
         Transform targetTransform = ResolveTargetTransform(targetText);
-        if (targetTransform == null) return;
+        if (targetTransform == null)
+        {
+            Debug.LogWarning($"QR target '{targetText}' not found.");
+            return;
+        }
 
-        Vector3 currentCameraWorldPos = sessionOrigin.Camera != null
-            ? sessionOrigin.Camera.transform.position
-            : sessionOrigin.transform.position;
+        // Destroy old anchor
+        if (currentAnchor != null)
+            Destroy(currentAnchor.gameObject);
 
-        Vector3 targetXZWithCurrentY = new Vector3(targetTransform.position.x, currentCameraWorldPos.y, targetTransform.position.z);
-        sessionOrigin.MoveCameraToWorldLocation(targetXZWithCurrentY);
+        // DON'T reset session here - it causes the erratic movement
+        // session.Reset(); // REMOVED
 
-        Vector3 desiredForward = targetTransform.forward;
-        desiredForward.y = 0f;
-        desiredForward = desiredForward.sqrMagnitude < 0.001f ? Vector3.forward : desiredForward.normalized;
-        sessionOrigin.MatchOriginUpCameraForward(Vector3.up, desiredForward);
+        Vector3 cameraPos = sessionOrigin.Camera.transform.position;
+        Vector3 targetXZ = new Vector3(targetTransform.position.x, cameraPos.y, targetTransform.position.z);
 
+        // Create new anchor at target position
+        if (anchorManager != null)
+            currentAnchor = anchorManager.AddAnchor(new Pose(targetXZ, targetTransform.rotation));
+
+        // Smooth reposition
+        StartCoroutine(SmoothRecenter(targetXZ, targetTransform.forward));
+
+        // Update minimap & indicator
+        UpdateMinimapAndIndicator(targetTransform, cameraPos);
+    }
+
+    private System.Collections.IEnumerator SmoothRecenter(Vector3 targetPos, Vector3 forward)
+    {
+        Vector3 startPos = sessionOrigin.Camera.transform.position;
+        Quaternion startRot = sessionOrigin.Camera.transform.rotation;
+        Quaternion targetRot = Quaternion.LookRotation(forward, Vector3.up);
+
+        float t = 0;
+        const float duration = 0.3f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            
+            sessionOrigin.MoveCameraToWorldLocation(Vector3.Lerp(startPos, targetPos, smoothT));
+            sessionOrigin.MatchOriginUpCameraForward(Vector3.up, Quaternion.Slerp(startRot, targetRot, smoothT) * Vector3.forward);
+            yield return null;
+        }
+
+        sessionOrigin.MoveCameraToWorldLocation(targetPos);
+        sessionOrigin.MatchOriginUpCameraForward(Vector3.up, forward);
+    }
+
+    private void UpdateMinimapAndIndicator(Transform targetTransform, Vector3 cameraWorldPos)
+    {
         if (indicatorSphere != null)
         {
-            Vector3 indicatorCurrent = indicatorSphere.position;
-            indicatorSphere.position = new Vector3(currentCameraWorldPos.x, indicatorCurrent.y, currentCameraWorldPos.z);
+            Vector3 indicatorPos = indicatorSphere.position;
+            indicatorSphere.position = new Vector3(cameraWorldPos.x, indicatorPos.y, cameraWorldPos.z);
             indicatorSphere.rotation = targetTransform.rotation;
         }
 
         if (minimapCamera != null)
         {
-            Vector3 miniCurrent = minimapCamera.position;
-            minimapCamera.position = new Vector3(currentCameraWorldPos.x, miniCurrent.y, currentCameraWorldPos.z);
+            Vector3 miniPos = minimapCamera.position;
+            minimapCamera.position = new Vector3(cameraWorldPos.x, miniPos.y, cameraWorldPos.z);
             minimapCamera.rotation = minimapNorthUp
                 ? Quaternion.Euler(90f, 0f, 0f)
                 : Quaternion.LookRotation(Vector3.down, targetTransform.forward);
@@ -158,73 +246,91 @@ public class QrCodeRecenter : MonoBehaviour
             if (viaHandler != null) return viaHandler.transform;
         }
 
-        GameObject go = GameObject.Find(targetText);
-        if (go != null) return go.transform;
+        GameObject go = GameObject.Find(targetText) ?? GameObject.Find($"Target({targetText})");
 
-        string wrapped = "Target(" + targetText + ")";
-        go = GameObject.Find(wrapped);
-        if (go != null) return go.transform;
-
-        int openIdx = targetText.IndexOf('(');
-        int closeIdx = targetText.IndexOf(')');
-        if (openIdx >= 0 && closeIdx > openIdx)
+        if (go == null)
         {
-            string inner = targetText.Substring(openIdx + 1, closeIdx - openIdx - 1);
-            go = GameObject.Find(inner);
-            if (go != null) return go.transform;
+            int openIdx = targetText.IndexOf('(');
+            int closeIdx = targetText.IndexOf(')');
+            if (openIdx >= 0 && closeIdx > openIdx)
+            {
+                string inner = targetText.Substring(openIdx + 1, closeIdx - openIdx - 1);
+                go = GameObject.Find(inner);
+            }
         }
 
-        return null;
+        return go?.transform;
     }
 
-public void StartScanning()
-{
-    scanningEnabled = true;
-    hasScannedSuccessfully = false;
-
-    // Show overlay
-    if (qrCodeScanningPanel != null)
+    public void StartScanning()
     {
-        qrCodeScanningPanel.SetActive(true);
+        if (!isInitialized) return;
+        
+        scanningEnabled = true;
+        hasScannedSuccessfully = false;
 
-        // Restore raycast blocking
-        var img = qrCodeScanningPanel.GetComponent<Image>();
-        if (img != null) img.raycastTarget = true;
+        if (qrCodeScanningPanel != null)
+        {
+            qrCodeScanningPanel.SetActive(true);
+            var img = qrCodeScanningPanel.GetComponent<Image>();
+            if (img != null) img.raycastTarget = true;
+        }
+
+        if (maskMaterial != null)
+        {
+            Color c = maskMaterial.GetColor("_Color");
+            c.a = 0.7f;
+            maskMaterial.SetColor("_Color", c);
+        }
     }
 
-    // Make dark overlay visible
-    if (maskMaterial != null)
+    public void StopScanning()
     {
-        Color c = maskMaterial.GetColor("_Color");
-        c.a = 0.7f; // semi-transparent
-        maskMaterial.SetColor("_Color", c);
-    }
-}
+        scanningEnabled = false;
 
-public void StopScanning()
-{
-    scanningEnabled = false;
+        if (maskMaterial != null)
+        {
+            Color c = maskMaterial.GetColor("_Color");
+            c.a = 0f;
+            maskMaterial.SetColor("_Color", c);
+        }
 
-    // Fade mask out
-    if (maskMaterial != null)
-    {
-        Color c = maskMaterial.GetColor("_Color");
-        c.a = 0f;
-        maskMaterial.SetColor("_Color", c);
+        if (qrCodeScanningPanel != null)
+        {
+            var img = qrCodeScanningPanel.GetComponent<Image>();
+            if (img != null) img.raycastTarget = false;
+            qrCodeScanningPanel.SetActive(false);
+        }
     }
 
-    // Allow clicks to pass through or hide the panel
-    if (qrCodeScanningPanel != null)
-    {
-        var img = qrCodeScanningPanel.GetComponent<Image>();
-        if (img != null) img.raycastTarget = false;
+    private void OnScanAgainClicked() => StartScanning();
 
-        // Optional: fully hide it if you prefer
-        qrCodeScanningPanel.SetActive(false);
-    }
-}
-    private void OnScanAgainClicked()
+    private void OnRescanClicked()
     {
+        // Reset flags
+        hasScannedSuccessfully = false;
+        scanningEnabled = false;
+
+        // Destroy anchor
+        if (currentAnchor != null)
+            Destroy(currentAnchor.gameObject);
+
+        // Reset session (this is fine here since we're intentionally resetting everything)
+        if (session != null)
+            session.Reset();
+
+        // Wait a frame then reset to defaults
+        StartCoroutine(ResetToDefaults());
+    }
+
+    private System.Collections.IEnumerator ResetToDefaults()
+    {
+        yield return new WaitForSeconds(0.2f);
+        
+        InitializeDefaultPositions();
+        
+        yield return new WaitForSeconds(0.1f);
+        
         StartScanning();
     }
 
@@ -240,9 +346,7 @@ public void StopScanning()
 
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
-            hasScannedSuccessfully = false;
-            StartScanning();
-            SetQrCodeRecenterTarget("Target(Gate)");
+            OnRescanClicked();
         }
     }
 #endif

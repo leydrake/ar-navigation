@@ -725,9 +725,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'finish
-
-'
+  m_text: Finish
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7e1941b2be977914ea379f630f82797a, type: 2}
   m_sharedMaterial: {fileID: -6045453863986444334, guid: 7e1941b2be977914ea379f630f82797a, type: 2}
@@ -1245,7 +1243,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: -436.20007}
-  m_SizeDelta: {x: 850.9, y: 50}
+  m_SizeDelta: {x: 950.7, y: 50}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &239703691
 MonoBehaviour:
@@ -1300,8 +1298,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 38
-  m_fontSizeBase: 38
+  m_fontSize: 36
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1743,7 +1741,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -85.92, y: -168.4}
+  m_AnchoredPosition: {x: -85.92, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &329065615
@@ -2325,16 +2323,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 434424437}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 393d14d6b9a95154fab1e96678919384, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stepsContainer: {fileID: 0}
+  stepsContainer: {fileID: 434424438}
   nextButton: {fileID: 1282773889}
   previousButton: {fileID: 1196931230}
   finishButton: {fileID: 1285139625}
-  sceneOnFinish: 
+  sceneOnFinish: scene1
 --- !u!1 &439748281
 GameObject:
   m_ObjectHideFlags: 0
@@ -2733,9 +2731,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: When you click "Select Destination," you'll be presented with this screen.
-    Here you can choose your desired location from the available options. After selecting,
-    you can return to the main screen to begin navigation.
+  m_text: Here you can choose your desired location from the available options. After
+    selecting, you can return to the main screen to begin navigation.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7e1941b2be977914ea379f630f82797a, type: 2}
   m_sharedMaterial: {fileID: -6045453863986444334, guid: 7e1941b2be977914ea379f630f82797a, type: 2}
@@ -3182,7 +3179,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -107.9, y: -181.9}
+  m_AnchoredPosition: {x: -107.9, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &543911645
@@ -3436,7 +3433,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: -436.20007}
+  m_AnchoredPosition: {x: 0, y: -402.98}
   m_SizeDelta: {x: 863.8, y: 50}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &550104112
@@ -4492,7 +4489,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -85.92, y: -176.1}
+  m_AnchoredPosition: {x: -85.92, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &670730026
@@ -5041,7 +5038,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: df97573ffbc47d948a523a60587eaa31, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f5820e04e36fb9a4e91a9ae5ec1c36e3, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -5117,9 +5114,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Review the final section of our Terms of Service. Scroll through the document
-    carefully and accept the terms by clicking the button at the bottom. This ensures
-    you understand how to use the application responsibly.
+  m_text: ' Scroll through the document carefully and accept the terms by clicking
+    the button at the bottom. This ensures you understand how to use the application
+    responsibly.
 
 '
   m_isRightToLeft: 0
@@ -5370,7 +5367,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -85.92, y: -208.46}
+  m_AnchoredPosition: {x: -85.92, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &799321758
@@ -7517,7 +7514,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -107.9, y: -178.9}
+  m_AnchoredPosition: {x: -107.9, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1282773887
@@ -8541,7 +8538,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -107.9, y: -178.5}
+  m_AnchoredPosition: {x: -107.9, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1388127520
@@ -9964,7 +9961,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1692450123
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10331,7 +10328,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -85.92, y: -175.5}
+  m_AnchoredPosition: {x: -85.92, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1745700857
@@ -12134,7 +12131,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -107.9, y: -161.2}
+  m_AnchoredPosition: {x: -107.9, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &2029039840
@@ -13186,7 +13183,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -107.9, y: -175.7}
+  m_AnchoredPosition: {x: -107.9, y: -150.95}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &2141778482
