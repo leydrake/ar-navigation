@@ -7,6 +7,7 @@ using ZXing;
 using ZXing.Common;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System; // added for Uri parsing
 
 public class QrCodeRecenter : MonoBehaviour
 {
@@ -82,12 +83,9 @@ public class QrCodeRecenter : MonoBehaviour
         if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
             yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
 
-        // Wait a frame for AR to initialize properly
         yield return new WaitForSeconds(0.5f);
 
-        // Initialize default positions BEFORE starting scan
         InitializeDefaultPositions();
-        
         isInitialized = true;
 
         if (qrCodeScanningPanel != null)
@@ -98,25 +96,21 @@ public class QrCodeRecenter : MonoBehaviour
 
     private void InitializeDefaultPositions()
     {
-        // Set origin to default position
         if (sessionOrigin != null)
         {
             sessionOrigin.transform.position = Vector3.zero;
             sessionOrigin.transform.rotation = Quaternion.identity;
             
-            // Lock the camera at default position initially
             sessionOrigin.MoveCameraToWorldLocation(defaultPosition);
             sessionOrigin.MatchOriginUpCameraForward(Vector3.up, Vector3.forward);
         }
 
-        // Set indicator to default
         if (indicatorSphere != null)
         {
             indicatorSphere.position = defaultPosition;
             indicatorSphere.rotation = defaultRotation;
         }
 
-        // Set minimap to default
         if (minimapCamera != null)
         {
             minimapCamera.position = new Vector3(defaultPosition.x, minimapHeight, defaultPosition.z);
@@ -166,34 +160,52 @@ public class QrCodeRecenter : MonoBehaviour
         }
     }
 
-    private void SetQrCodeRecenterTarget(string targetText)
+    public void SetQrCodeRecenterTarget(string targetText)
     {
-        Transform targetTransform = ResolveTargetTransform(targetText);
+        // ✅ Extract target if the scanned text is a URL
+        string extractedTarget = ExtractTargetFromUrl(targetText);
+
+        Transform targetTransform = ResolveTargetTransform(extractedTarget);
         if (targetTransform == null)
         {
-            Debug.LogWarning($"QR target '{targetText}' not found.");
+            Debug.LogWarning($"QR target '{extractedTarget}' not found.");
             return;
         }
 
-        // Destroy old anchor
         if (currentAnchor != null)
             Destroy(currentAnchor.gameObject);
-
-        // DON'T reset session here - it causes the erratic movement
-        // session.Reset(); // REMOVED
 
         Vector3 cameraPos = sessionOrigin.Camera.transform.position;
         Vector3 targetXZ = new Vector3(targetTransform.position.x, cameraPos.y, targetTransform.position.z);
 
-        // Create new anchor at target position
         if (anchorManager != null)
             currentAnchor = anchorManager.AddAnchor(new Pose(targetXZ, targetTransform.rotation));
 
-        // Smooth reposition
         StartCoroutine(SmoothRecenter(targetXZ, targetTransform.forward));
-
-        // Update minimap & indicator
         UpdateMinimapAndIndicator(targetTransform, cameraPos);
+    }
+
+    // ✅ New method to parse the "target" parameter from a full URL
+    private string ExtractTargetFromUrl(string input)
+    {
+        if (Uri.TryCreate(input, UriKind.Absolute, out Uri uri))
+        {
+            var query = uri.Query;
+            if (!string.IsNullOrEmpty(query))
+            {
+                var queryParams = query.TrimStart('?').Split('&');
+                foreach (var param in queryParams)
+                {
+                    var parts = param.Split('=');
+                    if (parts.Length == 2 && parts[0].ToLower() == "target")
+                    {
+                        return parts[1];
+                    }
+                }
+            }
+        }
+        // if not a URL, return the original text
+        return input;
     }
 
     private System.Collections.IEnumerator SmoothRecenter(Vector3 targetPos, Vector3 forward)
@@ -307,30 +319,23 @@ public class QrCodeRecenter : MonoBehaviour
 
     private void OnRescanClicked()
     {
-        // Reset flags
         hasScannedSuccessfully = false;
         scanningEnabled = false;
 
-        // Destroy anchor
         if (currentAnchor != null)
             Destroy(currentAnchor.gameObject);
 
-        // Reset session (this is fine here since we're intentionally resetting everything)
         if (session != null)
             session.Reset();
 
-        // Wait a frame then reset to defaults
         StartCoroutine(ResetToDefaults());
     }
 
     private System.Collections.IEnumerator ResetToDefaults()
     {
         yield return new WaitForSeconds(0.2f);
-        
         InitializeDefaultPositions();
-        
         yield return new WaitForSeconds(0.1f);
-        
         StartScanning();
     }
 
@@ -345,6 +350,13 @@ public class QrCodeRecenter : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.Backspace))
+        {
+            hasScannedSuccessfully = true;
+            StopScanning();
+            SetQrCodeRecenterTarget("Target(Gate)");
+        }
+
+        if (Input.GetKeyDown(KeyCode.R))
         {
             OnRescanClicked();
         }

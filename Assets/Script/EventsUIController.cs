@@ -81,7 +81,6 @@ public class EventsUIController : MonoBehaviour
 		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
 		if (root == null)
 		{
-			Debug.LogError("EventsUIController: UIDocument or rootVisualElement is missing.");
 			return;
 		}
 
@@ -90,14 +89,10 @@ public class EventsUIController : MonoBehaviour
 		refreshButton = root.Q<VisualElement>(refreshButtonName);
 		backButton = root.Q<VisualElement>(backButtonName);
 
-		if (searchField == null)
-		{
-			Debug.LogWarning($"EventsUIController: TextField '{searchFieldName}' not found in UXML.");
-		}
+		
 
 		if (listView == null)
 		{
-			Debug.LogWarning($"EventsUIController: ScrollView '{scrollViewName}' not found in UXML.");
 		}
 		else
 		{
@@ -109,7 +104,6 @@ public class EventsUIController : MonoBehaviour
 
 		if (refreshButton == null)
 		{
-			Debug.LogWarning($"EventsUIController: VisualElement '{refreshButtonName}' not found in UXML.");
 		}
 		else
 		{
@@ -119,7 +113,6 @@ public class EventsUIController : MonoBehaviour
 
 		if (backButton == null)
 		{
-			Debug.LogWarning($"EventsUIController: VisualElement '{backButtonName}' not found in UXML.");
 		}
 		else
 		{
@@ -173,7 +166,6 @@ public class EventsUIController : MonoBehaviour
 
 		if (eventsFetcher == null)
 		{
-			Debug.LogWarning("EventsUIController: No EventsFetcher found in scene (active or inactive). UI will be empty.");
 		}
 
 		if (eventsFetcher != null)
@@ -227,11 +219,8 @@ public class EventsUIController : MonoBehaviour
 
 	private void OnEventsChanged(List<EventData> list)
 	{
-		Debug.Log($"=== OnEventsChanged called with {list?.Count ?? -1} events ===");
 		current = list ?? new List<EventData>();
-		Debug.Log($"Current data set to {current.Count} events");
 		RebuildList(current);
-		Debug.Log("RebuildList completed");            
 	}
 
 	private void ApplyFilter()
@@ -257,18 +246,14 @@ public class EventsUIController : MonoBehaviour
 
 	private void RebuildList(List<EventData> list)
 	{
-		Debug.Log($"=== RebuildList called with {list?.Count ?? -1} items ===");
 		
 		if (listView == null)
 		{
-			Debug.LogWarning("[EventsUI] RebuildList called but listView is null.");
 			return;
 		}
 
-		Debug.Log("Clearing listView");
 		listView.Clear();
 
-		Debug.Log($"Adding {list.Count} items to listView");
 		foreach (var item in list)
 		{
 			var row = BuildCard(item);
@@ -277,7 +262,6 @@ public class EventsUIController : MonoBehaviour
 
 		if (list.Count == 0)
 		{
-			Debug.Log("No items found, adding empty state message");
 			var empty = new Label("No events found.");
 			empty.style.unityTextAlign = TextAnchor.MiddleCenter;
 			empty.style.color = new Color(0.4f, 0.4f, 0.4f);
@@ -285,7 +269,6 @@ public class EventsUIController : MonoBehaviour
 			listView.Add(empty);
 		}
 		
-		Debug.Log("RebuildList completed successfully");
 	}
 
 	private void ShowSkeletons(int count)
@@ -393,39 +376,29 @@ public class EventsUIController : MonoBehaviour
 	/// </summary>
 	public void RefreshEvents()
 	{
-		Debug.Log("=== RefreshEvents called ===");
 		
 		if (eventsFetcher == null)
 		{
-			Debug.LogWarning("[EventsUI] Cannot refresh - EventsFetcher is null");
 			// Try to show existing data if available
 			if (current != null && current.Count > 0)
 			{
-				Debug.Log($"Showing {current.Count} existing events data");
 				RebuildList(current);
 			}
-			else
-			{
-				Debug.Log("No existing data to show");
-			}
+			
 			return;
 		}
 		
-		Debug.Log("EventsFetcher found, proceeding with refresh");
 		
 		// Disable refresh button during loading to prevent multiple requests
 		if (refreshButton != null)
 		{
 			refreshButton.SetEnabled(false);
-			Debug.Log("Refresh button disabled");
 		}
 		
 		// Force refresh by clearing current data first
-		Debug.Log($"Clearing {current.Count} current items");
 		current.Clear();
 		RebuildList(current);
 		
-		Debug.Log("Calling eventsFetcher.FetchAllEvents()");
 		eventsFetcher.FetchAllEvents();
 	}
 
@@ -454,12 +427,8 @@ public class EventsUIController : MonoBehaviour
 		if (toggleMenu != null)
 		{
 			toggleMenu.ShowBothMenuAndBurger();
-			Debug.Log("Back button clicked - showing menu panel and burger button, events UI reset");
 		}
-		else
-		{
-			Debug.LogWarning("ToggleMenu component not found! Please make sure it exists in the scene.");
-		}
+		
 	}
 
 	/// <summary>
@@ -470,7 +439,6 @@ public class EventsUIController : MonoBehaviour
 		if (uiDocument != null)
 		{
 			uiDocument.rootVisualElement.style.display = DisplayStyle.None;
-			Debug.Log("Events UI hidden");
 		}
 	}
 
@@ -479,11 +447,9 @@ public class EventsUIController : MonoBehaviour
 	/// </summary>
 	public void ShowEventsUI()
 	{
-		Debug.Log("=== ShowEventsUI called ===");
 		
 		if (uiDocument != null)
 		{
-			Debug.Log("UIDocument found, setting display to Flex");
 			uiDocument.rootVisualElement.style.display = DisplayStyle.Flex;
 			
 			// Recreate modal every time UI is shown to ensure it works
@@ -495,7 +461,6 @@ public class EventsUIController : MonoBehaviour
 			// Reset search field if needed
 			if (searchField != null)
 			{
-				Debug.Log("Resetting search field");
 				searchField.SetValueWithoutNotify(string.Empty);
 				SetPlaceholder();
 			}
@@ -506,38 +471,28 @@ public class EventsUIController : MonoBehaviour
 				RebuildList(current);
 			}
 			
-			// Check current data state
-			Debug.Log($"Current data count: {(current != null ? current.Count : -1)}");
-			Debug.Log($"EventsFetcher is null: {eventsFetcher == null}");
+			
 			
 			// Refresh the events data when showing the UI
 			if (eventsFetcher != null)
 			{
-				Debug.Log("EventsFetcher found, calling RefreshEvents");
 				RefreshEvents();
 			}
 			else
 			{
-				Debug.Log("EventsFetcher is null, trying to show existing data");
 				// If no fetcher, try to populate with existing data
 				if (current != null && current.Count > 0)
 				{
-					Debug.Log($"Rebuilding list with {current.Count} existing items");
 					RebuildList(current);
 				}
 				else
 				{
-					Debug.Log("No existing data to show, showing empty state");
 					RebuildList(new List<EventData>());
 				}
 			}
 			
-			Debug.Log("Events UI shown and data refreshed");
 		}
-		else
-		{
-			Debug.LogError("UIDocument is null!");
-		}
+		
 	}
 
 	private void WireUi()
@@ -545,7 +500,6 @@ public class EventsUIController : MonoBehaviour
 		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
 		if (root == null)
 		{
-			Debug.LogWarning("[EventsUI] WireUi called but root is null");
 			return;
 		}
 
@@ -612,10 +566,7 @@ public class EventsUIController : MonoBehaviour
 	{
 		try
 		{
-			Debug.Log("[EventsUI] === HealthCheck ===");
-			Debug.Log($"UIDocument: {(uiDocument != null)} | Root: {(uiDocument != null && uiDocument.rootVisualElement != null)}");
-			Debug.Log($"Refs -> search:{(searchField!=null)} list:{(listView!=null)} refresh:{(refreshButton!=null)} back:{(backButton!=null)} health:{(healthButton!=null)}");
-			Debug.Log($"Current items: {(current!=null?current.Count:-1)}");
+			
 			var fetcher = eventsFetcher;
 			if (fetcher == null)
 			{
@@ -625,30 +576,25 @@ public class EventsUIController : MonoBehaviour
 				fetcher = FindObjectOfType<EventsFetcher>(true);
 #endif
 			}
-			Debug.Log($"EventsFetcher present: {(fetcher!=null)}");
-			Debug.Log($"AppCanvas present: {(appCanvas!=null)}");
+		
 			if (fetcher != null)
 			{
 				fetcher.EmitCachedEvents();
-				Debug.Log("[EventsUI] Emitted cached events.");
 			}
 			// Rebuild view with whatever we have
 			if (current != null)
 			{
 				RebuildList(current);
-				Debug.Log("[EventsUI] Rebuilt list from current cache.");
 			}
 		}
 		catch (System.Exception ex)
 		{
-			Debug.LogError($"[EventsUI] HealthCheck error: {ex.Message}");
 		}
 	}
 
 	public void SetVerboseLogging(bool on)
 	{
 		verboseLogging = on;
-		Debug.Log($"[EventsUI] verboseLogging set to {on}");
 	}
 
 	private VisualElement BuildCard(EventData data)
@@ -682,7 +628,6 @@ public class EventsUIController : MonoBehaviour
 
 		// Make the card clickable
 		row.RegisterCallback<ClickEvent>(evt => {
-			Debug.Log($"[EventsUI] Event card clicked for: {data.name}");
 			ShowEventModal(data);
 		});
 
@@ -794,22 +739,18 @@ public class EventsUIController : MonoBehaviour
 
 	private void CreateModal()
 {
-    Debug.Log("[EventsUI] CreateModal called");
     var root = uiDocument != null ? uiDocument.rootVisualElement : null;
     if (root == null) 
     {
-        Debug.LogError("[EventsUI] CreateModal: UIDocument or rootVisualElement is null!");
         return;
     }
 
     // Remove existing modal if it exists to prevent duplicates
     if (modalOverlay != null && modalOverlay.parent != null)
     {
-        Debug.Log("[EventsUI] Removing existing modal");
         modalOverlay.RemoveFromHierarchy();
     }
 
-    Debug.Log("[EventsUI] Creating modal overlay");
     // Create modal overlay
     modalOverlay = new VisualElement();
     modalOverlay.style.position = Position.Absolute;
@@ -949,7 +890,6 @@ public class EventsUIController : MonoBehaviour
 
     modalOverlay.Add(modalContent);
     root.Add(modalOverlay);
-    Debug.Log("[EventsUI] Modal created and added to root successfully");
 }
 
 	private string FormatDateTime(string dateTimeString)
@@ -973,23 +913,19 @@ public class EventsUIController : MonoBehaviour
 		}
 		catch (Exception ex)
 		{
-			Debug.LogWarning($"[EventsUI] Failed to parse datetime '{dateTimeString}': {ex.Message}");
 			return dateTimeString;
 		}
 	}
 
 	private void ShowEventModal(EventData eventData)
 	{
-		Debug.Log($"[EventsUI] ShowEventModal called for: {eventData?.name}");
 		
 		// Ensure modal exists before trying to show it
 		EnsureModalExists();
 		
-		Debug.Log($"[EventsUI] Modal overlay is null: {modalOverlay == null}");
 		
 		if (modalOverlay == null) 
 		{
-			Debug.LogError("[EventsUI] Modal overlay is null! Modal was not created properly.");
 			return;
 		}
 
@@ -1012,9 +948,7 @@ public class EventsUIController : MonoBehaviour
 		modalImage.Add(imagePlaceholder);
 
 		// Show modal
-		Debug.Log("[EventsUI] Setting modal display to Flex");
 		modalOverlay.style.display = DisplayStyle.Flex;
-		Debug.Log("[EventsUI] Modal should now be visible");
 	}
 
 	private void HideEventModal()
@@ -1032,7 +966,6 @@ public class EventsUIController : MonoBehaviour
 	{
 		if (modalOverlay == null || modalOverlay.parent == null)
 		{
-			Debug.Log("[EventsUI] Modal missing, recreating...");
 			CreateModal();
 		}
 	}
@@ -1041,44 +974,33 @@ public class EventsUIController : MonoBehaviour
 	{
 		if (currentEventData == null)
 		{
-			Debug.LogWarning("[EventsUI] No current event data available for navigation");
 			return;
 		}
 
 		if (targetHandler == null)
 		{
-			Debug.LogWarning("[EventsUI] TargetHandler not found. Cannot navigate to event location.");
 			return;
 		}
 
-		Debug.Log($"[EventsUI] Navigation button clicked for event: {currentEventData.name}");
-		Debug.Log($"[EventsUI] Event location data - Location: '{currentEventData.location}'");
+		
 
 		// Try to find matching target in dropdown
 		bool found = FindAndSetDropdownValue(currentEventData);
 		
 		if (found)
 		{
-			Debug.Log("[EventsUI] Successfully set dropdown to event location");
 			
 			// Update the name label in AppCanvas with the event name
 			if (appCanvas != null)
 			{
 				appCanvas.UpdateNameLabel(currentEventData.name);
-				Debug.Log($"[EventsUI] Updated name label with event: {currentEventData.name}");
 			}
-			else
-			{
-				Debug.LogWarning("[EventsUI] AppCanvas not found, cannot update name label");
-			}
+			
 			
 			// Use existing back button functionality to close events UI and show menu/burger
 			GoBackToMenu();
 		}
-		else
-		{
-			Debug.LogWarning("[EventsUI] Could not find matching location in dropdown for navigation");
-		}
+		
 	}
 
 	private bool FindAndSetDropdownValue(EventData eventData)
@@ -1089,7 +1011,6 @@ public class EventsUIController : MonoBehaviour
 		var dropdown = targetHandler.GetComponent<TargetHandler>();
 		if (dropdown == null)
 		{
-			Debug.LogWarning("[EventsUI] Could not get TargetHandler component");
 			return false;
 		}
 
@@ -1099,21 +1020,18 @@ public class EventsUIController : MonoBehaviour
 		
 		if (dropdownField == null)
 		{
-			Debug.LogWarning("[EventsUI] Could not access targetDataDropdown field");
 			return false;
 		}
 
 		var targetDropdown = dropdownField.GetValue(targetHandler) as TMPro.TMP_Dropdown;
 		if (targetDropdown == null)
 		{
-			Debug.LogWarning("[EventsUI] Target dropdown is null");
 			return false;
 		}
 
 		// Search for matching option based on event location data
 		string eventLocation = eventData.location ?? "";
 
-		Debug.Log($"[EventsUI] Searching for location: '{eventLocation}'");
 
 		// Try different matching strategies
 		for (int i = 0; i < targetDropdown.options.Count; i++)
@@ -1121,12 +1039,10 @@ public class EventsUIController : MonoBehaviour
 			var option = targetDropdown.options[i];
 			string optionText = option.text.ToLowerInvariant();
 			
-			Debug.Log($"[EventsUI] Checking option {i}: '{option.text}'");
 
 			// Strategy 1: Exact location match
 			if (!string.IsNullOrEmpty(eventLocation) && optionText.Contains(eventLocation.ToLowerInvariant()))
 			{
-				Debug.Log($"[EventsUI] Found exact location match at index {i}: '{option.text}'");
 				targetDropdown.value = i;
 				targetDropdown.RefreshShownValue();
 				return true;
@@ -1140,7 +1056,6 @@ public class EventsUIController : MonoBehaviour
 				{
 					if (!string.IsNullOrEmpty(part) && optionText.Contains(part.ToLowerInvariant()))
 					{
-						Debug.Log($"[EventsUI] Found partial location match at index {i}: '{option.text}' (matched part: '{part}')");
 						targetDropdown.value = i;
 						targetDropdown.RefreshShownValue();
 						return true;
@@ -1149,7 +1064,6 @@ public class EventsUIController : MonoBehaviour
 			}
 		}
 
-		Debug.LogWarning("[EventsUI] No matching location found in dropdown options");
 		return false;
 	}
 
@@ -1159,7 +1073,6 @@ public class EventsUIController : MonoBehaviour
 	/// </summary>
 	public void ForceRefreshEventsUI()
 	{
-		Debug.Log("=== ForceRefreshEventsUI called ===");
 		
 		// Show UI first
 		if (uiDocument != null)
@@ -1174,7 +1087,6 @@ public class EventsUIController : MonoBehaviour
 	private IEnumerator DelayedRefresh()
 	{
 		yield return null; // Wait one frame
-		Debug.Log("Performing delayed refresh");
 		RefreshEvents();
 	}
 }

@@ -26,12 +26,10 @@ public class FirestoreToCustomJson : MonoBehaviour
         if (targetModelData != null)
         {
             wrapper = JsonUtility.FromJson<TargetListWrapper>(targetModelData.text);
-            Debug.Log("Loaded base JSON model from TextAsset.");
         }
         else
         {
             wrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
-            Debug.Log("Created new empty JSON wrapper.");
         }
 
         // Init Firebase
@@ -42,10 +40,7 @@ public class FirestoreToCustomJson : MonoBehaviour
                 db = FirebaseFirestore.DefaultInstance;
                 FetchData();
             }
-            else
-            {
-                Debug.LogError("Could not resolve Firebase dependencies: " + task.Result);
-            }
+            
         });
     }
 
@@ -53,24 +48,20 @@ public class FirestoreToCustomJson : MonoBehaviour
     {
         if (db == null)
         {
-            Debug.LogError("Firestore DB instance is null. FetchData aborted.");
             return;
         }
 
-        Debug.Log($"Starting FetchData for collection '{collectionName}'");
 
         db.Collection(collectionName).GetSnapshotAsync().ContinueWithOnMainThread(task =>
         {
             if (task.IsFaulted || task.IsCanceled)
             {
-                Debug.LogError("Error fetching data: " + (task.Exception?.Flatten().Message ?? task.Exception?.Message ?? "unknown"));
                 return;
             }
 
             try
             {
                 QuerySnapshot snapshot = task.Result;
-                Debug.Log($"Fetched {snapshot?.Count ?? 0} documents from '{collectionName}'.");
 
                 if (wrapper == null) wrapper = new TargetListWrapper { TargetList = new List<TargetData>() };
                 if (wrapper.TargetList == null) wrapper.TargetList = new List<TargetData>();
@@ -80,17 +71,14 @@ public class FirestoreToCustomJson : MonoBehaviour
                 {
                     if (doc == null)
                     {
-                        Debug.LogWarning("Encountered null DocumentSnapshot, skipping.");
                         continue;
                     }
 
                     if (!doc.Exists)
                     {
-                        Debug.LogWarning($"Document {doc.Id} does not exist, skipping.");
                         continue;
                     }
 
-                    Debug.Log($"Processing doc: {doc.Id}");
                     Dictionary<string, object> data = doc.ToDictionary() ?? new Dictionary<string, object>();
 
                     TargetData target = new TargetData
@@ -116,41 +104,34 @@ public class FirestoreToCustomJson : MonoBehaviour
                 string json = JsonUtility.ToJson(wrapper, true);
                 string fileName = "TargetData.json";
                 string fullPath = Path.Combine(Application.persistentDataPath, fileName);
-                Debug.Log($"Attempting to write TargetData.json to: {fullPath}");
 
                 try
                 {
                     File.WriteAllText(fullPath, json);
-                    Debug.Log($"✅ Saved updated TargetData.json at: {fullPath} (length {json.Length})");
 
                     // verify write by reading back
                     if (File.Exists(fullPath))
                     {
                         string readBack = File.ReadAllText(fullPath);
-                        Debug.Log($"Read-back length: {readBack.Length}");
                     }
                     else
                     {
-                        Debug.LogWarning("Read-back failed: file missing after write.");
                     }
 
                     // ensure we have a TargetHandler reference and refresh it
                     if (targetHandler == null)
                     {
                         targetHandler = FindObjectOfType<TargetHandler>();
-                        Debug.Log(targetHandler == null ? "No TargetHandler found to refresh." : "Found TargetHandler - refreshing it.");
                     }
 
                     targetHandler?.RefreshTargetData();
                 }
                 catch (System.Exception ioEx)
                 {
-                    Debug.LogError($"Failed to write/read JSON: {ioEx.Message}\n{ioEx.StackTrace}");
                 }
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Unhandled error processing Firestore snapshot: {ex.Message}\n{ex.StackTrace}");
             }
         });
     }

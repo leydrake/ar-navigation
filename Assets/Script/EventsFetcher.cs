@@ -81,7 +81,6 @@ public class EventsFetcher : MonoBehaviour
 			}
 			catch (Exception cbEx)
 			{
-				Debug.LogError($"[EventsFetcher] Error while invoking EventsChanged: {cbEx.Message}");
 			}
 			
 			pendingEvents = null;
@@ -117,7 +116,6 @@ public class EventsFetcher : MonoBehaviour
 			// Check internet connectivity first
 			if (Application.internetReachability == NetworkReachability.NotReachable)
 			{
-				Debug.LogError("[EventsFetcher] No internet connection detected");
 				ErrorOccurred?.Invoke("No internet connection");
 				return;
 			}
@@ -129,13 +127,11 @@ public class EventsFetcher : MonoBehaviour
 			}
 			else
 			{
-				Debug.LogError("[EventsFetcher] Firestore DefaultInstance is null");
 				ErrorOccurred?.Invoke("Firebase not initialized");
 			}
 		}
 		catch (Exception e)
 		{
-			Debug.LogError($"[EventsFetcher] Failed to get Firestore instance: {e.Message}");
 			ErrorOccurred?.Invoke($"Firebase initialization failed: {e.Message}");
 		}
 	}
@@ -152,7 +148,6 @@ public class EventsFetcher : MonoBehaviour
 		// Check internet connectivity
 		if (Application.internetReachability == NetworkReachability.NotReachable)
 		{
-			Debug.LogError("[EventsFetcher] No internet connection for data fetch");
 			ErrorOccurred?.Invoke("No internet connection");
 			yield break;
 		}
@@ -173,7 +168,6 @@ public class EventsFetcher : MonoBehaviour
 			
 			if (db == null || !isInitialized)
 			{
-				Debug.LogError("[EventsFetcher] Firestore not initialized. Ensure Firebase is set up and initialized.");
 				ErrorOccurred?.Invoke("Firebase not initialized");
 				yield break;
 			}
@@ -188,7 +182,6 @@ public class EventsFetcher : MonoBehaviour
 		{
 			if (task.IsFaulted || task.IsCanceled)
 			{
-				Debug.LogError($"[EventsFetcher] Failed to fetch events. Faulted={task.IsFaulted}, Canceled={task.IsCanceled}, Exception={task.Exception}");
 				fetchException = task.Exception;
 			}
 			else
@@ -208,7 +201,6 @@ public class EventsFetcher : MonoBehaviour
 
 		if (!fetchCompleted)
 		{
-			Debug.LogError($"[EventsFetcher] Fetch timed out after {networkTimeoutSeconds} seconds");
 			HandleFetchError("Request timed out");
 		}
 		else if (fetchException != null)
@@ -226,7 +218,6 @@ public class EventsFetcher : MonoBehaviour
 				}
 				catch (Exception cbEx)
 				{
-					Debug.LogError($"[EventsFetcher] Error while invoking EventsChanged (post-fetch): {cbEx.Message}");
 				}
 				finally
 				{
@@ -244,7 +235,6 @@ public class EventsFetcher : MonoBehaviour
 
 		if (snapshot == null)
 		{
-			Debug.LogError("[EventsFetcher] Snapshot is null");
 			HandleFetchError("Received null snapshot from Firebase");
 			return;
 		}
@@ -257,13 +247,11 @@ public class EventsFetcher : MonoBehaviour
 				data.id = doc.Id;
 				
 				// Debug: Log the actual data being received
-				Debug.Log($"[EventsFetcher] Document {doc.Id} - Title: '{data.name}', Location: '{data.location}', Image: '{data.image}'");
 				
 				loaded.Add(data);
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"[EventsFetcher] Could not parse document '{doc.Id}': {ex.Message}. Falling back to dictionary parse.");
 				var dict = doc.ToDictionary();
 				var fallback = new EventData
 				{
@@ -278,8 +266,6 @@ public class EventsFetcher : MonoBehaviour
 				};
 				
 				// Debug: Log the fallback data
-				Debug.Log($"[EventsFetcher] Fallback Document {doc.Id} - Title: '{fallback.name}', Location: '{fallback.location}', Image: '{fallback.image}'");
-				Debug.Log($"[EventsFetcher] Available keys in document: {string.Join(", ", dict.Keys)}");
 				
 				loaded.Add(fallback);
 			}
@@ -296,7 +282,6 @@ public class EventsFetcher : MonoBehaviour
 
 	private void HandleFetchError(string errorMessage)
 	{
-		Debug.LogError($"[EventsFetcher] Fetch error: {errorMessage}");
 		ErrorOccurred?.Invoke(errorMessage);
 		try { LoadingChanged?.Invoke(false); } catch (Exception) {}
 		
@@ -306,10 +291,7 @@ public class EventsFetcher : MonoBehaviour
 			retryCount++;
 			StartCoroutine(RetryFetch());
 		}
-		else
-		{
-			Debug.LogError("[EventsFetcher] Max retry attempts reached. Giving up.");
-		}
+		
 	}
 
 	/// <summary>
@@ -326,7 +308,6 @@ public class EventsFetcher : MonoBehaviour
 			}
 			catch (Exception ex)
 			{
-				Debug.LogError($"[EventsFetcher] Error emitting cached events: {ex.Message}");
 			}
 		}
 	}

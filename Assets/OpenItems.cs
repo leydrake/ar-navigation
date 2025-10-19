@@ -97,34 +97,27 @@ public class OpenItems : MonoBehaviour
                 toggleMenu.CloseMenu();
             }
         }
-        else
-        {
-            Debug.LogWarning($"Scene index {sceneIndex} is out of range!");
-        }
+       
     }
     
     public void OpenScene(int sceneIndex, bool animate = true)
     {
         if (sceneIndex < 0 || sceneIndex >= sceneGameObjects.Length)
         {
-            Debug.LogWarning($"Invalid scene index: {sceneIndex}");
             return;
         }
         
         if (sceneGameObjects[sceneIndex] == null)
         {
-            Debug.LogWarning($"Scene GameObject at index {sceneIndex} is null!");
             return;
         }
         
         // If opening the same scene, do nothing
         if (currentSceneIndex == sceneIndex)
         {
-            Debug.Log($"Scene '{sceneNames[sceneIndex]}' is already open.");
             return;
         }
         
-        Debug.Log($"Opening scene: {sceneNames[sceneIndex]}");
         
         if (animate)
         {
@@ -225,7 +218,6 @@ public class OpenItems : MonoBehaviour
         }
         
         currentSceneIndex = sceneIndex;
-        Debug.Log($"Scene '{sceneNames[sceneIndex]}' is now active.");
     }
     
     // Public methods for external control
@@ -239,7 +231,6 @@ public class OpenItems : MonoBehaviour
             }
         }
         currentSceneIndex = -1;
-        Debug.Log("All scenes closed.");
     }
     
     public int GetCurrentSceneIndex()
@@ -285,7 +276,6 @@ public class OpenItems : MonoBehaviour
             newScene.SetActive(false);
         }
         
-        Debug.Log($"Added new scene: {sceneNames[newIndex]}");
     }
     
     // Method to remove a scene at runtime
@@ -309,6 +299,5 @@ public class OpenItems : MonoBehaviour
         System.Array.Resize(ref sceneGameObjects, sceneGameObjects.Length - 1);
         System.Array.Resize(ref sceneNames, sceneNames.Length - 1);
         
-        Debug.Log($"Removed scene at index {sceneIndex}");
     }
 }

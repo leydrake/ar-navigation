@@ -43,12 +43,8 @@ public class ActiveUserTracker : MonoBehaviour
             if (task.Result == DependencyStatus.Available)
             {
                 db = FirebaseFirestore.DefaultInstance;
-                Debug.Log("Firebase initialized successfully");
             }
-            else
-            {
-                Debug.LogError("Could not resolve Firebase dependencies: " + task.Result);
-            }
+           
         });
     }
 
@@ -67,7 +63,6 @@ public class ActiveUserTracker : MonoBehaviour
     {
         if (db == null) 
         {
-            Debug.LogWarning("Firebase not initialized yet, retrying in 1 second...");
             StartCoroutine(RetryStartSession(destination));
             return;
         }
@@ -105,11 +100,9 @@ public class ActiveUserTracker : MonoBehaviour
             {
                 if (task.IsFaulted || task.IsCanceled)
                 {
-                    Debug.LogError($"Failed to start active session tracking: {task.Exception?.Flatten().Message}");
                 }
                 else
                 {
-                    Debug.Log("Active session started successfully");
                     // Start periodic activity updates
                     StartCoroutine(UpdateLastActivity());
                 }

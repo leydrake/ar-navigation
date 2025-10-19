@@ -27,17 +27,14 @@ public class UIPageLoader : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("[UIPageLoader] Start called on " + gameObject.name);
+       
         if (uiDocument == null)
         {
-            Debug.LogError("[UIPageLoader] UIDocument is not assigned.");
+           
             return;
         }
 
-        if (startPageUXML == null || termsPageUXML == null || permissionPageUXML == null)
-        {
-            Debug.LogWarning("[UIPageLoader] One or more VisualTreeAssets are not assigned.");
-        }
+       
 
         ShowPage(startPageUXML);
     }
@@ -45,12 +42,12 @@ public class UIPageLoader : MonoBehaviour
 
     void ShowPage(VisualTreeAsset pageAsset)
     {
-        Debug.Log("[UIPageLoader] ShowPage called with: " + (pageAsset != null ? pageAsset.name : "<null>"));
+        
 
         var root = uiDocument != null ? uiDocument.rootVisualElement : null;
         if (root == null)
         {
-            Debug.LogError("[UIPageLoader] rootVisualElement is null (is UIDocument active?).");
+            
             return;
         }
 
@@ -58,13 +55,13 @@ public class UIPageLoader : MonoBehaviour
         if (pageAsset != null)
         {
             pageAsset.CloneTree(root);
-            Debug.Log("[UIPageLoader] Cloned UXML into root. Child count: " + root.childCount);
+           
         }
 
 		// 🔗 Always try to wire the 'info' VisualElement to open the tutorial scene
 		TryWireClick(root, "info", () =>
 		{
-			Debug.Log("[UIPageLoader] 'info' clicked → loading 'tutorial' scene");
+			
 			SceneManager.LoadScene("tutorial");
 		});
 
@@ -82,8 +79,7 @@ public class UIPageLoader : MonoBehaviour
                 TryWireClick(root, "Back", () => ShowPage(startPageUXML)) ||
                 TryWireClick(root, "btnBack", () => ShowPage(startPageUXML));
 
-            if (!wiredBack)
-                Debug.LogWarning("[UIPageLoader] Back element not found on Terms page.");
+            
         }
         else if (pageAsset == permissionPageUXML)
         {
@@ -94,8 +90,7 @@ public class UIPageLoader : MonoBehaviour
                 TryWireClick(root, "Back", () => ShowPage(termsPageUXML)) ||
                 TryWireClick(root, "btnBack", () => ShowPage(termsPageUXML));
 
-            if (!wiredBack2)
-                Debug.LogWarning("[UIPageLoader] Back element not found on Permission page.");
+           
         }
     }
 
@@ -122,7 +117,7 @@ public class UIPageLoader : MonoBehaviour
 
     void GrantPermission()
     {
-        Debug.Log("[UIPageLoader] GrantPermission invoked.");
+       
 #if UNITY_ANDROID
         if (Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
@@ -130,7 +125,7 @@ public class UIPageLoader : MonoBehaviour
             return;
         }
 
-        Debug.Log("[UIPageLoader][Android] Requesting camera permission...");
+      
         StartCoroutine(RequestCameraPermission());
 #elif UNITY_IOS
         GoToNextScene();
@@ -179,10 +174,7 @@ public class UIPageLoader : MonoBehaviour
         {
             SceneManager.LoadScene(nextSceneName);
         }
-        else
-        {
-            Debug.LogWarning("[UIPageLoader] Next scene name is not set!");
-        }
+       
     }
 }
 

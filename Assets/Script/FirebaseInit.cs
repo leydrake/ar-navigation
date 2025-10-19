@@ -8,14 +8,7 @@ public class FirebaseInit : MonoBehaviour
     {
         FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.Result == DependencyStatus.Available)
-            {
-                Debug.Log("Firebase is ready!");
-            }
-            else
-            {
-                Debug.LogError("Could not resolve Firebase dependencies: " + task.Result);
-            }
+           
         });
     }
 }

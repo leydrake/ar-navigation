@@ -17,7 +17,7 @@ public class PathLineVisualisation : MonoBehaviour {
     private void Update() {
         path = navigationController.CalculatedPath;
         AddOffsetToPath();
-        AddLineOffset();
+        // AddLineOffset();
         SetLineRendererPositions();
     }
 
@@ -28,13 +28,13 @@ public class PathLineVisualisation : MonoBehaviour {
         }
     }
 
-    private void AddLineOffset() {
-        if (navigationYOffset.value != 0) {
-            for (int i = 0; i < calculatedPathAndOffset.Length; i++) {
-                calculatedPathAndOffset[i] += new Vector3(0, navigationYOffset.value, 0);
-            }
-        }
-    }
+    // private void AddLineOffset() {
+    //     if (navigationYOffset.value != 0) {
+    //         for (int i = 0; i < calculatedPathAndOffset.Length; i++) {
+    //             calculatedPathAndOffset[i] += new Vector3(0, navigationYOffset.value, 0);
+    //         }
+    //     }
+    // }
 
     private void SetLineRendererPositions() {
         line.positionCount = calculatedPathAndOffset.Length;

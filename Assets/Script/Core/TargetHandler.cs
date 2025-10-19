@@ -80,7 +80,7 @@ public class TargetHandler : MonoBehaviour {
     public event Action<string> ErrorOccurred;
 
     private void Start() {
-        Debug.Log("TargetHandler.Start()");
+       
         StartCoroutine(InitializeWithDelay());
     }
 
@@ -100,7 +100,7 @@ public class TargetHandler : MonoBehaviour {
             }
             catch (Exception cbEx)
             {
-                Debug.LogError($"[TargetHandler] Error while processing targets: {cbEx.Message}");
+                
             }
             
             pendingTargets = null;
@@ -136,7 +136,7 @@ public class TargetHandler : MonoBehaviour {
             // Check internet connectivity first
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
-                Debug.LogError("[TargetHandler] No internet connection detected");
+                
                 ErrorOccurred?.Invoke("No internet connection");
                 return;
             }
@@ -145,17 +145,14 @@ public class TargetHandler : MonoBehaviour {
             if (db != null)
             {
                 isInitialized = true;
-                Debug.Log("[TargetHandler] Firebase initialized successfully");
             }
             else
             {
-                Debug.LogError("[TargetHandler] Firestore DefaultInstance is null");
                 ErrorOccurred?.Invoke("Firebase not initialized");
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TargetHandler] Failed to get Firestore instance: {e.Message}");
             ErrorOccurred?.Invoke($"Firebase initialization failed: {e.Message}");
         }
     }
@@ -171,7 +168,6 @@ public class TargetHandler : MonoBehaviour {
         // Check internet connectivity
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            Debug.LogError("[TargetHandler] No internet connection for data fetch");
             ErrorOccurred?.Invoke("No internet connection");
             yield break;
         }
@@ -192,7 +188,6 @@ public class TargetHandler : MonoBehaviour {
             
             if (db == null || !isInitialized)
             {
-                Debug.LogError("[TargetHandler] Firestore not initialized. Ensure Firebase is set up and initialized.");
                 ErrorOccurred?.Invoke("Firebase not initialized");
                 yield break;
             }
@@ -207,7 +202,6 @@ public class TargetHandler : MonoBehaviour {
         {
             if (task.IsFaulted || task.IsCanceled)
             {
-                Debug.LogError($"[TargetHandler] Failed to fetch targets. Faulted={task.IsFaulted}, Canceled={task.IsCanceled}, Exception={task.Exception}");
                 fetchException = task.Exception;
             }
             else
@@ -227,7 +221,6 @@ public class TargetHandler : MonoBehaviour {
 
         if (!fetchCompleted)
         {
-            Debug.LogError($"[TargetHandler] Fetch timed out after {networkTimeoutSeconds} seconds");
             HandleFetchError("Request timed out");
         }
         else if (fetchException != null)
@@ -247,7 +240,6 @@ public class TargetHandler : MonoBehaviour {
                 }
                 catch (Exception cbEx)
                 {
-                    Debug.LogError($"[TargetHandler] Error while processing targets (post-fetch): {cbEx.Message}");
                 }
                 finally
                 {
@@ -265,12 +257,10 @@ public class TargetHandler : MonoBehaviour {
 
         if (snapshot == null)
         {
-            Debug.LogError("[TargetHandler] Snapshot is null");
             HandleFetchError("Received null snapshot from Firebase");
             return;
         }
 
-        Debug.Log($"[TargetHandler] Processing {snapshot.Documents.Count()} documents from Firebase");
 
         foreach (var doc in snapshot.Documents)
         {
@@ -303,14 +293,11 @@ public class TargetHandler : MonoBehaviour {
                     }
                 };
                 
-                Debug.Log($"[TargetHandler] Document {doc.Id} - Name: '{data.Name}', Building: '{data.Building}', Floor: {data.FloorNumber}, Image: '{(string.IsNullOrEmpty(data.Image) ? "none" : "present")}'");
-                Debug.Log($"[TargetHandler] Position: ({data.Position.x}, {data.Position.y}, {data.Position.z})");
                 
                 loaded.Add(data);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[TargetHandler] Failed to parse document '{doc.Id}': {ex.Message}");
             }
         }
 
@@ -318,7 +305,6 @@ public class TargetHandler : MonoBehaviour {
         targets = loaded;
         retryCount = 0; // Reset retry count on success
 
-        Debug.Log($"[TargetHandler] Successfully loaded {loaded.Count} targets from Firebase");
 
         // Store targets to be processed on main thread
         pendingTargets = new List<TargetData>(targets);
@@ -327,7 +313,6 @@ public class TargetHandler : MonoBehaviour {
 
     private void HandleFetchError(string errorMessage)
     {
-        Debug.LogError($"[TargetHandler] Fetch error: {errorMessage}");
         ErrorOccurred?.Invoke(errorMessage);
         try { LoadingChanged?.Invoke(false); } catch (Exception) {}
         
@@ -339,7 +324,6 @@ public class TargetHandler : MonoBehaviour {
         }
         else
         {
-            Debug.LogError("[TargetHandler] Max retry attempts reached. Giving up.");
         }
     }
 
@@ -394,13 +378,11 @@ public class TargetHandler : MonoBehaviour {
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[TargetHandler] Error emitting cached targets: {ex.Message}");
             }
         }
     }
 
     private void GenerateTargetItems() {
-        Debug.Log("TargetHandler.GenerateTargetItems() - clearing existing items and creating new ones");
         
         foreach (var item in currentTargetItems) {
             if (item != null && item.gameObject != null) {
@@ -410,33 +392,24 @@ public class TargetHandler : MonoBehaviour {
         currentTargetItems.Clear();
 
         if (targets != null && targets.Count > 0) {
-            Debug.Log($"TargetHandler: Generating {targets.Count} target items from Firebase.");
             foreach (TargetData targetData in targets) {
                 TargetFacade created = CreateTargetFacade(targetData);
                 if (created != null) {
                     currentTargetItems.Add(created);
-                    Debug.Log($"Created TargetFacade: '{created.Name}' (Floor {created.FloorNumber}) GameObject='{created.gameObject.name}'");
-                } else {
-                    Debug.LogWarning($"Skipped creating target facade for '{targetData?.Name}' (floor {targetData?.FloorNumber}).");
-                }
+                } 
             }
-        } else {
-            Debug.Log("TargetHandler: No targets to generate from Firebase.");
-        }
+        } 
     }
 
     private TargetFacade CreateTargetFacade(TargetData targetData)
     {
-        Debug.Log($"CreateTargetFacade() called for target '{targetData?.Name}'");
         if (targetData == null)
         {
-            Debug.LogWarning("CreateTargetFacade called with null targetData");
             return null;
         }
 
         if (targetObjectPrefab == null)
         {
-            Debug.LogError("Target prefab (targetObjectPrefab) is not assigned. Cannot create target objects.");
             return null;
         }
 
@@ -450,14 +423,10 @@ public class TargetHandler : MonoBehaviour {
             int floor = targetData.FloorNumber;
             if (floor < 0 || floor >= targetObjectsParentTransforms.Length)
             {
-                Debug.LogWarning($"FloorNumber {floor} for target '{targetData.Name}' is out of range. Clamping to valid range.");
                 floor = Mathf.Clamp(floor, 0, targetObjectsParentTransforms.Length - 1);
             }
             parentTransform = targetObjectsParentTransforms[floor];
-            Debug.Log($"Selected parent transform for floor {floor}: {(parentTransform != null ? parentTransform.name : "null")}");
-        } else {
-            Debug.Log("No targetObjectsParentTransforms assigned, instantiating at root of scene.");
-        }
+        } 
 
         float px = (targetData.Position != null && !float.IsNaN(targetData.Position.x)) ? targetData.Position.x : 0f;
         float py = (targetData.Position != null && !float.IsNaN(targetData.Position.y)) ? targetData.Position.y : 0f;
@@ -466,10 +435,8 @@ public class TargetHandler : MonoBehaviour {
         if (float.IsNaN(pos.x) || float.IsNaN(pos.y) || float.IsNaN(pos.z) ||
             float.IsInfinity(pos.x) || float.IsInfinity(pos.y) || float.IsInfinity(pos.z))
         {
-            Debug.LogWarning($"Invalid position in target '{targetData.Name}', resetting to (0,0,0)");
             pos = Vector3.zero;
         }
-        Debug.Log($"Target position for '{targetData.Name}': {pos}");
 
         GameObject targetObject = parentTransform != null
             ? Instantiate(targetObjectPrefab, parentTransform, false)
@@ -488,11 +455,9 @@ public class TargetHandler : MonoBehaviour {
         facade.FloorNumber = targetData.FloorNumber;
         facade.Building = buildingName;
 
-        Debug.Log($"TargetFacade populated: Name='{facade.Name}' Building='{facade.Building}' Floor={facade.FloorNumber}");
 
         if (!string.IsNullOrEmpty(targetData.Image))
         {
-            Debug.Log($"Target '{targetData.Name}' contains image data (length {targetData.Image.Length}). Attempting decode.");
             try
             {
                 string base64 = targetData.Image;
@@ -504,12 +469,10 @@ public class TargetHandler : MonoBehaviour {
                 Texture2D tex = new Texture2D(2, 2);
                 if (tex.LoadImage(imageBytes))
                 {
-                    Debug.Log($"Decoded image for target '{targetData.Name}' -> texture {tex.width}x{tex.height}");
                     Renderer rend = targetObject.GetComponent<Renderer>();
                     if (rend != null && rend.material != null)
                     {
                         rend.material.mainTexture = tex;
-                        Debug.Log($"Applied texture to Renderer on '{targetObject.name}'");
                     }
 
                     var t = facade.GetType();
@@ -517,7 +480,6 @@ public class TargetHandler : MonoBehaviour {
                     if (field != null && field.FieldType == typeof(Texture2D))
                     {
                         field.SetValue(facade, tex);
-                        Debug.Log("Set TargetFacade.ImageTexture field.");
                     }
                     else
                     {
@@ -525,21 +487,17 @@ public class TargetHandler : MonoBehaviour {
                         if (prop != null && prop.PropertyType == typeof(Texture2D) && prop.CanWrite)
                         {
                             prop.SetValue(facade, tex);
-                            Debug.Log("Set TargetFacade.ImageTexture property.");
                         }
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"Failed to LoadImage from base64 for target '{targetData.Name}'.");
                 }
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"Failed to convert Base64 image for target '{targetData.Name}': {e.Message}");
             }
         } else {
-            Debug.Log($"No image data for target '{targetData.Name}'.");
         }
 
         return facade;
@@ -547,10 +505,8 @@ public class TargetHandler : MonoBehaviour {
 
     private void FillDropdownWithTargetItems()
     {
-        Debug.Log("TargetHandler.FillDropdownWithTargetItems()");
         if (targetDataDropdown == null)
         {
-            Debug.LogWarning("Dropdown not assigned!");
             return;
         }
 
@@ -570,7 +526,6 @@ public class TargetHandler : MonoBehaviour {
                 .Select(x =>
                 {
                     string optionText = $"{x.Building} - Floor {x.FloorNumber} - {x.Name}";
-                    Debug.Log($"Preparing dropdown option: {optionText}");
                     var option = new TMP_Dropdown.OptionData
                     {
                         text = optionText
@@ -579,9 +534,7 @@ public class TargetHandler : MonoBehaviour {
                     Sprite sprite = GetSpriteForFacade(x);
                     if (sprite != null) {
                         option.image = sprite;
-                        Debug.Log($" -> Option has image for '{x.Name}'");
                     } else {
-                        Debug.Log($" -> Option has NO image for '{x.Name}'");
                     }
 
                     return option;
@@ -590,7 +543,6 @@ public class TargetHandler : MonoBehaviour {
 
         targetDataDropdown.ClearOptions();
         targetDataDropdown.AddOptions(targetFacadeOptionData);
-        Debug.Log($"Dropdown populated with {targetFacadeOptionData.Count} options.");
 
         // Also populate DropdownScrollBinder with location data if available
         if (dropdownScrollBinder != null && targets != null && targets.Count > 0)
@@ -614,11 +566,9 @@ public class TargetHandler : MonoBehaviour {
             }).ToArray();
 
             dropdownScrollBinder.SetLocationData(locationDataArray);
-            Debug.Log($"DropdownScrollBinder populated with {locationDataArray.Length} location data items.");
         }
         else if (dropdownScrollBinder == null)
         {
-            Debug.LogWarning("DropdownScrollBinder not assigned in TargetHandler - images will not be displayed in scroll list.");
         }
     }
 
@@ -650,13 +600,11 @@ public class TargetHandler : MonoBehaviour {
         }
 
         if (tex == null) {
-            Debug.Log($"GetSpriteForFacade: No texture found for facade '{facade.Name}'");
             return null;
         }
 
         Sprite sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
         dropdownSpriteCache[facade] = sp;
-        Debug.Log($"GetSpriteForFacade: Created sprite for facade '{facade.Name}' size {tex.width}x{tex.height}");
         return sp;
     }
 
@@ -670,36 +618,29 @@ public class TargetHandler : MonoBehaviour {
     }
 
     public void SetSelectedTargetPositionWithDropdown(int selectedValue) {
-        Debug.Log($"SetSelectedTargetPositionWithDropdown(selectedValue={selectedValue})");
         navigationController.TargetPosition = GetCurrentlySelectedTarget(selectedValue);
     }
 
     private Vector3 GetCurrentlySelectedTarget(int selectedValue) {
-        Debug.Log($"GetCurrentlySelectedTarget(selectedValue={selectedValue})");
         if (selectedValue < 0 || selectedValue >= currentTargetItems.Count) {
-            Debug.LogWarning("Selected value out of range, returning Vector3.zero");
             return Vector3.zero;
         }
 
         var item = currentTargetItems[selectedValue];
         if (item == null || item.gameObject == null) {
-            Debug.LogWarning("Selected item null or destroyed, returning Vector3.zero");
             return Vector3.zero;
         }
 
-        Debug.Log($"Returning position for '{item.Name}' -> {item.transform.position}");
         return item.transform.position;
     }
 
     public TargetFacade GetCurrentTargetByTargetText(string targetText) {
-        Debug.Log($"GetCurrentTargetByTargetText('{targetText}')");
         return currentTargetItems.Find(x =>
             x.Name.ToLower().Equals(targetText.ToLower()));
     }
 
     // Public method to refresh target data (call this to reload from Firebase)
     public void RefreshTargetData() {
-        Debug.Log("TargetHandler.RefreshTargetData() called — fetching from Firebase and rebuilding targets.");
 
         if (currentTargetItems != null && currentTargetItems.Count > 0) {
             foreach (var item in currentTargetItems) {

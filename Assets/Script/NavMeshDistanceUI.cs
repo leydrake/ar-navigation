@@ -38,7 +38,6 @@ public class NavMeshDistanceUI : MonoBehaviour
             if (hasArrived)
             {
                 hasArrived = false;
-                Debug.Log("NavMeshDistanceUI: target changed — clearing arrived state.");
             }
 
             previousTarget = targetPos;

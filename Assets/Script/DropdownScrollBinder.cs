@@ -46,7 +46,6 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 	{
 		if ((dropdown == null && tmpDropdown == null) || scrollRect == null || content == null || rowPrefab == null)
 		{
-			Debug.LogWarning("[DropdownScrollBinder] Assign Dropdown or TMP_Dropdown, plus ScrollRect, Content, and RowPrefab in Inspector.");
 			return;
 		}
 
@@ -83,10 +82,7 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 
 	public void RebuildFromDropdown()
 	{
-		if (verboseLogging)
-		{
-			Debug.Log("[DropdownScrollBinder] RebuildFromDropdown() called");
-		}
+		
 
 		for (int i = 0; i < spawned.Count; i++)
 		{
@@ -99,7 +95,6 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 		{
 			if (verboseLogging)
 			{
-				Debug.Log("[DropdownScrollBinder] No options found on assigned dropdown.");
 			}
 			return;
 		}
@@ -134,12 +129,10 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 							
 							if (verboseLogging)
 							{
-								Debug.Log($"[DropdownScrollBinder] Set custom image for location '{optionText}' - Image size: {texture.width}x{texture.height}");
 							}
 						}
 						else
 						{
-							Debug.LogWarning($"[DropdownScrollBinder] Failed to convert base64 image for location '{optionText}', using default sprite");
 						}
 					}
 					
@@ -152,14 +145,12 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 							
 							if (verboseLogging)
 							{
-								Debug.Log($"[DropdownScrollBinder] Using default sprite for location '{optionText}'");
 							}
 						}
 						else
 						{
 							// Fallback to test sprite if no default sprite is assigned
 							sprite = CreateTestSprite();
-							Debug.LogWarning($"[DropdownScrollBinder] No default sprite assigned, using test sprite for location '{optionText}'");
 						}
 					}
 					
@@ -179,24 +170,13 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 							if (rectTransform.sizeDelta.x < 10 || rectTransform.sizeDelta.y < 10)
 							{
 								rectTransform.sizeDelta = new Vector2(100, 100);
-								Debug.Log($"[DropdownScrollBinder] Fixed ImageForDestination size for '{optionText}'");
 							}
 						}
 						
-						if (verboseLogging)
-						{
-							Debug.Log($"[DropdownScrollBinder] Sprite set: {sprite != null}, Image color: {imageForDestination.color}");
-							Debug.Log($"[DropdownScrollBinder] Image enabled: {imageForDestination.enabled}");
-							Debug.Log($"[DropdownScrollBinder] ImageForDestination size: {rectTransform?.sizeDelta}");
-							Debug.Log($"[DropdownScrollBinder] ImageForDestination position: {rectTransform?.anchoredPosition}");
-							Debug.Log($"[DropdownScrollBinder] ImageForDestination active: {imageForDestination.gameObject.activeInHierarchy}");
-						}
+						
 					}
 				}
-				else
-				{
-					Debug.LogWarning($"[DropdownScrollBinder] ImageForDestination component not found for location '{optionText}'");
-				}
+				
 			}
 
 			int idx = i;
@@ -214,10 +194,7 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 				btn.targetGraphic = imgForButton;
 			}
 			btn.onClick.AddListener(() => OnRowClicked(idx));
-			if (verboseLogging)
-			{
-				Debug.Log($"[DropdownScrollBinder] Wired click for row {idx} -> '{optionText}'");
-			}
+			
 
 			var img = go.GetComponent<Image>();
 			if (img != null) img.color = normalColor;
@@ -230,10 +207,7 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 
 	private void OnRowClicked(int index)
 	{
-		if (verboseLogging)
-		{
-			Debug.Log($"[DropdownScrollBinder] Row clicked index={index}");
-		}
+		
 		SetSelectedIndex(index);
 		UpdateSelectedLabel();
 
@@ -374,7 +348,6 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 		
 		if (verboseLogging)
 		{
-			Debug.Log($"[DropdownScrollBinder] Set location data with {locations?.Length ?? 0} locations");
 			
 			// Debug each location's image data
 			if (locations != null)
@@ -383,11 +356,7 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 				{
 					var location = locations[i];
 					bool hasImage = !string.IsNullOrEmpty(location.Image);
-					Debug.Log($"[DropdownScrollBinder] Location {i}: '{location.Name}' - Has Image: {hasImage}");
-					if (hasImage)
-					{
-						Debug.Log($"[DropdownScrollBinder] Image data length: {location.Image.Length} characters");
-					}
+					
 				}
 			}
 		}
@@ -409,14 +378,10 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 			{
 				SetLocationData(targetListData.TargetList);
 			}
-			else
-			{
-				Debug.LogError("[DropdownScrollBinder] Failed to parse JSON or TargetList is null");
-			}
+			
 		}
 		catch (System.Exception ex)
 		{
-			Debug.LogError($"[DropdownScrollBinder] Error parsing JSON: {ex.Message}");
 		}
 	}
 
@@ -433,19 +398,12 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 				string jsonContent = System.IO.File.ReadAllText(filePath);
 				SetLocationDataFromJson(jsonContent);
 				
-				if (verboseLogging)
-				{
-					Debug.Log($"[DropdownScrollBinder] Loaded location data from file: {filePath}");
-				}
+				
 			}
-			else
-			{
-				Debug.LogError($"[DropdownScrollBinder] File not found: {filePath}");
-			}
+			
 		}
 		catch (System.Exception ex)
 		{
-			Debug.LogError($"[DropdownScrollBinder] Error loading file {filePath}: {ex.Message}");
 		}
 	}
 
@@ -478,7 +436,6 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 		}
 		catch (Exception ex)
 		{
-			Debug.LogError($"[DropdownScrollBinder] Error converting base64 to texture: {ex.Message}");
 			return null;
 		}
 	}
@@ -497,7 +454,6 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 			var image = imageTransform.GetComponent<Image>();
 			if (verboseLogging)
 			{
-				Debug.Log($"[DropdownScrollBinder] Found ImageForDestination by name: {image != null}");
 			}
 			return image;
 		}
@@ -506,10 +462,8 @@ private EventsFetcher eventsFetcher; // Reference to get EventData
 		var allImages = prefab.GetComponentsInChildren<Image>();
 		if (verboseLogging)
 		{
-			Debug.Log($"[DropdownScrollBinder] Found {allImages.Length} Image components in prefab");
 			foreach (var img in allImages)
 			{
-				Debug.Log($"[DropdownScrollBinder] Image component: {img.name}");
 			}
 		}
 		

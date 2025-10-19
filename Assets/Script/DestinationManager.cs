@@ -25,8 +25,7 @@ public class DestinationManager : MonoBehaviour
             if (string.IsNullOrEmpty(SelectedLocation))
                 SelectedLocation = testDestinationName;
 
-            Debug.Log($"🧭 Simulating arrival for '{SelectedLocation}'... " +
-                      $"(Elapsed {Time.time - NavigationStartTime:F1}s)");
+           
             
             SceneManager.LoadScene(arrivalSceneName);
         }
@@ -38,7 +37,6 @@ public class DestinationManager : MonoBehaviour
         var button = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
         if (button == null)
         {
-            Debug.LogWarning("⚠️ No button selected.");
             return;
         }
 
@@ -56,7 +54,6 @@ public class DestinationManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(name))
         {
-            Debug.LogWarning("⚠️ Could not read location name.");
             return;
         }
 
@@ -75,8 +72,7 @@ public class DestinationManager : MonoBehaviour
         if (string.IsNullOrEmpty(SelectedLocation))
             SelectedLocation = testDestinationName;
 
-        Debug.Log($"🧭 Simulating arrival for '{SelectedLocation}'... " +
-                  $"(Elapsed {Time.time - NavigationStartTime:F1}s)");
+       
 
         SceneManager.LoadScene(arrivalSceneName);
     }

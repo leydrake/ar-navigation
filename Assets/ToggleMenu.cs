@@ -190,14 +190,12 @@ public class ToggleMenu : MonoBehaviour
             button.onClick.AddListener(() => OnMenuItemClicked(button));
         }
         
-        Debug.Log($"Setup auto-close for {menuButtons.Length} menu items");
     }
     
     private void OnMenuItemClicked(Button clickedButton)
     {
         if (autoCloseOnItemClick && isMenuOpen)
         {
-            Debug.Log($"Menu item '{clickedButton.name}' clicked. Hiding both menu panel and burger button.");
             
             // Check if this is the events menu item
             if (clickedButton.name.ToLower().Contains("event") || clickedButton.name.ToLower().Contains("calendar"))
@@ -302,7 +300,6 @@ public class ToggleMenu : MonoBehaviour
             burgerCanvasGroup.interactable = false;
             burgerCanvasGroup.blocksRaycasts = false;
             
-            Debug.Log("Burger button hidden");
         }
     }
     
@@ -320,7 +317,6 @@ public class ToggleMenu : MonoBehaviour
             burgerCanvasGroup.interactable = true;
             burgerCanvasGroup.blocksRaycasts = true;
             
-            Debug.Log("Burger button shown");
         }
     }
     
@@ -688,7 +684,6 @@ public class ToggleMenu : MonoBehaviour
     {
         panelWidth = newWidth;
         SetMenuState(isMenuOpen);
-        Debug.Log($"Panel width set to {newWidth}");
     }
     
     // Canvas sorting control methods
@@ -759,7 +754,6 @@ public class ToggleMenu : MonoBehaviour
             // Also ensure menu panel is rendered before burger button
             menuPanel.transform.SetSiblingIndex(menuPanel.transform.GetSiblingIndex());
             
-            Debug.Log("Burger button moved to top using Transform hierarchy");
         }
     }
     
@@ -797,7 +791,6 @@ public class ToggleMenu : MonoBehaviour
         if (burgerButtonSortingOrder <= menuPanelSortingOrder)
         {
             burgerButtonSortingOrder = menuPanelSortingOrder + 1;
-            Debug.Log($"Adjusted burger button sorting order to {burgerButtonSortingOrder} to ensure it's above menu panel");
         }
     }
     
@@ -805,21 +798,18 @@ public class ToggleMenu : MonoBehaviour
     public void DisableCanvasSorting()
     {
         useCanvasSorting = false;
-        Debug.Log("Canvas sorting disabled. Menu should now be visible.");
     }
     
     // Emergency method to disable transform hierarchy if it causes issues
     public void DisableTransformHierarchy()
     {
         useTransformHierarchy = false;
-        Debug.Log("Transform hierarchy disabled.");
     }
     
     // Public method to force burger button on top (can be called from other scripts)
     public void ForceBurgerButtonOnTop()
     {
         EnsureBurgerButtonOnTop();
-        Debug.Log("Burger button forced to top using all available methods");
     }
     
     // Simple method that just uses Transform.SetAsLastSibling (most reliable)
@@ -828,7 +818,6 @@ public class ToggleMenu : MonoBehaviour
         if (burgerButton != null)
         {
             burgerButton.transform.SetAsLastSibling();
-            Debug.Log("Burger button moved to top using SetAsLastSibling");
         }
     }
     
@@ -837,13 +826,11 @@ public class ToggleMenu : MonoBehaviour
     {
         autoCloseOnItemClick = true;
         SetupMenuItemsAutoClose();
-        Debug.Log("Auto-close on item click enabled");
     }
     
     public void DisableAutoCloseOnItemClick()
     {
         autoCloseOnItemClick = false;
-        Debug.Log("Auto-close on item click disabled");
     }
     
     // Method to manually close menu (can be called from other scripts)
@@ -852,7 +839,6 @@ public class ToggleMenu : MonoBehaviour
         if (isMenuOpen)
         {
             CloseMenu();
-            Debug.Log("Menu closed from external call");
         }
     }
     
@@ -869,39 +855,33 @@ public class ToggleMenu : MonoBehaviour
     public void DisableBurgerButtonSorting()
     {
         keepBurgerButtonOnTop = false;
-        Debug.Log("Burger button sorting disabled. Button should remain visible.");
     }
     
     // Method to enable burger button sorting
     public void EnableBurgerButtonSorting()
     {
         keepBurgerButtonOnTop = true;
-        Debug.Log("Burger button sorting enabled.");
     }
     
     // Public methods for external control of menu and burger button visibility
     public void HideBothMenuAndBurger()
     {
         HideMenuAndBurgerButton();
-        Debug.Log("Both menu and burger button hidden from external call");
     }
     
     public void ShowBothMenuAndBurger()
     {
         ShowMenuAndBurgerButton();
-        Debug.Log("Both menu and burger button shown from external call");
     }
     
     public void HideOnlyBurgerButton()
     {
         HideBurgerButton();
-        Debug.Log("Only burger button hidden from external call");
     }
     
     public void ShowOnlyBurgerButton()
     {
         ShowBurgerButton();
-        Debug.Log("Only burger button shown from external call");
     }
     
     private void HideEventsUI()
@@ -942,7 +922,6 @@ public class ToggleMenu : MonoBehaviour
         EnsureEventsUI();
         if (eventsUIController == null)
         {
-            Debug.LogWarning("Cannot open events - EventsUIController missing");
             return;
         }
         eventsUIController.ShowEventsUI();
@@ -966,11 +945,7 @@ public class ToggleMenu : MonoBehaviour
         {
             var instance = Instantiate(eventsUIPrefab);
             eventsUIController = instance;
-            Debug.Log("Instantiated EventsUIController from prefab");
         }
-        else
-        {
-            Debug.LogWarning("No EventsUIController instance found and no prefab assigned. Assign 'eventsUIPrefab' in ToggleMenu.");
-        }
+       
     }
 }
