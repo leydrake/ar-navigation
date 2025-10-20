@@ -1020,6 +1020,7 @@ body, html {
     background: rgba(0, 0, 0, 0.2);
     display: flex;
     align-items: flex-start;
+    flex-direction: column-reverse;
     justify-content: flex-end;
     z-index: 1000;
     backdrop-filter: blur(1px);
@@ -1255,6 +1256,8 @@ body, html {
     animation: tutorialPulse 2s infinite;
     box-shadow: 0 0 0 4px rgba(32, 98, 51, 0.3), 0 8px 25px rgba(0,0,0,0.15) !important;
     transform: scale(1.02) !important;
+    backdrop-filter: none !important;
+    filter: none !important;
 }
 
 @keyframes tutorialPulse {
