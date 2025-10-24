@@ -378,6 +378,12 @@ async function openViewModal(eventId, isArchived = false) {
                 viewEventImage.style.display = 'none';
             }
             
+            // Determine if current user can edit this event
+            const currentRole = sessionStorage.getItem('adminRole');
+            const currentEmail = sessionStorage.getItem('adminEmail');
+            const isSuperAdmin = currentRole === 'super_admin';
+            const isCreator = data.createdByEmail && currentEmail && data.createdByEmail === currentEmail;
+
             // Update modal buttons based on archive status
             if (isArchived) {
                 editEventBtn.style.display = 'none';
@@ -396,7 +402,8 @@ async function openViewModal(eventId, isArchived = false) {
                     deleteEventBtn.parentNode.insertBefore(restoreBtn, deleteEventBtn);
                 }
             } else {
-                editEventBtn.style.display = 'inline-block';
+                // Show edit button only if super_admin or event creator
+                editEventBtn.style.display = (isSuperAdmin || isCreator) ? 'inline-block' : 'none';
                 deleteEventBtn.textContent = 'Delete';
                 deleteEventBtn.className = 'delete-btn';
                 
@@ -459,6 +466,15 @@ editEventBtn.onclick = async function() {
         const eventDoc = await getDoc(doc(db, "events", viewingEventId));
         if (eventDoc.exists()) {
             const data = eventDoc.data();
+            const currentRole = sessionStorage.getItem('adminRole');
+            const currentEmail = sessionStorage.getItem('adminEmail');
+            const isSuperAdmin = currentRole === 'super_admin';
+            const isCreator = data.createdByEmail && currentEmail && data.createdByEmail === currentEmail;
+
+            if (!isSuperAdmin && !isCreator) {
+                alert('You can only edit events you created.');
+                return;
+            }
             eventName.value = data.name || data.title || '';
             eventDescription.value = data.description || '';
             eventLocation.value = data.location || '';
@@ -815,11 +831,34 @@ eventForm.onsubmit = async function(e) {
             
             // User clicked "OK" - proceed with adding/updating
             if (editingEventId) {
+                // Enforce edit authorization: only super_admin or creator can update
+                const existingDoc = await getDoc(doc(db, "events", editingEventId));
+                if (!existingDoc.exists()) {
+                    alert('Event not found.');
+                    return;
+                }
+                const existingData = existingDoc.data();
+                const currentRole = sessionStorage.getItem('adminRole');
+                const currentEmail = sessionStorage.getItem('adminEmail');
+                const isSuperAdmin = currentRole === 'super_admin';
+                const isCreator = existingData.createdByEmail && currentEmail && existingData.createdByEmail === currentEmail;
+                if (!isSuperAdmin && !isCreator) {
+                    alert('You are not allowed to edit this event.');
+                    return;
+                }
                 // Update existing event
                 console.log('Updating event:', editingEventId, eventData);
                 await updateDoc(doc(db, "events", editingEventId), eventData);
                 console.log('Event updated successfully');
             } else {
+                // Add new event with creator metadata
+                const creatorEmail = sessionStorage.getItem('adminEmail') || null;
+                const creatorName = sessionStorage.getItem('adminName') || null;
+                const creatorRole = sessionStorage.getItem('adminRole') || null;
+                eventData.createdByEmail = creatorEmail;
+                eventData.createdByName = creatorName;
+                eventData.createdByRole = creatorRole;
+                eventData.createdAt = new Date().toISOString();
                 // Add new event
                 console.log('Adding new event:', eventData);
                 await addDoc(eventsRef, eventData);

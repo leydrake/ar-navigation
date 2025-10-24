@@ -42,7 +42,7 @@
                         </div>
                     </nav>
                     <div class="download-section">
-                        <a class="download-btn" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans" target="_blank" rel="noopener noreferrer" aria-label="Download on Google Play">Download App</a>
+                        <!-- <a class="download-btn" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans" target="_blank" rel="noopener noreferrer" aria-label="Download on Google Play">Download App</a> -->
                         <button class="burger-menu" id="burgerMenu">
                             <span class="burger-line"></span>
                             <span class="burger-line"></span>
@@ -827,6 +827,41 @@
         });
 
         // No automatic admin creation on load.
+    </script>
+
+    <!-- Burger Menu JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const burgerMenu = document.getElementById('burgerMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (burgerMenu && mobileMenu) {
+                burgerMenu.addEventListener('click', function() {
+                    // Toggle burger menu animation
+                    burgerMenu.classList.toggle('active');
+                    
+                    // Toggle mobile menu visibility
+                    mobileMenu.classList.toggle('open');
+                });
+                
+                // Close mobile menu when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!burgerMenu.contains(event.target) && !mobileMenu.contains(event.target)) {
+                        burgerMenu.classList.remove('active');
+                        mobileMenu.classList.remove('open');
+                    }
+                });
+                
+                // Close mobile menu when clicking on a nav link
+                const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+                mobileNavLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        burgerMenu.classList.remove('active');
+                        mobileMenu.classList.remove('open');
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>
