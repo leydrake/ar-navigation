@@ -13,7 +13,7 @@
     const appLink = `navigatemycampus://open?data=${encodeURIComponent(data)}`;
 
     // PLAY STORE FALLBACK (replace with your package)
-    const playStoreLink = "https://play.google.com/store/apps/details?id=com.supercell.clashofclans";
+    const playStoreLink = "https://navigatemycampus.capstone-two.com/download";
 
     // Try to open the app, fallback to Play Store after ~1.5s
     function tryOpen() {
@@ -33,7 +33,7 @@
   </script>
 </head>
 <body>
-  <p>Opening the app… If nothing happens, <a id="storelink" href="https://play.google.com/store/apps/details?id=com.supercell.clashofclans">open the Play Store</a>.</p>
+  <p>Opening the app… If nothing happens, <a id="storelink" href="https://navigatemycampus.capstone-two.com/download">open the Play Store</a>.</p>
   <script>
     // update visible link in case you used query param
     document.getElementById('storelink').href = playStoreLink;
